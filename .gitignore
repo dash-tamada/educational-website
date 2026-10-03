@@ -42,3 +42,6 @@ next-env.d.ts
 
 # old prototype + scraped reference dumps
 /_archive
+
+# visual QA frames
+/.qa
