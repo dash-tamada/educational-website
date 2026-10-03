@@ -3,25 +3,122 @@
 
 const u = (id: string) => `https://images.unsplash.com/${id}`;
 
+/**
+ * Colour tones shared by cards, stickers, tags and panels. Keep the legacy names
+ * (yellow, orange, tomato) working; they map to the V2 palette (sun, tangerine, flame).
+ */
 export type Tone =
-  | "cyan"
-  | "magenta"
+  | "sun"
   | "yellow"
-  | "lilac"
-  | "lime"
+  | "butter"
+  | "tangerine"
   | "orange"
+  | "flame"
   | "tomato"
-  | "aqua";
+  | "hotpink"
+  | "magenta"
+  | "blush"
+  | "bubblegum"
+  | "cyan"
+  | "aqua"
+  | "turquoise"
+  | "blue"
+  | "green"
+  | "mint"
+  | "forest"
+  | "lilac"
+  | "purple"
+  | "indigo"
+  | "olive"
+  | "lime"
+  | "white"
+  | "ink";
 
+/** Tailwind background class per tone. */
 export const toneBg: Record<Tone, string> = {
-  cyan: "bg-cyan",
+  sun: "bg-sun",
+  yellow: "bg-sun",
+  butter: "bg-butter",
+  tangerine: "bg-tangerine",
+  orange: "bg-tangerine",
+  flame: "bg-flame",
+  tomato: "bg-flame",
+  hotpink: "bg-hotpink",
   magenta: "bg-magenta",
-  yellow: "bg-yellow",
-  lilac: "bg-lilac",
-  lime: "bg-lime",
-  orange: "bg-orange",
-  tomato: "bg-tomato",
+  blush: "bg-blush",
+  bubblegum: "bg-bubblegum",
+  cyan: "bg-cyan",
   aqua: "bg-aqua",
+  turquoise: "bg-turquoise",
+  blue: "bg-blue",
+  green: "bg-green",
+  mint: "bg-mint",
+  forest: "bg-forest",
+  lilac: "bg-lilac",
+  purple: "bg-purple",
+  indigo: "bg-indigo",
+  olive: "bg-olive",
+  lime: "bg-lime",
+  white: "bg-white",
+  ink: "bg-ink",
+};
+
+/** Readable text colour class on each tone (spec V2 contrast rules). */
+export const toneText: Record<Tone, string> = {
+  sun: "text-ink",
+  yellow: "text-ink",
+  butter: "text-ink",
+  tangerine: "text-ink",
+  orange: "text-ink",
+  flame: "text-white",
+  tomato: "text-white",
+  hotpink: "text-white",
+  magenta: "text-ink",
+  blush: "text-ink",
+  bubblegum: "text-ink",
+  cyan: "text-ink",
+  aqua: "text-ink",
+  turquoise: "text-ink",
+  blue: "text-white",
+  green: "text-white",
+  mint: "text-forest",
+  forest: "text-mint",
+  lilac: "text-white",
+  purple: "text-white",
+  indigo: "text-white",
+  olive: "text-white",
+  lime: "text-ink",
+  white: "text-ink",
+  ink: "text-cream",
+};
+
+/** Raw hex per tone, for SVG fills and inline styles. */
+export const toneHex: Record<Tone, string> = {
+  sun: "#ffcf3f",
+  yellow: "#ffcf3f",
+  butter: "#fff2b7",
+  tangerine: "#f9a220",
+  orange: "#f9a220",
+  flame: "#fd4401",
+  tomato: "#fd4401",
+  hotpink: "#ff008c",
+  magenta: "#fd48f2",
+  blush: "#ffdbfd",
+  bubblegum: "#f780d4",
+  cyan: "#a3f6f6",
+  aqua: "#1ce8ed",
+  turquoise: "#2cd1d0",
+  blue: "#2668fd",
+  green: "#00b351",
+  mint: "#a7eb98",
+  forest: "#163f10",
+  lilac: "#9b82e0",
+  purple: "#3b308f",
+  indigo: "#4f3fb0",
+  olive: "#857a23",
+  lime: "#c8ff2e",
+  white: "#ffffff",
+  ink: "#161616",
 };
 
 export const navLinks = [
@@ -31,52 +128,66 @@ export const navLinks = [
   { label: "FAQ", href: "/#faq" },
 ];
 
-export const heroCards = [
+/**
+ * Hero photo fan (7 cards, centre = index 3). The fan geometry (arc, tilt, overlap,
+ * parallax speed) is derived from the index in Hero.tsx so it stays symmetric:
+ * mobile shows the middle 3, tablet the middle 5, desktop all 7. Keep captions
+ * short (<= 12 chars) so the tag never reaches the neighbouring card.
+ */
+export const heroCards: {
+  caption: string;
+  alt: string;
+  img: string;
+  tone: Tone;
+}[] = [
   {
-    caption: "Shipping my first app",
+    caption: "Photo walks",
+    alt: "A film camera and printed photos on a map",
+    img: u("photo-1452587925148-ce544e77e70d"),
+    tone: "lilac",
+  },
+  {
+    caption: "My first app",
+    alt: "A student coding on a laptop with headphones on",
     img: u("photo-1513258496099-48168024aec0"),
-    rotate: -9,
-    y: 34,
+    tone: "blue",
   },
   {
-    caption: "Drawing on my new tablet",
+    caption: "Sketch club",
+    alt: "Drawing on a tablet with a stylus",
     img: u("photo-1611241893603-3c359704e0ee"),
-    rotate: -5,
-    y: 8,
+    tone: "hotpink",
   },
   {
-    caption: "Finally nailing that riff",
+    caption: "Guitar riffs",
+    alt: "Close-up of hands playing an acoustic guitar",
     img: u("photo-1510915361894-db8b60106cb1"),
-    rotate: -2,
-    y: 18,
+    tone: "tangerine",
   },
   {
-    caption: "Budgeting without the panic",
+    caption: "Money basics",
+    alt: "A calculator and budget papers on a desk",
     img: u("photo-1554224155-6726b3ff858f"),
-    rotate: 3,
-    y: 0,
+    tone: "aqua",
   },
   {
-    caption: "Ordering coffee in Spanish",
+    caption: "Café Spanish",
+    alt: "Friends laughing around a laptop in a café",
     img: u("photo-1522202176988-66273c2fd55f"),
-    rotate: 6,
-    y: 16,
+    tone: "flame",
   },
   {
-    caption: "Cooking for the whole flat",
+    caption: "Home cooking",
+    alt: "Fresh vegetables being chopped on a wooden board",
     img: u("photo-1507048331197-7d4ac70811cf"),
-    rotate: 10,
-    y: 38,
+    tone: "green",
   },
 ];
 
+/** One sentence per promo tape (MarqueeTape repeats each along its tape). */
 export const marqueeItems = [
-  "1st video free",
-  "Learn at your pace",
-  "Tests that make it stick",
-  "Real tutors",
-  "Certificates",
-  "Pay once, keep forever",
+  "1st video of every course is free!",
+  "Learn at your pace with real tutors",
 ];
 
 export type Course = {
@@ -101,7 +212,7 @@ export const courses: Course[] = [
       "HTML, CSS and JavaScript until you've shipped a real site you're proud of.",
     tutor: "Arjun Rao",
     img: u("photo-1461749280684-dccba630e2f6"),
-    tone: "cyan",
+    tone: "aqua",
     badge: "BESTSELLER",
     tags: ["Coding", "Beginner"],
     modules: 6,
@@ -128,7 +239,7 @@ export const courses: Course[] = [
       "Chords, strumming and your first three songs. Calluses not included.",
     tutor: "Kabir Das",
     img: u("photo-1525201548942-d8732f6617a0"),
-    tone: "yellow",
+    tone: "sun",
     badge: "JUST DROPPED",
     tags: ["Music", "Beginner"],
     modules: 5,
@@ -141,7 +252,7 @@ export const courses: Course[] = [
     blurb: "Budgets, savings, investing basics. Explained like a friend would.",
     tutor: "Priya Nair",
     img: u("photo-1633158829585-23ba8f7c8caf"),
-    tone: "lime",
+    tone: "lilac",
     badge: "NEW",
     tags: ["Finance", "Life skills"],
     modules: 4,
@@ -154,7 +265,7 @@ export const courses: Course[] = [
     blurb: "Light, framing and editing so your camera roll looks intentional.",
     tutor: "Sana Iqbal",
     img: u("photo-1516035069371-29a1b244cc32"),
-    tone: "lilac",
+    tone: "tangerine",
     badge: "BESTSELLER",
     tags: ["Photography", "All levels"],
     modules: 5,
@@ -167,7 +278,7 @@ export const courses: Course[] = [
     blurb: "Exam-ready chemistry with experiments you can actually picture.",
     tutor: "Dr. Vikram Iyer",
     img: u("photo-1614935151651-0bea6508db6b"),
-    tone: "orange",
+    tone: "blue",
     badge: "NEW",
     tags: ["Science", "Exam prep"],
     modules: 8,
@@ -180,7 +291,7 @@ export const courses: Course[] = [
     blurb: "From a voice memo to a published show, with gear on any budget.",
     tutor: "Rhea Kapoor",
     img: u("photo-1478737270239-2f02b77fc618"),
-    tone: "aqua",
+    tone: "bubblegum",
     badge: "JUST DROPPED",
     tags: ["Creator", "Beginner"],
     modules: 4,
@@ -193,7 +304,7 @@ export const steps = [
   {
     title: "Pick a course",
     body: "Browse by topic, level or price. Every course shows its full curriculum up front.",
-    tone: "cyan" as Tone,
+    tone: "aqua" as Tone,
     icon: "search",
   },
   {
@@ -205,7 +316,7 @@ export const steps = [
   {
     title: "Unlock & pass the tests",
     body: "Buy once to open every module. Short tests between lessons keep it sticking.",
-    tone: "yellow" as Tone,
+    tone: "sun" as Tone,
     icon: "check",
   },
   {
@@ -216,39 +327,62 @@ export const steps = [
   },
 ];
 
-export const features = [
+/**
+ * Folder-tab feature stack (Krackerz mechanics, Maxima colour fields).
+ * `tab` must stay short (it sits in a fixed-width folder tab), `tone` is the
+ * panel field colour (white text on all of them).
+ */
+export const features: {
+  tab: string;
+  icon: "play" | "check" | "chart" | "tutor";
+  title: string;
+  bullets: string[];
+  img: string;
+  tone: Tone;
+  cta: { label: string; href: string };
+}[] = [
   {
-    tab: "Video modules",
-    title: "Bite-size video modules",
+    tab: "Video lessons",
+    icon: "play",
+    title: "Bite‑size video modules",
     bullets: [
       "Lessons grouped into clear modules",
       "Resume exactly where you left off",
-      "Speed controls & notes",
+      "Speed controls and notes",
     ],
     img: u("photo-1588196749597-9ff075ee6b5b"),
+    tone: "blue",
+    cta: { label: "Watch a free lesson", href: "/courses" },
   },
   {
-    tab: "Tests between lessons",
+    tab: "Quick tests",
+    icon: "check",
     title: "Tests between lessons",
     bullets: [
       "Quick quizzes after key videos",
-      "Pass mark unlocks the next part",
+      "A pass mark unlocks the next part",
       "Explanations for every answer",
     ],
     img: u("photo-1514369118554-e20d93546b30"),
+    tone: "green",
+    cta: { label: "See how tests work", href: "/#how" },
   },
   {
-    tab: "Progress & certificates",
+    tab: "Progress",
+    icon: "chart",
     title: "Progress you can see",
     bullets: [
       "Progress bars on every course",
-      '"Continue where you left off"',
-      "Verified certificates",
+      "Pick up where you left off",
+      "Certificates with a shareable code",
     ],
     img: u("photo-1601097874965-f940d4f012b5"),
+    tone: "flame",
+    cta: { label: "Start learning free", href: "/signup" },
   },
   {
     tab: "Real tutors",
+    icon: "tutor",
     title: "Taught by real tutors",
     bullets: [
       "Vetted, approved tutors",
@@ -256,75 +390,155 @@ export const features = [
       "New courses every month",
     ],
     img: u("photo-1664382953518-4a664ab8a8c9"),
+    tone: "purple",
+    cta: { label: "Browse courses", href: "/courses" },
   },
 ];
 
-export const categories = [
-  "Coding",
-  "Design",
-  "Business",
-  "Music",
-  "Languages",
-  "Finance",
-  "Photography",
-  "Science",
-  "Exam Prep",
-  "Cooking",
+/**
+ * Aardvark genre list as course categories (~8 + "and more!"). `thumbs` are the
+ * four course covers that pop into the panel corners when the row is hovered.
+ */
+export const categories: { name: string; thumbs: [string, string, string, string] }[] = [
+  {
+    name: "Coding",
+    thumbs: [
+      u("photo-1461749280684-dccba630e2f6"),
+      u("photo-1513258496099-48168024aec0"),
+      u("photo-1588196749597-9ff075ee6b5b"),
+      u("photo-1601097874965-f940d4f012b5"),
+    ],
+  },
+  {
+    name: "Design",
+    thumbs: [
+      u("photo-1561070791-2526d30994b5"),
+      u("photo-1611241893603-3c359704e0ee"),
+      u("photo-1516035069371-29a1b244cc32"),
+      u("photo-1514369118554-e20d93546b30"),
+    ],
+  },
+  {
+    name: "Business",
+    thumbs: [
+      u("photo-1554224155-6726b3ff858f"),
+      u("photo-1633158829585-23ba8f7c8caf"),
+      u("photo-1664382953518-4a664ab8a8c9"),
+      u("photo-1513258496099-48168024aec0"),
+    ],
+  },
+  {
+    name: "Music",
+    thumbs: [
+      u("photo-1525201548942-d8732f6617a0"),
+      u("photo-1510915361894-db8b60106cb1"),
+      u("photo-1478737270239-2f02b77fc618"),
+      u("photo-1522202176988-66273c2fd55f"),
+    ],
+  },
+  {
+    name: "Languages",
+    thumbs: [
+      u("photo-1522202176988-66273c2fd55f"),
+      u("photo-1588196749597-9ff075ee6b5b"),
+      u("photo-1664382953518-4a664ab8a8c9"),
+      u("photo-1507048331197-7d4ac70811cf"),
+    ],
+  },
+  {
+    name: "Photography",
+    thumbs: [
+      u("photo-1516035069371-29a1b244cc32"),
+      u("photo-1561070791-2526d30994b5"),
+      u("photo-1611241893603-3c359704e0ee"),
+      u("photo-1510915361894-db8b60106cb1"),
+    ],
+  },
+  {
+    name: "Exam Prep",
+    thumbs: [
+      u("photo-1614935151651-0bea6508db6b"),
+      u("photo-1514369118554-e20d93546b30"),
+      u("photo-1601097874965-f940d4f012b5"),
+      u("photo-1522202176988-66273c2fd55f"),
+    ],
+  },
+  {
+    name: "Cooking",
+    thumbs: [
+      u("photo-1507048331197-7d4ac70811cf"),
+      u("photo-1554224155-6726b3ff858f"),
+      u("photo-1522202176988-66273c2fd55f"),
+      u("photo-1516035069371-29a1b244cc32"),
+    ],
+  },
 ];
 
-export const whyStickers: { label: string; tone: Tone; className: string }[] = [
-  {
-    label: "First lesson free",
-    tone: "magenta",
-    className: "md:left-[3%] md:top-[14%] -rotate-6",
-  },
-  {
-    label: "Expert tutors",
-    tone: "orange",
-    className: "md:right-[2%] md:top-[30%] rotate-3",
-  },
-  {
-    label: "Fair prices",
-    tone: "lilac",
-    className: "md:left-[7%] md:top-[50%] rotate-2",
-  },
-  {
-    label: "Learn anywhere",
-    tone: "aqua",
-    className: "md:right-[6%] md:top-[64%] -rotate-[4deg]",
-  },
-  {
-    label: "Real certificates",
-    tone: "lime",
-    className: "md:left-[14%] md:top-[80%] -rotate-3",
-  },
+/**
+ * Why-panel pill stickers (Aardvark). At >=1024 they flank the emblem: `side`
+ * picks the column, `overlap` is how far (fraction of the emblem width) the pill
+ * reaches over the ring; tuned so the ring is overlapped but the arc title never.
+ * `rotate` = resting tilt (inline, never Tailwind rotate classes). A "\n" in the
+ * label forces a two-line pill.
+ */
+export const whyStickers: {
+  label: string;
+  tone: Tone;
+  rotate: number;
+  side: "left" | "right";
+  overlap: number;
+  /** 2 = two-line sticker (label split at the space nearest its middle) */
+  lines?: 1 | 2;
+}[] = [
+  { label: "First lesson free", tone: "hotpink", rotate: -5, side: "left", overlap: 0.24 },
+  { label: "Expert tutors", tone: "tangerine", rotate: 4, side: "right", overlap: 0.24 },
+  { label: "Fair prices", tone: "lilac", rotate: 3, side: "left", overlap: 0.3 },
+  { label: "Learn anywhere", tone: "aqua", rotate: 5, side: "right", overlap: 0.3, lines: 2 },
+  { label: "Real certificates", tone: "olive", rotate: -4, side: "left", overlap: 0.12 },
 ];
 
-// TODO: replace with real reviews once students start leaving them (reviews table, milestone 9).
-export const testimonials = [
+// TODO(before launch): these are illustrative sample reviews written for the design.
+// Replace them with real, consented student reviews (reviews table, milestone 9).
+// Avatars are flat illustrated faces (no photos of real people next to sample quotes).
+export const testimonials: {
+  quote: string;
+  name: string;
+  role: string;
+  /** badge colour + avatar colours (flat Maxima block faces) */
+  tone: Tone;
+  avatar: { head: string; hair: string; bg: string };
+}[] = [
   {
     quote:
-      "I'd bought three courses elsewhere and finished none. The tests in between kept me going here.",
-    name: "Sample learner",
-    role: "Placeholder review",
+      "I'd bought three courses elsewhere and finished none. The tests between lessons kept me going.",
+    name: "Ananya R.",
+    role: "UI design · Pune",
+    tone: "sun",
+    avatar: { head: "#f4b183", hair: "#161616", bg: "#2668fd" },
   },
   {
     quote:
-      "Watching the free first video made it easy to pick a tutor whose style actually suits me.",
-    name: "Sample learner",
-    role: "Placeholder review",
+      "The free first video made it easy to pick a tutor whose style actually suits me.",
+    name: "Kabir S.",
+    role: "Spoken English · Lucknow",
+    tone: "bubblegum",
+    avatar: { head: "#c98a5e", hair: "#3b308f", bg: "#ffcf3f" },
   },
   {
     quote:
       "Short lessons, clear modules. I learn on the metro and pick up exactly where I stopped.",
-    name: "Sample learner",
-    role: "Placeholder review",
+    name: "Meera J.",
+    role: "Excel for work · Kochi",
+    tone: "white",
+    avatar: { head: "#e7a77a", hair: "#fd4401", bg: "#a7eb98" },
   },
   {
     quote:
-      "Getting the certificate at the end felt like a real win, and the code makes it easy to share.",
-    name: "Sample learner",
-    role: "Placeholder review",
+      "The certificate felt like a real win, and the verification code makes it easy to share.",
+    name: "Rohan D.",
+    role: "Guitar basics · Jaipur",
+    tone: "mint",
+    avatar: { head: "#b9784f", hair: "#161616", bg: "#f780d4" },
   },
 ];
 
@@ -334,14 +548,12 @@ export const tutorPhotos = [
   u("photo-1664382953647-5c6c76dd63b9"),
 ];
 
-export const testimonialBg = u("photo-1543269865-cbf427effbad");
-
 export const pricing = [
   {
     name: "Just looking",
     note: "Try before you buy",
     price: "Free",
-    per: "",
+    per: "to start",
     cta: "Watch a free lesson",
     href: "/courses",
     perks: [
@@ -352,7 +564,7 @@ export const pricing = [
   },
   {
     name: "Buy a course",
-    note: "Most popular",
+    note: "Own it for life",
     price: "₹799+",
     per: "/ course",
     cta: "Browse courses",
@@ -408,12 +620,30 @@ export const faqs = [
   },
 ];
 
-export const footerLinks = [
-  { label: "Courses", href: "/courses" },
-  { label: "Become a tutor", href: "/become-tutor" },
-  { label: "Log in", href: "/login" },
-  { label: "Sign up", href: "/signup" },
-  { label: "Admin login", href: "/admin" },
-  { label: "Terms", href: "/terms" },
-  { label: "Privacy", href: "/privacy" },
+/** Footer link columns (all internal: the route curtain handles them). */
+export const footerLinks: { title: string; links: { label: string; href: string }[] }[] = [
+  {
+    title: "Learn",
+    links: [
+      { label: "All courses", href: "/courses" },
+      { label: "How it works", href: "/#how" },
+      { label: "Pricing", href: "/#pricing" },
+      { label: "FAQ", href: "/#faq" },
+    ],
+  },
+  {
+    title: "Teach",
+    links: [
+      { label: "Become a tutor", href: "/become-tutor" },
+      { label: "Tutor login", href: "/login" },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "Log in", href: "/login" },
+      { label: "Sign up", href: "/signup" },
+      { label: "Admin", href: "/admin" },
+    ],
+  },
 ];

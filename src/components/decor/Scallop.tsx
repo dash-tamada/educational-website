@@ -1,50 +1,75 @@
 import clsx from "clsx";
 
+type Placement = "outside-top" | "outside-bottom" | "inside-top" | "inside-bottom";
+
 /**
- * A row of circles that turns a straight section edge into a Krackerz-style
- * scalloped "cloud" edge. Drop it inside a `relative` section.
+ * Scalloped "cloud" edge (Krackerz). Drop it inside a `relative` section.
+ * Bump diameter is responsive (48px mobile, 72px >=1024 via --scallop) unless
+ * `size` is given. Every edge overlaps its section by 1px so no hairline shows.
+ *
+ * placement:
+ *   "outside-top"    bumps rise ABOVE the section, filled with `color` = THIS section's colour
+ *   "outside-bottom" bumps hang BELOW the section, `color` = THIS section's colour
+ *   "inside-top"     bumps hang DOWN into the section from its top edge,
+ *                    `color` = the colour of the section ABOVE (cream for the canvas)
+ *   "inside-bottom"  bumps rise UP into the section from its bottom edge,
+ *                    `color` = the colour of the section BELOW
+ * Legacy: side="top" = "outside-top", side="bottom" = "outside-bottom".
  */
 export function ScallopEdge({
   color = "var(--color-cream)",
-  size = 56,
-  side = "top",
+  size,
+  placement,
+  side,
   className,
 }: {
   color?: string;
+  /** bump diameter in px; omit for the responsive 48/72 default */
   size?: number;
+  placement?: Placement;
+  /** @deprecated use placement */
   side?: "top" | "bottom";
   className?: string;
 }) {
-  const at = side === "top" ? "50% 100%" : "50% 0%";
+  const p: Placement =
+    placement ?? (side === "bottom" ? "outside-bottom" : "outside-top");
+  // Circles sit on the strip edge that touches the section body.
+  const atBottom = p === "outside-top" || p === "inside-bottom";
+  const pos: React.CSSProperties =
+    p === "outside-top"
+      ? { bottom: "calc(100% - 1px)" }
+      : p === "outside-bottom"
+        ? { top: "calc(100% - 1px)" }
+        : p === "inside-top"
+          ? { top: -1 }
+          : { bottom: -1 };
+  const style: React.CSSProperties & Record<string, string | number> = {
+    ...pos,
+    backgroundImage: `radial-gradient(circle at 50% ${atBottom ? "100%" : "0%"}, ${color} calc(var(--s) / 2 - 0.5px), transparent calc(var(--s) / 2))`,
+    backgroundPosition: atBottom ? "center bottom" : "center top",
+  };
+  if (size) style["--s"] = `${size}px`;
   return (
-    <div
-      aria-hidden
-      className={clsx(
-        "pointer-events-none absolute inset-x-0 z-10",
-        side === "top" ? "bottom-[calc(100%-1px)]" : "top-[calc(100%-1px)]",
-        className,
-      )}
-      style={{
-        height: size / 2,
-        backgroundImage: `radial-gradient(circle at ${at}, ${color} ${size / 2 - 0.5}px, transparent ${size / 2}px)`,
-        backgroundSize: `${size}px ${size}px`,
-        backgroundPosition: side === "top" ? "center bottom" : "center top",
-        backgroundRepeat: "repeat-x",
-      }}
-    />
+    <div aria-hidden className={clsx("scallop z-10", className)} style={style} />
   );
 }
 
-/** A circle with bumps round the edge (testimonial badges, featured price card). */
+/**
+ * A circle with bumps round the edge (testimonial badges, featured price card,
+ * number badges). Position it with className (absolute/fixed work: relative is
+ * only added when no position utility is given).
+ */
 export function ScallopBadge({
   fill,
   bumps = 14,
   className,
+  style,
   children,
 }: {
   fill: string;
   bumps?: number;
   className?: string;
+  style?: React.CSSProperties;
   children?: React.ReactNode;
 }) {
   const R = 80;
@@ -54,7 +79,14 @@ export function ScallopBadge({
     return { cx: 100 + R * Math.cos(a), cy: 100 + R * Math.sin(a) };
   });
   return (
-    <div className={clsx("relative", className)}>
+    <div
+      className={clsx(
+        // only add relative when the caller did not position it (absolute/fixed/sticky)
+        !/(^|\s)(absolute|fixed|sticky|relative)(\s|$)/.test(className ?? "") && "relative",
+        className,
+      )}
+      style={style}
+    >
       <svg
         viewBox="0 0 200 200"
         className="absolute inset-0 h-full w-full overflow-visible"

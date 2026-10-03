@@ -1,77 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import clsx from "clsx";
 import { faqs } from "@/lib/landing-data";
-import { Eyebrow, HandNote } from "@/components/decor/Bits";
+import { BlobSet, HandNote, SectionHead } from "@/components/decor/Bits";
 import { Mascot } from "@/components/decor/Mascot";
+import { Parallax } from "@/components/motion/Parallax";
 
+/**
+ * Maxima-style FAQ: a cyan Aardvark panel with turquoise blobs; chunky heading,
+ * hand note and Tami on the left; a white content panel of questions on the right
+ * (2px blue separators, bubblegum plus buttons, answers open via grid rows).
+ */
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
+  const uid = useId();
 
   return (
-    <section id="faq" className="scroll-mt-24 bg-paper py-24 md:py-32">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 md:grid-cols-[1fr_1.3fr]">
-        <div className="relative">
-          <Eyebrow>FAQ</Eyebrow>
-          <h2 className="mt-5 font-display text-[clamp(1.8rem,4.6vw,3.4rem)] leading-[1.2] tracking-tight uppercase">
-            Before
-            <br />
-            you ask
-          </h2>
-          <HandNote className="mt-6 w-56" rotate={-4}>
-            still stuck? message us from the contact page and a real human
-            replies
+    <section id="faq" aria-labelledby={`${uid}-title`} className="panel panel-y bg-cyan">
+      <BlobSet tone="cyan" flip />
+
+      <div className="container-x relative grid gap-head lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+        <div className="relative flex flex-col items-start">
+          <SectionHead
+            eyebrow="FAQ"
+            kind="chunky"
+            align="left"
+            title={<span id={`${uid}-title`}>Before you ask</span>}
+            titleClassName="max-w-[8ch]"
+          />
+          <HandNote className="mt-6 max-w-[15rem] md:max-w-[17rem]" rotate={-6}>
+            still stuck? message us from the contact page and a real human replies
           </HandNote>
-          <Mascot className="mt-8 hidden size-28 rotate-6 md:block" title="" />
+          <Parallax
+            y={60}
+            rotate={[-6, 6]}
+            mobile={0.2}
+            className="pointer-events-none absolute right-0 bottom-[-8px] w-[76px] sm:right-[8%] md:w-[110px] lg:pointer-events-auto lg:static lg:mt-12 lg:w-[150px]"
+          >
+            <div className="group">
+              <Mascot interactive title="" className="w-full" style={{ transform: "rotate(8deg)" }} />
+            </div>
+          </Parallax>
         </div>
 
-        <ul className="space-y-3">
-          {faqs.map((f, i) => {
-            const isOpen = open === i;
-            return (
-              <li
-                key={f.q}
-                className="rounded-2xl border-2 border-ink bg-cyan/30"
-              >
-                <h3>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-base font-semibold md:text-lg"
-                    aria-expanded={isOpen}
-                    aria-controls={`faq-${i}`}
-                    onClick={() => setOpen(isOpen ? null : i)}
-                  >
-                    {f.q}
-                    <span
-                      className={clsx(
-                        "grid size-8 shrink-0 place-items-center rounded-full border-2 border-ink bg-lime text-xl leading-none transition-transform duration-500 ease-[var(--ease-elastic)]",
-                        isOpen && "rotate-45",
-                      )}
-                      aria-hidden
+        <div className="panel-content shadow-soft max-md:px-4 max-md:py-2 md:px-10 md:py-6 lg:px-12 lg:py-8">
+          <ul>
+            {faqs.map((f, i) => {
+              const isOpen = open === i;
+              const id = `${uid}-a${i}`;
+              return (
+                <li key={f.q} className="border-b-2 border-blue/80 last:border-b-0">
+                  <h3>
+                    <button
+                      type="button"
+                      className="group tap -mx-3 flex w-[calc(100%+1.5rem)] items-center justify-between gap-3 rounded-2xl px-3 py-5 md:gap-5 text-left transition-[color,background-color,scale] duration-300 ease-ui hf:bg-cyan/35 md:py-6"
+                      aria-expanded={isOpen}
+                      aria-controls={id}
+                      onClick={() => setOpen(isOpen ? null : i)}
                     >
-                      +
-                    </span>
-                  </button>
-                </h3>
-                <div
-                  id={`faq-${i}`}
-                  role="region"
-                  className={clsx(
-                    "grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]",
-                    isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                  )}
-                >
-                  <div className="overflow-hidden">
-                    <p className="px-5 pb-5 text-[15px] leading-relaxed font-medium text-ink/75">
-                      {f.a}
-                    </p>
+                      <span className="text-[17px] leading-snug font-semibold tracking-[-0.02em] md:text-xl">
+                        {f.q}
+                      </span>
+                      <span
+                        aria-hidden
+                        className={clsx(
+                          "grid size-9 shrink-0 place-items-center md:size-10 rounded-full bg-bubblegum text-ink transition-[rotate,scale,background-color] duration-300 ease-ui",
+                          isOpen
+                            ? "rotate-45 bg-hotpink text-white"
+                            : "group-hf:scale-110 group-hf:rotate-90",
+                        )}
+                      >
+                        <svg viewBox="0 0 24 24" className="size-[18px]" fill="none">
+                          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                    </button>
+                  </h3>
+                  <div
+                    id={id}
+                    role="region"
+                    aria-hidden={!isOpen}
+                    className={clsx(
+                      "grid transition-[grid-template-rows,opacity] duration-[600ms] ease-expo",
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                    )}
+                  >
+                    <div className="overflow-hidden">
+                      <p className="t-body max-w-[38rem] pb-6 text-ink/75 md:pr-12">{f.a}</p>
+                    </div>
                   </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
     </section>
   );

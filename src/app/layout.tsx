@@ -1,22 +1,39 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import {
-  Boldonse,
-  Bricolage_Grotesque,
   Caveat,
   DM_Sans,
+  Londrina_Solid,
   Yellowtail,
 } from "next/font/google";
+import { SmoothScroll } from "@/components/motion/SmoothScroll";
+import { RevealScanner } from "@/components/motion/Reveal";
+import { AnimationGate } from "@/components/motion/AnimationGate";
+import { RouteTransitionProvider } from "@/components/transition/RouteTransition";
 import "./globals.css";
 
-const boldonse = Boldonse({
-  variable: "--font-boldonse",
-  weight: "400",
+/** Display caps (Maxima-style tall, rounded, condensed). Only 900 is used. */
+const londrina = Londrina_Solid({
+  variable: "--font-londrina",
+  weight: "900",
   subsets: ["latin"],
 });
-const bricolage = Bricolage_Grotesque({
+/**
+ * Chunky Aardvark-style headings. Every use is weight 800 at opsz 96, so we ship
+ * Google's static instance pinned to exactly that (opsz 96, wght 800, latin:
+ * 22 KB) instead of the variable font with opsz + wdth axes (131 KB).
+ * Re-download: fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@96,800
+ * (OFL, see fonts/Bricolage-OFL.txt). Not preloaded: nothing above the fold uses it.
+ */
+const bricolage = localFont({
   variable: "--font-bricolage",
-  subsets: ["latin"],
+  src: [{ path: "./fonts/bricolage-800-opsz96-latin.woff2", weight: "800", style: "normal" }],
+  display: "swap",
+  preload: false,
+  fallback: ["Arial Black", "Arial", "sans-serif"],
+  adjustFontFallback: "Arial",
 });
+/** Hand notes (hero + sections): 600, plus 700 for the category hover swap. */
 const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"] });
 const yellowtail = Yellowtail({
   variable: "--font-yellowtail",
@@ -35,16 +52,35 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f5ef",
+  themeColor: "#f5f0e3",
 };
 
+/**
+ * Runs before first paint (see docs: preventing-flash-before-hydration).
+ * - data-motion="ok" | "reduce": CSS only pre-hides [data-reveal] targets when "ok",
+ *   so no-JS and reduced-motion visitors always see static content.
+ * - data-intro="done" on every route except "/" (the intro curtain only lives on home).
+ */
+const prePaint = `(function(){var d=document.documentElement;try{var r=matchMedia("(prefers-reduced-motion: reduce)").matches;d.dataset.motion=r?"reduce":"ok";if(location.pathname!=="/"||r)d.dataset.intro="done";}catch(e){d.dataset.intro="done";}})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const fonts = [boldonse, bricolage, caveat, yellowtail, dmSans]
+  const fonts = [londrina, bricolage, caveat, yellowtail, dmSans]
     .map((f) => f.variable)
     .join(" ");
   return (
     <html lang="en" className={fonts} suppressHydrationWarning>
-      <body className="min-h-dvh">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: prePaint }} />
+      </head>
+      <body className="min-h-dvh">
+        <SmoothScroll>
+          <RouteTransitionProvider>
+            {children}
+            <RevealScanner />
+            <AnimationGate />
+          </RouteTransitionProvider>
+        </SmoothScroll>
+      </body>
     </html>
   );
 }

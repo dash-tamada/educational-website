@@ -1,40 +1,144 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   TAMADA MEDIA DESIGN SYSTEM  (Style spec V2: Maxima system + Aardvark panels,
+   Krackerz seasoning). Read this header before styling a section.
+
+   CANVAS   One page background: cream #F5F0E3 + 7% ink dot grid (24px) on <body>.
+            Sections are TRANSPARENT. Never give a section bg-paper / bg-dots / bg-cream.
+            Colour lives in exactly one of:
+              (a) inset panel   .panel  (+ .panel-y)  Aardvark colour block, rounded
+              (b) full-bleed    .field                Maxima flat colour section
+              (c) canvas        .section-y            transparent on the cream canvas
+            Two full-bleed fields of different colours meet with <ScallopEdge>
+            (or a diagonal/wave), never a straight seam.
+
+   GRID     .container-x  = one 1240px column, gutters 20/32/40px (<640/<1024/>=1024).
+            Every heading, CTA row, carousel first card and arrow sits on it.
+            .container-narrow = 880px column for centred text blocks.
+
+   RHYTHM   (mobile / >=768 / >=1024)
+            --section-y 80/112/160   canvas section padding (a section owns ONLY its
+                                     own padding: no margin-top + padding stacking)
+            --panel-inset 12/16/18   panel margin on all sides (adjacent panels touch
+                                     at one inset because vertical margins collapse)
+            --panel-pad-y 64/88/104  panel inner vertical padding (.panel-y)
+            --gap-eyebrow 12/16      eyebrow -> heading     (mt-eyebrow)
+            --gap-sub     16/20      heading -> body        (mt-sub)
+            --gap-block   40/64      heading block -> content (mt-head)
+            --gap-cta     32/48      content -> CTA row     (mt-cta)
+            Spacing utilities generated from these: py-section, px-gutter, m-inset,
+            mt-eyebrow, mt-sub, mt-head, mt-cta, py-panel (and gap-*, etc.).
+
+   TYPE     Maxima caps sections (Hero, WhyCards, FeatureStack, Testimonials,
+            TutorBanner, Pricing, FinalCta, curtains):
+              .t-display-xxl (hero h1) / .t-display-l (section h2) / .t-display-m (h3)
+            Aardvark chunky sections (Courses, How, Category, WhyStickers, FAQ, Footer):
+              .t-chunky-xl (h2) / .t-chunky-list (category rows) / .t-chunky-card
+            Body: .t-body-l / .t-body ; labels .t-label ; tags .t-tag ; notes .t-hand
+            One heading family per section. Eyebrow = <Eyebrow> capsule (13px caps).
+            h1-h3 balance automatically; p/li/blockquote use text-wrap: pretty.
+
+   SHAPE    Radii: rounded-tag (12) / rounded-img (16) / rounded-card (24) /
+            rounded-card-lg (36, 24 on mobile) / rounded-panel (40/64/120) / rounded-full.
+            FLAT: no ink borders and no hard offset shadows. Soft shadows only:
+            shadow-soft (resting UI on cream), shadow-photo (photo cards), shadow-lift (hover).
+
+   MOTION   Eases: ease-expo (reveals), ease-spring (springy hovers), ease-squash
+            (button bg squash), ease-ui (UI slides). GSAP tokens live in src/lib/motion.ts.
+            Hover rules apply only to fine pointers without reduced motion: use the
+            hf: / group-hf: variants or the .hover-* classes below.
+            NEVER put Tailwind rotate-/translate-/scale- classes on an element GSAP
+            animates (they compose). Set a resting tilt via inline style or a prop.
+   ============================================================================= */
+
+@custom-variant hf {
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+@custom-variant group-hf {
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    :where(.group):hover & {
+      @slot;
+    }
+  }
+}
+@custom-variant motion-ok {
+  @media (prefers-reduced-motion: no-preference) {
+    @slot;
+  }
+}
+
 @theme {
-  /* Palette: Aardvark's saturated panels + Krackerz's cream / maroon / lime */
-  --color-cream: #f7f5ef;
+  /* ---- Colour (spec V2 §2) -------------------------------------------- */
+  --color-cream: #f5f0e3;
   --color-paper: #fffdf8;
   --color-ink: #161616;
-  --color-lime: #c8ff2e;
-  --color-maroon: #5c0d14;
-  --color-wine: #7a1620;
-  --color-brick: #b8321c;
-  --color-tomato: #e2482b;
-  --color-yellow: #ffd23f;
-  --color-butter: #fff0a8;
-  --color-magenta: #ff4fd8;
-  --color-hotpink: #ff1f8e;
-  --color-blush: #ffd6f5;
-  --color-cyan: #9af3f4;
-  --color-aqua: #2fd6e0;
-  --color-purple: #3e2a8c;
-  --color-lilac: #a98bef;
-  --color-orange: #ff8a1f;
-  --color-olive: #7c7a2a;
 
-  --font-display: var(--font-boldonse), "Arial Black", sans-serif;
+  --color-sun: #ffcf3f;
+  --color-butter: #fff2b7;
+  --color-tangerine: #f9a220;
+  --color-flame: #fd4401;
+  --color-hotpink: #ff008c;
+  --color-magenta: #fd48f2;
+  --color-blush: #ffdbfd;
+  --color-bubblegum: #f780d4;
+  --color-cyan: #a3f6f6;
+  --color-aqua: #1ce8ed;
+  --color-turquoise: #2cd1d0;
+  --color-blue: #2668fd;
+  --color-green: #00b351;
+  --color-mint: #a7eb98;
+  --color-forest: #163f10;
+  --color-lilac: #9b82e0;
+  --color-purple: #3b308f;
+  --color-indigo: #4f3fb0;
+  --color-berry: #670a2e; /* TEXT ONLY (tapes, arc titles) */
+  --color-lime: #c8ff2e; /* ONE accent per screen */
+  --color-olive: #857a23;
+
+  /* Legacy aliases (kept so older classes keep compiling; do not use for new work) */
+  --color-yellow: #ffcf3f; /* = sun */
+  --color-orange: #f9a220; /* = tangerine */
+  --color-tomato: #fd4401; /* = flame */
+  --color-maroon: #5c0d14; /* DEPRECATED as a fill: no maroon panels */
+  --color-wine: #7a1620; /* DEPRECATED */
+  --color-brick: #b8321c; /* DEPRECATED */
+
+  /* ---- Fonts ------------------------------------------------------------ */
+  --font-display: var(--font-londrina), "Anton", "Arial Narrow", sans-serif;
   --font-heading: var(--font-bricolage), "Arial Black", sans-serif;
   --font-hand: var(--font-caveat), cursive;
   --font-script: var(--font-yellowtail), cursive;
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
 
-  --radius-panel: 2.5rem;
+  /* ---- Radii / shadows -------------------------------------------------- */
+  --radius-tag: 0.75rem;
+  --radius-img: 1rem;
+  --radius-card: 1.5rem;
+  --radius-card-lg: clamp(1.5rem, 1rem + 1.6vw, 2.25rem);
+
+  --shadow-soft:
+    0 1px 0 rgb(22 22 22 / 0.06), 0 8px 24px -12px rgb(22 22 22 / 0.2);
+  --shadow-photo: 0 18px 40px -20px rgb(22 22 22 / 0.38);
+  --shadow-lift: 0 26px 48px -24px rgb(22 22 22 / 0.45);
+
+  /* ---- Eases ------------------------------------------------------------ */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.57, 0.64, 1);
+  --ease-squash: cubic-bezier(0.34, 2.27, 0.64, 1);
+  --ease-ui: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  --animate-marquee: marquee 28s linear infinite;
-  --animate-marquee-rev: marquee 28s linear infinite reverse;
+  /* ---- Animations ------------------------------------------------------- */
+  --animate-marquee: marquee 35s linear infinite;
+  --animate-marquee-rev: marquee 35s linear infinite reverse;
   --animate-float: float 5s ease-in-out infinite;
   --animate-spin-slow: spin 18s linear infinite;
+  --animate-wiggle: wiggle 0.55s var(--ease-spring);
 
   @keyframes marquee {
     from {
@@ -44,66 +148,859 @@
       transform: translateX(-50%);
     }
   }
+  /* float animates the independent `translate` property so it never fights a
+     resting rotation set inline or by GSAP (transform). */
   @keyframes float {
     0%,
     100% {
-      transform: translateY(0) rotate(var(--r, 0deg));
+      translate: 0 0;
     }
     50% {
-      transform: translateY(-10px) rotate(var(--r, 0deg));
+      translate: 0 -10px;
+    }
+  }
+  @keyframes wiggle {
+    0%,
+    100% {
+      rotate: 0deg;
+      scale: 1;
+    }
+    30% {
+      rotate: -6deg;
+      scale: 1.06;
+    }
+    60% {
+      rotate: 4deg;
+      scale: 1.04;
     }
   }
 }
 
+/* Responsive tokens referenced by utilities through `@theme inline`. */
+@theme inline {
+  --spacing-gutter: var(--gutter);
+  --spacing-section: var(--section-y);
+  --spacing-inset: var(--panel-inset);
+  --spacing-panel: var(--panel-pad-y);
+  --spacing-eyebrow: var(--gap-eyebrow);
+  --spacing-sub: var(--gap-sub);
+  --spacing-head: var(
+    --gap-block
+  ); /* mt-head (NOT "block": would clobber .inline-block) */
+  --spacing-cta: var(--gap-cta);
+  --radius-panel: var(--panel-radius);
+}
+
+:root {
+  --container: 1240px;
+  --container-narrow: 880px;
+  --gutter: 20px;
+  --gutter-in-panel: 14px; /* max(14px, gutter - panel-inset) */
+  --section-y: 80px;
+  --panel-inset: 12px;
+  --panel-pad-y: 64px;
+  --panel-radius: clamp(2.5rem, 8.3vw, 7.5rem);
+  --gap-eyebrow: 12px;
+  --gap-sub: 16px;
+  --gap-block: 40px;
+  --gap-cta: 32px;
+  --scallop: 48px; /* scallop bump diameter */
+  --radius-panel: var(
+    --panel-radius
+  ); /* legacy rounded-[var(--radius-panel)] */
+  --header-offset: 96px;
+  --dot: color-mix(in srgb, var(--color-ink) 7%, transparent);
+}
+@media (min-width: 640px) {
+  :root {
+    --gutter: 32px;
+    --gutter-in-panel: 16px;
+    --section-y: 112px;
+    --panel-inset: 16px;
+    --panel-pad-y: 88px;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --gap-eyebrow: 16px;
+    --gap-sub: 20px;
+    --gap-block: 64px;
+    --gap-cta: 48px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 40px;
+    --gutter-in-panel: 22px;
+    --section-y: 160px;
+    --panel-inset: 18px;
+    --panel-pad-y: 104px;
+    --scallop: 72px;
+  }
+}
+
+/* ============================================================================= BASE */
 @layer base {
   html {
     background: var(--color-cream);
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Lenis stops (curtains, menus) clip overflow: keep the scrollbar gutter so
+       the layout never reflows by the scrollbar width when scrolling is paused. */
+    scrollbar-gutter: stable;
   }
   body {
     font-family: var(--font-sans);
-    background: var(--color-cream);
+    font-weight: 500;
+    letter-spacing: -0.01em;
     overflow-x: clip;
+    /* The single page canvas: cream + faint dot grid. */
+    background-color: var(--color-cream);
+    background-image: radial-gradient(
+      circle,
+      var(--dot) 1.1px,
+      transparent 1.6px
+    );
+    background-size: 24px 24px;
+    background-position: 12px 12px;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  blockquote,
+  figcaption,
+  dd {
+    text-wrap: pretty;
+  }
+  .font-display {
+    font-weight: 900;
+  }
+  .font-heading {
+    font-variation-settings: "opsz" 96;
   }
   ::selection {
-    background: var(--color-lime);
+    background: var(--color-sun);
     color: var(--color-ink);
   }
   :focus-visible {
-    outline: 3px solid var(--color-hotpink);
+    outline: 3px solid var(--color-blue);
     outline-offset: 3px;
+    border-radius: 6px;
+  }
+  /* On blue / dark fields put data-field="dark" on the section. */
+  [data-field="dark"] :focus-visible {
+    outline-color: var(--color-sun);
+  }
+  main:focus {
+    outline: none;
+  }
+  /* Anchor targets clear the fixed header (Lenis honours scroll-margin). */
+  [id] {
+    scroll-margin-top: var(--header-offset);
+  }
+  img {
+    -webkit-user-drag: none;
   }
 }
 
-@layer utilities {
-  /* Krackerz-style dotted canvas */
-  .bg-dots {
-    background-color: var(--color-cream);
-    background-image: radial-gradient(
-      color-mix(in srgb, var(--color-ink) 13%, transparent) 1px,
-      transparent 1.4px
-    );
-    background-size: 22px 22px;
+/* ============================================================================= LAYOUT */
+@utility container-x {
+  width: 100%;
+  max-width: calc(var(--container) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+@utility container-narrow {
+  width: 100%;
+  max-width: calc(var(--container-narrow) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+/* Canvas section padding. */
+@utility section-y {
+  padding-block: var(--section-y);
+}
+/* Aardvark inset colour panel: margin on all sides, huge radius, clips blobs. */
+@utility panel {
+  position: relative;
+  isolation: isolate;
+  margin: var(--panel-inset);
+  border-radius: var(--panel-radius);
+  overflow: clip;
+}
+@utility panel-y {
+  padding-block: var(--panel-pad-y);
+}
+/* Inside a .panel the column keeps the SAME page edge as canvas sections: the
+   panel's own inset is subtracted from the gutter (x=40 at 1280, x=100 at 1440).
+   Below 640px a 14px floor keeps text off the panel's rounded edge. */
+:where(.panel) .container-x {
+  padding-inline: var(--gutter-in-panel);
+  max-width: calc(var(--container) + 2 * var(--gutter-in-panel));
+}
+:where(.panel) .container-narrow {
+  padding-inline: var(--gutter-in-panel);
+  max-width: calc(var(--container-narrow) + 2 * var(--gutter-in-panel));
+}
+/* Maxima full-bleed colour field. */
+@utility field {
+  position: relative;
+  isolation: isolate;
+}
+/* Large white/cream content panel inside a field (FAQ, footer). */
+@utility panel-content {
+  position: relative;
+  border-radius: 1.5rem;
+  padding: 24px;
+  background: #fff;
+  @media (min-width: 768px) {
+    border-radius: 2.25rem;
+    padding: 56px;
   }
-  .text-outline {
-    -webkit-text-stroke: 2px var(--color-ink);
+}
+
+/* ============================================================================= TYPE */
+@utility t-display-xxl {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(3.25rem, 1.6rem + 7vw, 8.5rem);
+  line-height: 0.86;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+@utility t-display-l {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.75rem, 1.4rem + 4.6vw, 6rem);
+  line-height: 0.88;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+@utility t-display-m {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 1.2rem + 2.4vw, 3.75rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+@utility t-chunky-xl {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings:
+    "opsz" 96,
+    "wdth" 100;
+  font-size: clamp(2.75rem, 1.5rem + 4.5vw, 5rem);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+}
+@utility t-chunky-list {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings:
+    "opsz" 96,
+    "wdth" 100;
+  font-size: clamp(2.5rem, 1.1rem + 5vw, 5.25rem);
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+}
+@utility t-chunky-card {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings:
+    "opsz" 96,
+    "wdth" 100;
+  font-size: clamp(1.5rem, 1.2rem + 0.6vw, 1.875rem);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+@utility t-sticker {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings:
+    "opsz" 96,
+    "wdth" 100;
+  font-size: clamp(1.5rem, 0.8rem + 3.4vw, 4.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+}
+@utility t-service {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 1.1rem + 1vw, 2.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+@utility t-body-l {
+  font-weight: 500;
+  font-size: clamp(1.0625rem, 0.95rem + 0.45vw, 1.25rem);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+@utility t-body {
+  font-weight: 500;
+  font-size: clamp(1rem, 0.96rem + 0.15vw, 1.0625rem);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+@utility t-label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  @media (min-width: 768px) {
+    font-size: 16px;
   }
-  .shadow-hard {
-    box-shadow: 4px 4px 0 var(--color-ink);
-  }
-  .shadow-hard-sm {
-    box-shadow: 2px 3px 0 var(--color-ink);
-  }
-  .no-scrollbar {
-    scrollbar-width: none;
-  }
-  .no-scrollbar::-webkit-scrollbar {
+}
+@utility t-tag {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1;
+}
+@utility t-eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+@utility t-hand {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.5rem);
+  line-height: 1.05;
+}
+@utility t-hand-lg {
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 1.2rem + 0.8vw, 1.875rem);
+  line-height: 1.05;
+}
+
+/* ============================================================================= DECOR */
+/* Scalloped cloud edge (see <ScallopEdge>): a row of circles of diameter --s. */
+@utility scallop {
+  --s: var(--scallop);
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: calc(var(--s) / 2 + 1px);
+  pointer-events: none;
+  background-repeat: repeat-x;
+  background-size: var(--s) calc(var(--s) / 2 + 1px);
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
     display: none;
   }
 }
+@utility text-outline {
+  -webkit-text-stroke: 2px var(--color-ink);
+}
+/* DEPRECATED (Krackerz v1). Kept compiling; do not use in new work. */
+@utility shadow-hard {
+  box-shadow: 4px 4px 0 var(--color-ink);
+}
+@utility shadow-hard-sm {
+  box-shadow: 2px 3px 0 var(--color-ink);
+}
+/* DEPRECATED: the dot canvas is now on <body>; this is a no-op so old call
+   sites stop creating seams. Remove it from your section. */
+@utility bg-dots {
+  background-color: transparent;
+}
 
-/* Lenis smooth scroll */
+/* Clouds (see <Cloud>): gentle horizontal sway, paused offscreen. */
+@keyframes cloud-sway {
+  from {
+    translate: var(--cloud-from, 3vw) 0;
+  }
+  to {
+    translate: var(--cloud-to, -3vw) 0;
+  }
+}
+.cloud-drift {
+  animation: cloud-sway var(--cloud-dur, 24s) ease-in-out infinite alternate;
+  animation-delay: var(--cloud-delay, 0s);
+}
+[data-offscreen] .cloud-drift,
+.cloud-drift[data-offscreen] {
+  animation-play-state: paused;
+}
+/* Any decorative animate-* utility pauses while off screen (AnimationGate.tsx toggles the
+   attribute), and the long marquee tracks get their own GPU layer while visible. */
+[class*="animate-"][data-offscreen] {
+  animation-play-state: paused !important;
+}
+.animate-marquee:not([data-offscreen]),
+.animate-marquee-rev:not([data-offscreen]) {
+  will-change: transform;
+}
+
+/* ============================================================================= REVEALS (no FOUC) */
+/* html[data-motion] is set by the pre-paint script in layout.tsx. Targets are hidden
+   before first paint only when JS runs and motion is allowed. JS marks them
+   data-reveal-armed (failsafe off) and data-revealed (done). If JS never arms them,
+   the failsafe animation shows them after 4.5s. */
+html[data-motion="ok"] [data-reveal]:not([data-revealed]),
+html[data-motion="ok"] [data-reveal-stagger]:not([data-revealed]) > * {
+  opacity: 0;
+}
+html[data-motion="ok"]
+  [data-reveal]:not([data-reveal-armed]):not([data-revealed]),
+html[data-motion="ok"]
+  [data-reveal-stagger]:not([data-reveal-armed]):not([data-revealed])
+  > * {
+  animation: reveal-failsafe 0.6s ease 4.5s forwards;
+}
+@keyframes reveal-failsafe {
+  to {
+    opacity: 1;
+  }
+}
+/* Custom entrance timelines (your own GSAP code, not data-reveal): mark targets
+   data-enter. They are hidden before first paint (motion allowed + JS only).
+   In your timeline call armEnter(scope) from "@/lib/motion" first (cancels the
+   failsafe), animate with fromTo({autoAlpha:0}, {autoAlpha:1, ...}) and call
+   markEntered(targets) when done. If JS never arms them they fade in at 4.5s. */
+html[data-motion="ok"] [data-enter]:not([data-entered]) {
+  opacity: 0;
+}
+html[data-motion="ok"]
+  [data-enter]:not([data-enter-armed]):not([data-entered]) {
+  animation: reveal-failsafe 0.6s ease 4.5s forwards;
+}
+/* SplitText line masks: room for descenders, script swashes and tilted boxes.
+   HEIGHT-NEUTRAL: sibling masks' vertical margins would COLLAPSE (-0.12/-0.14em
+   -> only -0.14em per line break), so a split heading used to grow ~0.12em per
+   line and shrink back on revert, changing the page height mid-scroll and forcing
+   a full ScrollTrigger.refresh (400-800ms long tasks). Now each mask only has a
+   bottom margin (= both paddings, nothing to collapse with) and a relative
+   -0.12em offset puts the text exactly where the unsplit line sits. */
+.split-mask {
+  position: relative;
+  top: -0.12em;
+  padding: 0.12em 0.14em 0.14em;
+  margin: 0 -0.14em -0.26em;
+}
+
+/* ============================================================================= BUTTONS */
+/* <ArrowButton>: split pill = label pill + round arrow chip (spec V2 §5, hover H1/H1b). */
+.btn {
+  --btn-h: 48px;
+  --btn-bg: var(--color-hotpink);
+  --btn-fg: #fff;
+  --btn-chip-bg: var(--btn-bg);
+  --btn-chip-fg: var(--btn-fg);
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  height: var(--btn-h);
+  max-width: 100%;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--btn-fg);
+  white-space: nowrap;
+  border-radius: 999px;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    translate 0.3s var(--ease-spring),
+    scale 0.15s var(--ease-ui);
+}
+@media (min-width: 768px) {
+  .btn {
+    --btn-h: 52px;
+    font-size: 16px;
+  }
+}
+.btn[data-size="sm"] {
+  --btn-h: 42px;
+  font-size: 14px;
+}
+.btn[data-size="lg"] {
+  --btn-h: 56px;
+  font-size: 17px;
+}
+/* compact: label pill only (no chip), 48px at every width (mobile header CTA) */
+.btn[data-compact],
+.btn[data-compact][data-size] {
+  --btn-h: 48px;
+  font-size: 15px;
+}
+.btn[data-compact] .btn-label {
+  padding-inline: 20px;
+}
+.btn-label {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 24px;
+  border-radius: 999px;
+}
+.btn[data-size="sm"] .btn-label {
+  padding-inline: 16px;
+}
+.btn-label::before,
+.btn-label::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  background: var(--btn-bg);
+  pointer-events: none;
+}
+.btn-label::before {
+  inset: 0;
+  border-radius: inherit;
+  transition: opacity 0.25s var(--ease-ui);
+}
+.btn-label::after {
+  /* Maxima bubble (bubble variant only) */
+  display: none;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% -50%;
+  scale: 0.5;
+  opacity: 0;
+  transition:
+    scale 0.25s var(--ease-ui),
+    opacity 0.2s var(--ease-ui);
+}
+.btn[data-bubble] .btn-label::after {
+  display: block;
+}
+.btn-roll {
+  display: block;
+  overflow: hidden;
+  height: 1.25em;
+  line-height: 1.25;
+  padding-inline: 0.04em;
+  margin-inline: -0.04em;
+}
+.btn-roll-track {
+  display: flex;
+  flex-direction: column;
+  transition: translate 0.32s cubic-bezier(0.59, 1, 0.88, 1.01);
+}
+.btn-roll-track > span {
+  display: block;
+  height: 1.25em;
+}
+.btn-chip {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--btn-h);
+  border-radius: 999px;
+  background: var(--btn-chip-bg);
+  color: var(--btn-chip-fg);
+  overflow: hidden;
+}
+.btn-chip > svg {
+  grid-area: 1 / 1;
+  width: 40%;
+  height: 40%;
+  transition: translate 0.38s var(--ease-spring);
+}
+.btn-chip > svg + svg {
+  translate: -160% 0;
+}
+.btn[data-full] {
+  display: flex;
+  width: 100%;
+}
+.btn[data-full] .btn-label {
+  flex: 1;
+  justify-content: flex-start;
+}
+.btn:active {
+  scale: 0.96;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .btn:hover {
+    translate: 0 -2px;
+  }
+  .btn:not([data-bubble]):hover .btn-label::before {
+    animation: btn-squash 0.42s var(--ease-ui);
+  }
+  .btn:hover .btn-roll-track {
+    translate: 0 -50%;
+  }
+  .btn:hover .btn-chip > svg:first-child {
+    translate: 160% 0;
+  }
+  .btn:hover .btn-chip > svg + svg {
+    translate: 0 0;
+  }
+  .btn[data-bubble]:hover .btn-label::before {
+    opacity: 0;
+  }
+  .btn[data-bubble]:hover .btn-label::after {
+    scale: 1;
+    opacity: 1;
+    transition:
+      scale 0.42s var(--ease-spring),
+      opacity 0.15s var(--ease-ui);
+  }
+}
+@keyframes btn-squash {
+  0% {
+    scale: 1;
+  }
+  38% {
+    scale: 1.05 1.09;
+  }
+  70% {
+    scale: 0.99 0.98;
+  }
+  100% {
+    scale: 1;
+  }
+}
+/* Variants */
+.btn[data-variant="flame"] {
+  --btn-bg: var(--color-flame);
+  --btn-fg: #fff;
+}
+.btn[data-variant="blue"] {
+  --btn-bg: var(--color-blue);
+  --btn-fg: #fff;
+}
+.btn[data-variant="ink"] {
+  --btn-bg: var(--color-ink);
+  --btn-fg: var(--color-cream);
+}
+.btn[data-variant="paper"] {
+  --btn-bg: #fff;
+  --btn-fg: var(--color-ink);
+}
+.btn[data-variant="forest"] {
+  --btn-bg: var(--color-forest);
+  --btn-fg: var(--color-mint);
+}
+.btn[data-variant="sun"] {
+  --btn-bg: var(--color-sun);
+  --btn-fg: var(--color-ink);
+}
+
+/* ============================================================================= HOVER KIT */
+/* The base transition declarations live in @layer components, so a Tailwind
+   transition-* utility on the same element wins. If an element needs .tap/.hover-*
+   AND a transition-* utility, list the property in the utility, e.g.
+   transition-[color,background-color,scale]. The :hover/:active state rules stay
+   unlayered so they beat resting utilities such as shadow-photo. */
+@layer components {
+  /* Transitions are declared always (so leaving a hover animates); the moving part
+     only applies to fine pointers without reduced motion. Touch gets .tap feedback.
+     All of these use the independent translate/rotate/scale properties, so they
+     compose with inline resting tilts (style={{transform}}) on the SAME element.
+     GSAP RULE: GSAP 3.15 writes inline `translate/rotate/scale: none` on every
+     element it tweens a transform on, which cancels these classes on that
+     element. Put hover classes on a WRAPPER that GSAP never animates, never on a
+     Parallax inner layer, a custom GSAP target or a [data-enter] target.
+     Exception: <Reveal>/data-reveal targets (rise/scale/pop/card/card-sm) clear
+     those inline props when the reveal completes, so hover classes work there
+     once revealed, provided the element has no resting Tailwind
+     rotate/translate/scale class of its own. */
+  .hover-lift,
+  .hover-tilt,
+  .hover-tilt-r,
+  .hover-pop {
+    transition:
+      translate 0.35s var(--ease-spring),
+      rotate 0.35s var(--ease-spring),
+      scale 0.35s var(--ease-spring),
+      box-shadow 0.35s var(--ease-ui);
+  }
+  .hover-zoom {
+    transition: scale 0.6s var(--ease-expo);
+  }
+  .hover-icon {
+    transition: scale 0.25s var(--ease-spring);
+  }
+  .hover-icon > svg {
+    transition: rotate 0.25s var(--ease-spring);
+  }
+  .tap {
+    -webkit-tap-highlight-color: transparent;
+    transition: scale 0.12s var(--ease-ui);
+  }
+}
+/* State rules stay unlayered so they beat resting utilities (shadow-photo etc.). */
+.tap:active {
+  scale: 0.97;
+}
+/* Underline draw (H3): grows from the left, retracts to the right. */
+.link-draw {
+  position: relative;
+  text-decoration: none;
+}
+.link-draw::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.12em;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.35s var(--ease-expo);
+}
+@media (hover: hover) and (pointer: fine) {
+  .link-draw:hover::before,
+  .link-draw:focus-visible::before {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hover-lift:hover {
+    translate: 0 -6px;
+    box-shadow: var(--shadow-lift);
+  }
+  .hover-tilt:hover {
+    translate: 0 -6px;
+    rotate: -2deg;
+  }
+  .hover-tilt-r:hover {
+    translate: 0 -6px;
+    rotate: 2deg;
+  }
+  .hover-pop:hover {
+    scale: 1.04;
+  }
+  .hover-wiggle:hover {
+    animation: wiggle 0.55s var(--ease-spring);
+  }
+  :where(.hover-zoom-parent):hover .hover-zoom,
+  .hover-zoom:hover {
+    scale: 1.06;
+  }
+  .hover-icon:hover {
+    scale: 1.12;
+  }
+  .hover-icon:hover > svg {
+    rotate: -8deg;
+  }
+  /* Tami (H13): wink + bounce when the Mascot (interactive) or its .group is hovered */
+  .tami-hover:hover,
+  :where(.group):hover .tami-hover {
+    animation: tami-bounce 0.6s var(--ease-spring);
+  }
+  .tami-hover:hover .tami-eye-r,
+  :where(.group):hover .tami-hover .tami-eye-r {
+    animation: tami-blink 0.24s ease-in-out;
+  }
+}
+.tami-eye-r {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes tami-blink {
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes tami-bounce {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  35% {
+    translate: 0 -5px;
+  }
+}
+
+/* ============================================================================= CURSOR */
+/* Maxima-style CSS cursor (no JS follower). Text fields keep the native cursor. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html {
+    cursor:
+      url("/cursor/arrow.svg") 5 3,
+      auto;
+  }
+  a[href],
+  button:not(:disabled),
+  [role="button"],
+  label[for],
+  summary,
+  select {
+    cursor:
+      url("/cursor/hand.svg") 12 3,
+      pointer;
+  }
+  [data-cursor="grab"] {
+    cursor:
+      url("/cursor/grab.svg") 16 16,
+      grab;
+  }
+  [data-cursor="grab"]:active,
+  [data-cursor="grabbing"] {
+    cursor:
+      url("/cursor/grabbing.svg") 16 16,
+      grabbing;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not(
+      [type="button"]
+    ),
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+}
+
+/* ============================================================================= ROUTE CURTAIN */
+.route-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  visibility: hidden;
+  overflow: hidden;
+  contain: strict;
+}
+.route-curtain[data-active] {
+  pointer-events: auto;
+  visibility: visible;
+}
+/* ONE compositor layer while active (the sheet): the page behind jumps thousands
+   of px (scroll reset / restore) and must never leave an unpainted cream frame.
+   The disc, Tami, label and clouds are painted INTO the sheet's layer (no
+   will-change of their own), so the very first covered frame (e.g. browser Back)
+   always rasterises sheet + art together instead of a bare cream sheet. */
+.route-curtain[data-active] [data-curtain-sheet] {
+  will-change: transform;
+}
+/* The route curtain lasts ~1s: its clouds move with the GSAP cover/reveal only.
+   No CSS sway loop (it would tick while the curtain is hidden, and a composited
+   loop would give each cloud its own layer again). */
+.route-curtain .cloud-drift {
+  animation: none;
+}
+
+/* ============================================================================= LENIS */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -111,10 +1008,14 @@ html.lenis body {
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
 }
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
 .lenis.lenis-stopped {
   overflow: clip;
 }
 
+/* ============================================================================= REDUCED MOTION */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -122,5 +1023,6 @@ html.lenis body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Visual-QA captures, production snapshots and the archived prototype.
+    ".qa/**",
+    "_archive/**",
   ]),
 ]);
 
