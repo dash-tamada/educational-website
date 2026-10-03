@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palette: Aardvark's saturated panels + Krackerz's cream / maroon / lime */
+  --color-cream: #f7f5ef;
+  --color-paper: #fffdf8;
+  --color-ink: #161616;
+  --color-lime: #c8ff2e;
+  --color-maroon: #5c0d14;
+  --color-wine: #7a1620;
+  --color-brick: #b8321c;
+  --color-tomato: #e2482b;
+  --color-yellow: #ffd23f;
+  --color-butter: #fff0a8;
+  --color-magenta: #ff4fd8;
+  --color-hotpink: #ff1f8e;
+  --color-blush: #ffd6f5;
+  --color-cyan: #9af3f4;
+  --color-aqua: #2fd6e0;
+  --color-purple: #3e2a8c;
+  --color-lilac: #a98bef;
+  --color-orange: #ff8a1f;
+  --color-olive: #7c7a2a;
+
+  --font-display: var(--font-boldonse), "Arial Black", sans-serif;
+  --font-heading: var(--font-bricolage), "Arial Black", sans-serif;
+  --font-hand: var(--font-caveat), cursive;
+  --font-script: var(--font-yellowtail), cursive;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+
+  --radius-panel: 2.5rem;
+  --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-marquee: marquee 28s linear infinite;
+  --animate-marquee-rev: marquee 28s linear infinite reverse;
+  --animate-float: float 5s ease-in-out infinite;
+  --animate-spin-slow: spin 18s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(var(--r, 0deg));
+    }
+    50% {
+      transform: translateY(-10px) rotate(var(--r, 0deg));
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-cream);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-cream);
+    overflow-x: clip;
+  }
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-hotpink);
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  /* Krackerz-style dotted canvas */
+  .bg-dots {
+    background-color: var(--color-cream);
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--color-ink) 13%, transparent) 1px,
+      transparent 1.4px
+    );
+    background-size: 22px 22px;
+  }
+  .text-outline {
+    -webkit-text-stroke: 2px var(--color-ink);
+  }
+  .shadow-hard {
+    box-shadow: 4px 4px 0 var(--color-ink);
+  }
+  .shadow-hard-sm {
+    box-shadow: 2px 3px 0 var(--color-ink);
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Lenis smooth scroll */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
