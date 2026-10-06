@@ -71,6 +71,41 @@
     @slot;
   }
 }
+/* Short desktop viewports (laptops at 1366x768, 1280x720): the app sidebar
+   tightens its rows so the whole nav fits without hidden items. */
+@custom-variant short {
+  @media (min-width: 1024px) and (max-height: 820px) {
+    @slot;
+  }
+}
+
+/* ---- MOBILE device classes (.qa/mobile/MOBILE_SPEC.md §1.1) -----------------
+   phone-s  max-width 359.98px      (320-359: SE 1st gen, small Androids)
+   max-sm:  max-width 639.98px      (Tailwind built-in: every phone pattern)
+   coarse:  pointer: coarse         (44px hit areas, also on touch tablets)
+   land:    short landscape phones  (orientation landscape, height <= 500px)
+   kbd:     the on-screen keyboard is up (html[data-kbd], set by useKeyboardInset)
+   e.g. className="h-9 coarse:h-11 phone-s:px-3 land:hidden kbd:hidden" */
+@custom-variant phone-s {
+  @media (max-width: 359.98px) {
+    @slot;
+  }
+}
+@custom-variant coarse {
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+@custom-variant land {
+  @media (orientation: landscape) and (max-height: 500px) {
+    @slot;
+  }
+}
+@custom-variant kbd {
+  :where(html[data-kbd]) & {
+    @slot;
+  }
+}
 
 @theme {
   /* ---- Colour (spec V2 §2) -------------------------------------------- */
@@ -99,6 +134,9 @@
   --color-berry: #670a2e; /* TEXT ONLY (tapes, arc titles) */
   --color-lime: #c8ff2e; /* ONE accent per screen */
   --color-olive: #857a23;
+  --color-blue-deep: #1f56d6; /* blue for SMALL text on cream/white (5.5:1); fills stay blue */
+  --color-hotpink-deep: #d6006f; /* pink FILL behind small white text (5.1:1); big fills stay hotpink */
+  --color-flame-deep: #c43400; /* flame FILL behind small white text (5.5:1) */
 
   /* Legacy aliases (kept so older classes keep compiling; do not use for new work) */
   --color-yellow: #ffcf3f; /* = sun */
@@ -210,6 +248,31 @@
   ); /* legacy rounded-[var(--radius-panel)] */
   --header-offset: 96px;
   --dot: color-mix(in srgb, var(--color-ink) 7%, transparent);
+
+  /* Safe areas + phone layout contract (MOBILE_SPEC §1.8, §1.11, §1.16).
+     --bottom-ui : height of the fixed bottom UI on screen (AppDock / StickyActionBar /
+                   learn bar) INCLUDING its bottom offset; written on <html> by those
+                   components, 0 when none. Toasts, main padding and scroll-padding read it.
+     --kb        : on-screen keyboard height (useKeyboardInset), 0 when closed.
+     --vvh       : visual viewport height (sheets cap their height at it). */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --bottom-ui: 0px;
+  --kb: 0px;
+  --vvh: 100dvh;
+}
+/* phone-s (320-359): tighter rhythm so 320 screens are not all padding (§1.3). */
+@media (max-width: 359.98px) {
+  :root {
+    --gutter: 16px;
+    --gutter-in-panel: 12px;
+    --section-y: 64px;
+    --panel-inset: 8px;
+    --panel-pad-y: 56px;
+    --gap-block: 32px;
+  }
 }
 @media (min-width: 640px) {
   :root {
@@ -250,6 +313,14 @@
     /* Lenis stops (curtains, menus) clip overflow: keep the scrollbar gutter so
        the layout never reflows by the scrollbar width when scrolling is paused. */
     scrollbar-gutter: stable;
+    /* focused fields and #anchors never land behind a fixed bottom bar (dock, action bar) */
+    scroll-padding-bottom: calc(var(--bottom-ui) + 16px);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  /* A fullscreen element (the learn player) must not keep a reserved gutter strip. */
+  html:has(:fullscreen) {
+    scrollbar-gutter: auto;
   }
   body {
     font-family: var(--font-sans);
@@ -304,6 +375,11 @@
   [id] {
     scroll-margin-top: var(--header-offset);
   }
+  /* Form controls get focused (and scrolled to) after a failed submit: leave room for the
+     label (up to two lines) above them too, so it never hides behind the fixed header. */
+  :where(input, select, textarea, [role="radiogroup"], [role="switch"])[id] {
+    scroll-margin-top: calc(var(--header-offset) + 4rem);
+  }
   img {
     -webkit-user-drag: none;
   }
@@ -314,13 +390,14 @@
   width: 100%;
   max-width: calc(var(--container) + 2 * var(--gutter));
   margin-inline: auto;
-  padding-inline: var(--gutter);
+  /* landscape notch: never less than the safe-area inset on that side */
+  padding-inline: max(var(--gutter), var(--sal)) max(var(--gutter), var(--sar));
 }
 @utility container-narrow {
   width: 100%;
   max-width: calc(var(--container-narrow) + 2 * var(--gutter));
   margin-inline: auto;
-  padding-inline: var(--gutter);
+  padding-inline: max(var(--gutter), var(--sal)) max(var(--gutter), var(--sar));
 }
 /* Canvas section padding. */
 @utility section-y {
@@ -373,6 +450,10 @@
   line-height: 0.86;
   letter-spacing: 0.005em;
   text-transform: uppercase;
+  /* phone-s (MOBILE_SPEC §1.2) */
+  @media (max-width: 359.98px) {
+    font-size: 2.75rem;
+  }
 }
 @utility t-display-l {
   font-family: var(--font-display);
@@ -381,6 +462,10 @@
   line-height: 0.88;
   letter-spacing: 0.005em;
   text-transform: uppercase;
+  /* phone-s (MOBILE_SPEC §1.2) */
+  @media (max-width: 359.98px) {
+    font-size: 2.5rem;
+  }
 }
 @utility t-display-m {
   font-family: var(--font-display);
@@ -389,6 +474,10 @@
   line-height: 0.9;
   letter-spacing: 0.01em;
   text-transform: uppercase;
+  /* phone-s (MOBILE_SPEC §1.2) */
+  @media (max-width: 359.98px) {
+    font-size: 1.875rem;
+  }
 }
 @utility t-chunky-xl {
   font-family: var(--font-heading);
@@ -399,6 +488,10 @@
   font-size: clamp(2.75rem, 1.5rem + 4.5vw, 5rem);
   line-height: 0.86;
   letter-spacing: -0.04em;
+  /* phone-s (MOBILE_SPEC §1.2) */
+  @media (max-width: 359.98px) {
+    font-size: 2.5rem;
+  }
 }
 @utility t-chunky-list {
   font-family: var(--font-heading);
@@ -409,6 +502,10 @@
   font-size: clamp(2.5rem, 1.1rem + 5vw, 5.25rem);
   line-height: 0.92;
   letter-spacing: -0.045em;
+  /* phone-s (MOBILE_SPEC §1.2) */
+  @media (max-width: 359.98px) {
+    font-size: 2.25rem;
+  }
 }
 @utility t-chunky-card {
   font-family: var(--font-heading);
@@ -643,6 +740,20 @@ html[data-motion="ok"]
 }
 .btn[data-compact] .btn-label {
   padding-inline: 20px;
+}
+/* narrow phones (320-374px): a tighter pill so lockup + CTA + menu fit the row */
+@media (max-width: 374.98px) {
+  .btn[data-compact] .btn-label {
+    padding-inline: 14px;
+  }
+}
+/* phone-s (320-359): 44px pill, 14px label so lockup + CTA + menu fit 320 (MOBILE_SPEC §1.6) */
+@media (max-width: 359.98px) {
+  .btn[data-compact],
+  .btn[data-compact][data-size] {
+    --btn-h: 44px;
+    font-size: 14px;
+  }
 }
 .btn-label {
   position: relative;
@@ -951,13 +1062,20 @@ html[data-motion="ok"]
       url("/cursor/hand.svg") 12 3,
       pointer;
   }
-  [data-cursor="grab"] {
+  /* the element-qualified selectors outrank `button:not(:disabled)` above, so drag
+     handles built as buttons still show the grab hand */
+  [data-cursor="grab"],
+  button[data-cursor="grab"]:not(:disabled),
+  a[href][data-cursor="grab"] {
     cursor:
       url("/cursor/grab.svg") 16 16,
       grab;
   }
   [data-cursor="grab"]:active,
-  [data-cursor="grabbing"] {
+  button[data-cursor="grab"]:not(:disabled):active,
+  a[href][data-cursor="grab"]:active,
+  [data-cursor="grabbing"],
+  button[data-cursor="grabbing"]:not(:disabled) {
     cursor:
       url("/cursor/grabbing.svg") 16 16,
       grabbing;
@@ -1024,5 +1142,311 @@ html.lenis body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================= APP UI */
+/* Inner app pages (dashboards, builder, admin, player). Same canvas, same palette,
+   calmer type scale. Components live in src/components/app (see its index.ts).
+   Page titles: .t-display-m (PageHeader). Card/section titles: .t-app-h2 / .t-app-h3.
+   Big numbers: .t-stat. Motion: .app-enter (fade + 8px rise, 260ms) only. */
+
+/* Dashboard sidebar offset for fixed bars portalled to <body> (sticky save bars, bulk bars).
+   DashboardShell writes --app-sb on <html> (272px open, 92px collapsed) while it is mounted.
+   --app-main-left = left edge of the content column: 0 below lg, the sidebar width from lg.
+   e.g. style={{ left: "var(--app-main-left)", right: 0 }} */
+:root {
+  --app-sb: 272px;
+  --app-main-left: 0px;
+}
+@media (width >= 64rem) {
+  :root {
+    --app-main-left: var(--app-sb);
+  }
+}
+@utility t-app-h2 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings: "opsz" 96;
+  font-size: clamp(1.25rem, 1.12rem + 0.45vw, 1.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+@utility t-app-h3 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-variation-settings: "opsz" 96;
+  font-size: 17px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+@utility t-stat {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.125rem, 1.8rem + 1vw, 2.75rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  /* phone-s (MOBILE_SPEC §1.2) */
+  @media (max-width: 359.98px) {
+    font-size: 1.875rem;
+  }
+}
+@utility t-small {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+@utility t-micro {
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+@keyframes app-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+/* fill-mode BACKWARDS, never both/forwards: a filled `translate` would linger on the
+   wrapper after the entrance and make it the containing block of every
+   position:fixed descendant (drag overlays, popovers rendered in place). */
+.app-enter {
+  animation: app-in 0.26s var(--ease-ui) backwards;
+}
+@keyframes app-fade {
+  from {
+    opacity: 0;
+  }
+}
+.app-fade {
+  animation: app-fade 0.2s var(--ease-ui) backwards;
+}
+@keyframes skeleton-sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgb(22 22 22 / 0.06) 25%, rgb(22 22 22 / 0.11) 37%, rgb(22 22 22 / 0.06) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-sheen 1.4s ease infinite;
+}
+/* A demo session exists (set before paint by the root layout script and by
+   loginAsDemo): hide logged-out-only header bits until the client header swaps in. */
+html[data-session] [data-session-out] {
+  visibility: hidden;
+}
+/* Thin, calm scrollbars for app panels (sidebar, tables, drawers). */
+.app-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(22 22 22 / 0.18) transparent;
+}
+/* Overflow cue for a scrolling list (sidebar nav): soft fades at whichever
+   edge still has content past it. data-fade-top / data-fade-bottom are set by
+   useScrollFade() only while the list actually overflows. */
+.scroll-fade {
+  --fade-t: 0px;
+  --fade-b: 0px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
+}
+.scroll-fade[data-fade-top] {
+  --fade-t: 28px;
+}
+.scroll-fade[data-fade-bottom] {
+  --fade-b: 36px;
+}
+/* Small blue text on cream/white: --color-blue is 4.1:1 at 13px, so eyebrows
+   and labels coloured text-blue switch to the deeper AA-safe blue on their own. */
+.t-eyebrow.text-blue,
+.t-label.text-blue {
+  color: var(--color-blue-deep);
+}
+/* Scroll lock (Modal/Drawer): html keeps its stable scrollbar gutter, which a
+   fixed backdrop cannot paint. Dim the canvas itself to match the backdrop
+   (ink 45% over cream) so no bright strip shows at the right edge. */
+html {
+  transition: background-color 0.2s var(--ease-ui);
+}
+html[data-scroll-locked] {
+  background-color: color-mix(in srgb, var(--color-ink) 45%, var(--color-cream));
+}
+html[data-scroll-locked] body {
+  min-height: 100dvh;
+}
+/* Search fields: the kit draws its own clear button, so hide WebKit's native one. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  appearance: none;
+  -webkit-appearance: none;
+}
+/* Horizontally scrolling rows (Tabs): fade the edge that has more content so
+   cut-off labels read as "scroll for more". Set via data-overflow by Tabs and
+   useOverflowFade(ref) from "@/components/app". */
+[data-overflow="end"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+[data-overflow="start"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent);
+}
+[data-overflow="both"] {
+  mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+/* DataTable: the pinned actions cell is opaque, so it repaints the row hover tint
+   (cream/60 over white) itself. Selected rows set an opaque butter in the component. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .dt-row:not([data-selected]):hover > .dt-sticky {
+    background-color: #f9f6ee;
+  }
+}
+
+/* ============================================================================= MOBILE */
+/* Phone patterns from .qa/mobile/MOBILE_SPEC.md (§1). Desktop is untouched: every rule
+   here is scoped to phones (max-width 639.98px), coarse pointers or short landscape.
+   Kit components (src/components/app): AppDock/AppTopBar (DashboardShell), BottomSheet /
+   ActionSheet / FullScreenSheet (Sheet.tsx), StickyActionBar, useKeyboardInset (mobile.ts). */
+
+/* 44x44 hit area around a smaller visual (§1.4). Uses ::before (::after is the stretched
+   link). Only on coarse pointers, so desktop hover targets keep their exact size.
+   <button className="hit size-9 …"> */
+@utility hit {
+  &:not(.absolute, .fixed, .sticky) {
+    position: relative;
+  }
+  @media (pointer: coarse) {
+    &::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      translate: -50% -50%;
+    }
+  }
+}
+
+/* Horizontal snap scroller (§1.12): full-bleed to the gutter, children snap to start.
+   Children size themselves (e.g. w-[82vw] max-w-[340px] shrink-0). Pair with
+   useOverflowFade(ref) for the trailing-edge fade. */
+@utility h-scroller {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  padding-inline: var(--gutter);
+  margin-inline: calc(var(--gutter) * -1);
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  & > * {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
+/* No backdrop-filter on phones (§1.15): sticky bars paint solid instead (cheaper on
+   mid-range Android, no smeared text while scrolling). */
+@media (max-width: 639.98px) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Keyboard up (html[data-kbd], useKeyboardInset): floating bottom UI steps aside (§1.16).
+   Put data-kbd-hide on any fixed bottom bar / FAB of your own. */
+html[data-kbd] [data-kbd-hide] {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Bottom sheets (Sheet.tsx). Open: 360ms ease-ui slide, scrim 240ms. Close: 240ms. */
+@keyframes sheet-in {
+  from {
+    translate: 0 100%;
+  }
+}
+@keyframes sheet-out {
+  to {
+    translate: 0 100%;
+  }
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes scrim-out {
+  to {
+    opacity: 0;
+  }
+}
+.sheet-panel {
+  animation: sheet-in 0.36s var(--ease-ui) backwards;
+}
+.sheet-panel[data-closing] {
+  animation: sheet-out 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.sheet-scrim {
+  animation: scrim-in 0.24s var(--ease-ui) backwards;
+}
+.sheet-scrim[data-closing] {
+  animation: scrim-out 0.24s var(--ease-ui) forwards;
+}
+.sheet-panel[data-dragging] {
+  animation: none;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel,
+  .sheet-panel[data-closing] {
+    animation-name: scrim-in;
+    animation-duration: 0.16s !important;
+  }
+  .sheet-panel[data-closing] {
+    animation-name: scrim-out;
+  }
+}
+
+/* Fixed bottom bars (dock, sticky action bar) slide in/out (300ms ease-ui). */
+.bottom-bar {
+  transition:
+    translate 0.3s var(--ease-ui),
+    opacity 0.3s var(--ease-ui);
+}
+.bottom-bar[data-hidden] {
+  translate: 0 calc(100% + 24px);
+  opacity: 0;
+  pointer-events: none;
+}
+/* App top bar on phones: hides on scroll down, returns on scroll up. */
+.app-topbar {
+  transition:
+    translate 0.3s var(--ease-ui),
+    box-shadow 0.2s var(--ease-ui);
+}
+.app-topbar[data-hidden] {
+  translate: 0 -100%;
+}
+.app-topbar[data-scrolled] {
+  box-shadow: 0 1px 0 rgb(22 22 22 / 0.06);
+}
+/* Tablets (640-1023px): the DashboardShell shows a 72px icon rail; fixed bars portalled to
+   <body> line up with the content column through --app-main-left (see APP UI above). */
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  html[data-app-shell] {
+    --app-main-left: calc(92px + var(--sal));
   }
 }

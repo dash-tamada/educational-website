@@ -16,6 +16,27 @@ import { getLenis, scrollToTarget } from "@/lib/lenis";
 import { prefersReducedMotion } from "@/lib/motion";
 import { CurtainArt } from "./CurtainArt";
 
+/* Touch devices (MOBILE_SPEC §1.15, F-18): a shorter curtain (cover ~380ms, reveal ~480ms,
+   total <= 0.9s), Tami's idle bob only if the hold runs past 600ms, and NO curtain on
+   browser back/forward (iOS edge swipe / Android back already animate the page):
+   the stored scroll position is restored instantly instead. */
+const isTouch = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+const COVER_SCALE = 0.56 / 0.38; // timeline speed-up on touch: the sheet covers in 380ms
+const REVEAL_SCALE = 0.82 / 0.48; // the reveal lifts away in 480ms
+import { areaOf, isAppArea } from "@/components/app/nav";
+
+/**
+ * Curtain or instant? The branded curtain plays when moving BETWEEN site areas
+ * (landing -> login, catalog -> course, login -> dashboard). Navigation inside one
+ * app area (/dashboard/*, /tutor/*, /admin/*, /learn/*) and query-only changes
+ * (filters, pagination: same pathname, new ?search) are instant.
+ */
+export function shouldCurtain(fromPath: string, toPath: string) {
+  if (fromPath === toPath) return false;
+  const a = areaOf(fromPath);
+  return !(a === areaOf(toPath) && isAppArea(a));
+}
+
 /* =============================================================================
    Route transitions (spec V2 §7): cream cloud curtain + accent disc + Tami.
    - One persistent curtain in the root layout.
@@ -42,19 +63,160 @@ import { CurtainArt } from "./CurtainArt";
    - Never traps: the hold is capped at 2.5s and every error path reveals.
    ============================================================================= */
 
-type NavigateOpts = { replace?: boolean };
+/* =============================================================================
+   Navigation guards (unsaved-changes prompts and the like).
+
+     const off = registerNavigationGuard((to) => {
+       if (!dirtyRef.current) return true;          // allow
+       return askUser();                            // Promise<boolean>: false blocks
+     });
+     off();                                         // unregister
+
+   Guards run for EVERY navigation that goes through this module: intercepted
+   link clicks (sidebar, breadcrumbs, next/link, plain <a>), useTransitionRouter()
+   push/replace, useDemoAuth() loginAs/logout, the dashboard top-bar search,
+   notifications and DataTable rowHref. Same-page #hash / back-to-top scrolls are
+   never guarded. Newest guard runs first; the first one that returns false (or a
+   Promise resolving to false) blocks the navigation. A guard that throws allows
+   it (never trap the user). While one guard is waiting for an answer, other
+   navigation attempts are ignored.
+   NOT covered: browser back/forward (the App Router can't veto popstate) and
+   reload / tab close (use useBeforeUnload, or <UnsavedChangesGuard> from
+   "@/components/app", which does both). Navigating with next/navigation's
+   router directly also skips guards: use useTransitionRouter() (or wrap the
+   call in whenNavigationAllowed(href, go)) when a page might be guarded.
+   To navigate after the user already confirmed (or right after saving), pass
+   { skipGuards: true } to useTransitionRouter().push / replace.
+   ============================================================================= */
+
+export type NavigationAttempt = {
+  /** destination as pathname + search + hash */
+  href: string;
+  url: URL;
+  /** pathname + search being left */
+  from: string;
+  /** "link" (intercepted click) or "push" / "replace" (programmatic) */
+  source: "link" | "push" | "replace";
+};
+/** Return false (or resolve to false) to block; true / undefined allow. */
+export type NavigationGuard = (
+  to: NavigationAttempt,
+) => boolean | void | Promise<boolean | void>;
+
+const guards = new Set<NavigationGuard>();
+let guardPending = false;
+
+/** Register a guard; returns its unregister function. Client only. */
+export function registerNavigationGuard(guard: NavigationGuard): () => void {
+  guards.add(guard);
+  return () => {
+    guards.delete(guard);
+  };
+}
+
+/** True while at least one guard is registered. */
+export function hasNavigationGuards() {
+  return guards.size > 0;
+}
+
+function attemptFor(href: string, source: NavigationAttempt["source"]): NavigationAttempt | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const url = new URL(href, window.location.href);
+    return {
+      href: url.pathname + url.search + url.hash,
+      url,
+      from: window.location.pathname + window.location.search,
+      source,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ask every guard. Returns `true` SYNCHRONOUSLY when none is registered (so
+ * unguarded navigation stays instant), `false` while another guard is still
+ * waiting for an answer, else a Promise<boolean>.
+ */
+export function checkNavigation(
+  href: string,
+  source: NavigationAttempt["source"] = "push",
+): boolean | Promise<boolean> {
+  if (!guards.size) return true;
+  if (guardPending) return false;
+  const attempt = attemptFor(href, source);
+  if (!attempt) return true;
+  const list = Array.from(guards).reverse();
+  guardPending = true;
+  return (async () => {
+    try {
+      for (const g of list) {
+        if (!guards.has(g)) continue;
+        let ok: boolean | void;
+        try {
+          ok = await g(attempt);
+        } catch {
+          ok = true;
+        }
+        if (ok === false) return false;
+      }
+      return true;
+    } finally {
+      guardPending = false;
+    }
+  })();
+}
+
+/** Promise form of checkNavigation, for code that navigates on its own. */
+export function confirmNavigation(
+  href: string,
+  source: NavigationAttempt["source"] = "push",
+): Promise<boolean> {
+  return Promise.resolve(checkNavigation(href, source));
+}
+
+/** Run `proceed` once the guards allow `href` (synchronously when there are none). */
+export function whenNavigationAllowed(
+  href: string,
+  proceed: () => void,
+  source: NavigationAttempt["source"] = "push",
+) {
+  const r = checkNavigation(href, source);
+  if (r === true) proceed();
+  else if (r !== false) void r.then((ok) => ok && proceed());
+}
+
+type NavigateOpts = {
+  replace?: boolean;
+  /** skip navigation guards (the user already confirmed, or the page just saved) */
+  skipGuards?: boolean;
+  /** where the navigation came from (reported to guards) */
+  source?: NavigationAttempt["source"];
+};
 type Ctx = { navigate: (href: string, opts?: NavigateOpts) => void };
 const RouteCtx = createContext<Ctx | null>(null);
 
-/** router.push with the curtain. Falls back to a plain router when no provider. */
+/** Options for useTransitionRouter().push / replace. */
+export type TransitionNavOptions = { skipGuards?: boolean };
+
+/** router.push with the curtain and navigation guards. Falls back to a plain router when no provider. */
 export function useTransitionRouter() {
   const ctx = useContext(RouteCtx);
   const router = useRouter();
   return useMemo(
     () => ({
-      push: (href: string) => (ctx ? ctx.navigate(href) : router.push(href)),
-      replace: (href: string) =>
-        ctx ? ctx.navigate(href, { replace: true }) : router.replace(href),
+      push: (href: string, opts?: TransitionNavOptions) => {
+        if (ctx) return ctx.navigate(href, { skipGuards: opts?.skipGuards, source: "push" });
+        if (opts?.skipGuards) return router.push(href);
+        whenNavigationAllowed(href, () => router.push(href), "push");
+      },
+      replace: (href: string, opts?: TransitionNavOptions) => {
+        if (ctx)
+          return ctx.navigate(href, { replace: true, skipGuards: opts?.skipGuards, source: "replace" });
+        if (opts?.skipGuards) return router.replace(href);
+        whenNavigationAllowed(href, () => router.replace(href), "replace");
+      },
       back: () => router.back(),
       prefetch: (href: string) => router.prefetch(href),
     }),
@@ -78,6 +240,13 @@ const ROUTES: { test: RegExp; accent: string; label: string }[] = [
   { test: /^\/courses/, accent: "#ffcf3f", label: "Courses" },
   { test: /^\/become-tutor/, accent: "#00b351", label: "Teach" },
   { test: /^\/admin/, accent: "#3b308f", label: "Admin" },
+  { test: /^\/dashboard/, accent: "#ff008c", label: "Your space" },
+  { test: /^\/tutor(\/|$)/, accent: "#00b351", label: "Studio" },
+  { test: /^\/tutors\//, accent: "#f9a220", label: "Tutor" },
+  { test: /^\/learn/, accent: "#2668fd", label: "Press play" },
+  { test: /^\/checkout/, accent: "#ff008c", label: "Checkout" },
+  { test: /^\/certificates/, accent: "#9b82e0", label: "Certificate" },
+  { test: /^\/forgot-password/, accent: "#2668fd", label: "Reset" },
 ];
 export function routeAccent(pathname: string) {
   const hit = ROUTES.find((r) => r.test.test(pathname));
@@ -114,6 +283,17 @@ function findHash(hash: string): HTMLElement | null {
   }
 }
 
+/** Move focus to an in-page target without a second scroll jump (makes it focusable if needed). */
+function focusTarget(el: HTMLElement) {
+  const focusable = el.matches("a[href],button,input,select,textarea,[tabindex]");
+  if (!focusable) el.setAttribute("tabindex", "-1");
+  try {
+    el.focus({ preventScroll: true });
+  } catch {
+    el.focus();
+  }
+}
+
 /** Distance between the target's top and where it should rest (its scroll-margin). */
 function anchorError(el: HTMLElement) {
   const margin = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
@@ -124,6 +304,17 @@ function anchorError(el: HTMLElement) {
   // Clamped at the bottom of the page: the target legitimately rests lower.
   if (err > 0 && atBottom) return 0;
   return err;
+}
+
+/** Same-page anchor: put the #hash in the address bar (copyable, bookmarkable) as a new history
+ *  entry, remembering where we scrolled from so Back returns there. Next patches pushState and
+ *  copies its own router state into the entry, so the app router stays in sync. */
+function pushHashEntry(hash: string, fromY: number) {
+  try {
+    const cur = (window.history.state ?? {}) as Record<string, unknown>;
+    window.history.replaceState({ ...cur, __tmY: fromY }, "");
+    window.history.pushState({ __tmHash: true }, "", hash);
+  } catch {}
 }
 
 /** Land on a cross-route #hash: refresh, jump, re-check twice. Returns the element. */
@@ -195,6 +386,8 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
     busy: false,
     pending: null as null | (() => void),
     pop: false,
+    /** touch back/forward: no curtain, just restore the scroll position */
+    popBare: false,
     popY: 0,
     popAt: 0,
     popTimer: 0,
@@ -302,8 +495,11 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
             { autoAlpha: 1, yPercent: 0, duration: 0.5, ease: "expo.out" },
             0.38,
           )
-          .call(resolve, [], 0.56)
-          .call(startIdle, [], 0.84);
+          .call(resolve, [], 0.56);
+        if (isTouch()) {
+          // idle bob only when the route takes longer than ~600ms after covering
+          st.coverTl.call(startIdle, [], 0.56 + 0.6 * COVER_SCALE).timeScale(COVER_SCALE);
+        } else st.coverTl.call(startIdle, [], 0.84);
       });
     },
     [killAll, pieces, setCovered, startIdle],
@@ -338,6 +534,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
         // lift away WITH it (no empty cream frame). Tami hops first.
         gsap
           .timeline({ onComplete: end })
+          .timeScale(isTouch() ? REVEAL_SCALE : 1)
           .to(p.tami, { y: -16, rotate: 8, scale: 1, duration: 0.18, ease: "power2.out" }, 0)
           .to(p.tami, { y: 0, rotate: 0, duration: 0.3, ease: "power2.in" }, 0.18)
           .to(p.disc, { scale: 0.9, duration: 0.5, ease: "power2.in" }, 0.08)
@@ -354,6 +551,26 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
   const finishPop = useCallback(async () => {
     const st = s.current;
     const reduced = prefersReducedMotion();
+    if (st.popBare) {
+      // touch back/forward: the browser animated the page already; restore the spot instantly
+      st.popBare = false;
+      try {
+        await raf2();
+        const lenis = getLenis();
+        lenis?.start();
+        lenis?.resize();
+        ScrollTrigger.refresh();
+        const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        jumpTo(Math.min(st.popY, max));
+        await raf();
+        st.y = window.scrollY;
+        if (liveRef.current) liveRef.current.textContent = document.title;
+      } catch {}
+      delete document.documentElement.dataset.curtain;
+      window.dispatchEvent(new Event("route:revealed"));
+      st.busy = false;
+      return;
+    }
     try {
       // Give the freshly shown curtain time to rasterise before the page behind
       // jumps thousands of px (otherwise one unpainted cream frame can show).
@@ -505,13 +722,41 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       if (url.pathname === here.pathname && url.search === here.search) {
         // Same page: hash => Lenis scroll; bare link => back to top.
         if (url.hash && url.hash !== "#") {
+          const el = findHash(url.hash);
+          const fromY = window.scrollY;
           if (!scrollToTarget(url.hash)) window.location.hash = url.hash;
+          else if (url.hash !== here.hash) pushHashEntry(url.hash, fromY);
+          // Skip links / in-page anchors: move keyboard focus too (WCAG 2.4.1), not just the viewport.
+          if (el) focusTarget(el);
         } else scrollToTarget(0);
         return;
       }
-      void go(url, opts);
+      const target = url.pathname + url.search + url.hash;
+      const proceed = () => {
+        const now = window.location;
+        // Query-only change (filters / pagination): instant, keep the scroll position.
+        if (url.pathname === now.pathname) {
+          if (opts?.replace) router.replace(target, { scroll: false });
+          else router.push(target, { scroll: false });
+          return;
+        }
+        // Inside one app area: instant (no curtain), normal scroll-to-top.
+        if (!shouldCurtain(now.pathname, url.pathname)) {
+          if (opts?.replace) router.replace(target);
+          else router.push(target);
+          return;
+        }
+        void go(url, opts);
+      };
+      if (opts?.skipGuards) proceed();
+      else
+        whenNavigationAllowed(
+          target,
+          proceed,
+          opts?.source ?? (opts?.replace ? "replace" : "push"),
+        );
     },
-    [go],
+    [go, router],
   );
 
   // Global interceptor (capture phase, before next/link) + back/forward + scroll memory.
@@ -542,12 +787,22 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       }
       if (url.origin !== window.location.origin) return;
       e.preventDefault();
-      navigate(url.pathname + url.search + url.hash);
+      navigate(url.pathname + url.search + url.hash, { source: "link" });
     };
     // Back/forward: cover instantly with the same art, restore y, then the normal reveal.
     const onPop = () => {
       const st = s.current;
-      if (st.busy || window.location.pathname === st.path) return;
+      if (st.busy) return;
+      if (window.location.pathname === st.path) {
+        // Back/forward between same-page #hash entries (pushHashEntry): restore the spot we left,
+        // or land on the section again. Other same-path entries (query changes) are Next's.
+        const state = window.history.state as { __tmY?: unknown; __tmHash?: unknown } | null;
+        if (typeof state?.__tmY === "number") scrollToTarget(state.__tmY, { immediate: true });
+        else if (state?.__tmHash && window.location.hash) scrollToTarget(window.location.hash, { immediate: true });
+        return;
+      }
+      // Back/forward inside one app area: instant, Next handles it.
+      if (!shouldCurtain(st.path, window.location.pathname)) return;
       const root = rootRef.current;
       if (!root) return;
       saveScroll(st.path, st.y);
@@ -556,6 +811,15 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       st.unlock?.();
       st.popY = readScrollMap()[window.location.pathname] ?? 0;
       st.popAt = performance.now();
+      if (isTouch()) {
+        st.popBare = true;
+        st.popTimer = window.setTimeout(() => {
+          if (!s.current.pop) return;
+          s.current.pop = false;
+          void finishPop();
+        }, 2500);
+        return;
+      }
       setDest(routeAccent(window.location.pathname));
       document.documentElement.dataset.curtain = "cover";
       getLenis()?.stop();

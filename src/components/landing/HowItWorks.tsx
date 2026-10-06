@@ -6,6 +6,7 @@ import { steps, toneBg } from "@/lib/landing-data";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { ArrowButton, BlobSet, HandNote } from "@/components/decor/Bits";
 import { Parallax } from "@/components/motion/Parallax";
+import { ScrollIndicator } from "./ScrollIndicator";
 
 /* =============================================================================
    How it works: Aardvark blush panel with 4 flat, tilted step cards.
@@ -24,6 +25,8 @@ const tilt = [-1.5, 3, -1, 4];
 const drop = [12, 44, 0, 30];
 /** Depth: per-card y drift amplitude (px). */
 const depth = [18, 34, 24, 40];
+/** Phones (< 640px, swipe row): alternating -3/+3deg tilts. */
+const tiltPhone = [-3, 3, -3, 3];
 
 const ink = "#161616";
 
@@ -184,17 +187,25 @@ export function HowItWorks() {
           </div>
         </div>
 
+        {/* Phones: one step card + the next peeking in a snap row (Aardvark mobile),
+            with a progress track. From 640px: 2x2 grid, xl: the fanned row. */}
         <ol
+          id="how-steps"
+          aria-label="How it works, step by step"
           className={clsx(
-            "step-row relative mt-head grid gap-6 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8",
+            "step-row relative mt-head",
+            "max-sm:h-scroller max-sm:mt-[calc(var(--gap-block)-24px)] max-sm:py-6",
+            "sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8",
             "xl:flex xl:justify-center xl:gap-0",
           )}
+          /* the row bleeds to the panel edges and snaps cards to the text column */
+          style={{ "--gutter": "var(--gutter-in-panel)" } as React.CSSProperties}
         >
           {steps.map((s, i) => (
             <li
               key={s.title}
               className={clsx(
-                "relative z-0 xl:[margin-top:var(--drop)] xl:w-1/4 xl:max-w-[310px]",
+                "relative z-0 max-sm:w-[min(78vw,320px)] xl:[margin-top:var(--drop)] xl:w-1/4 xl:max-w-[310px]",
                 // H6: the hovered card comes to the front at once and only drops
                 // back after its 350ms settle, so it never slides under a
                 // neighbour while still scaled up.
@@ -204,21 +215,23 @@ export function HowItWorks() {
             >
               {/* fan layer (GSAP x/rotate, xl only) */}
               <div className="step-fan h-full">
-                {/* depth layer: per-card speed + a shared tilt drift */}
+                {/* depth layer: per-card speed + a shared tilt drift (off on phones:
+                    the swipe row clips vertical drift) */}
                 <Parallax
                   y={depth[i]}
                   rotate={[1.5, -1.5]}
-                  mobile={0.4}
+                  mobile={0}
                   className="h-full"
                 >
                   {/* tilt + hover layer. GSAP never touches it: a GSAP transform tween
                       writes inline `rotate/scale/translate: none`, which would kill the
                       hover's independent rotate/scale on the animated element. */}
                   <div
-                    className="group h-full transition-[rotate,scale] duration-[350ms] ease-spring hf:scale-[1.04] hf:[rotate:var(--untilt)]"
+                    className="group h-full [transform:rotate(var(--tilt))] transition-[rotate,scale] duration-[350ms] ease-spring hf:scale-[1.04] hf:[rotate:var(--untilt)] max-sm:[transform:rotate(var(--tilt-m))]"
                     style={
                       {
-                        transform: `rotate(${tilt[i]}deg)`,
+                        "--tilt": `${tilt[i]}deg`,
+                        "--tilt-m": `${tiltPhone[i]}deg`,
                         "--untilt": `${-tilt[i]}deg`,
                       } as React.CSSProperties
                     }
@@ -227,13 +240,18 @@ export function HowItWorks() {
                       data-reveal="card"
                       data-reveal-delay={String(i * 0.08)}
                       className={clsx(
-                        "relative flex h-full flex-col rounded-card px-6 pt-7 pb-6 text-ink xl:min-h-[400px]",
+                        "relative flex h-full flex-col rounded-card px-6 pt-7 pb-6 text-ink max-sm:pt-6 xl:min-h-[400px]",
                         "transition-shadow duration-[350ms] ease-ui group-hf:shadow-lift",
                         toneBg[s.tone],
                       )}
                     >
-                      <p className="text-center t-hand-lg">Step #{i + 1}</p>
-                      <div className="my-5 flex justify-center xl:my-6">
+                      <p className="text-center t-hand-lg">
+                        <span className="max-sm:hidden">Step #{i + 1}</span>
+                        <span className="sm:hidden">
+                          Step {i + 1}/{steps.length}
+                        </span>
+                      </p>
+                      <div className="my-5 flex justify-center max-sm:my-4 xl:my-6">
                         <div
                           className="motion-safe:animate-float"
                           style={{ animationDelay: `${-i * 1.3}s` }}
@@ -242,7 +260,7 @@ export function HowItWorks() {
                         </div>
                       </div>
                       <h3 className="mt-auto t-chunky-card">{s.title}</h3>
-                      <p className="mt-3 text-[15px] leading-[1.38] font-medium text-ink/85">
+                      <p className="mt-3 text-[15px] leading-[1.38] font-medium text-ink/85 max-sm:text-base max-sm:leading-[1.4]">
                         {s.body}
                       </p>
                     </article>
@@ -252,6 +270,7 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+        <ScrollIndicator target="how-steps" className="mt-1 sm:hidden" />
       </div>
     </section>
   );

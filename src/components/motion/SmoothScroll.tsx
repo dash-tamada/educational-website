@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
+import { areaOf, isAppArea } from "@/components/app/nav";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { onScrollIdle, setLenis } from "@/lib/lenis";
 
@@ -12,13 +14,25 @@ import { onScrollIdle, setLenis } from "@/lib/lenis";
  * as ONE deferred refresh at scroll idle (never inside a scroll).
  */
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
+  // App areas (/dashboard, /tutor, /admin, /learn) scroll natively: Lenis is torn
+  // down there and comes back on the marketing pages.
+  const pathname = usePathname();
+  const native = isAppArea(areaOf(pathname));
+  const nativeRef = useRef(native);
+  const ctl = useRef<{ start: () => void; stop: () => void } | null>(null);
+  useEffect(() => {
+    nativeRef.current = native;
+    if (native) ctl.current?.stop();
+    else ctl.current?.start();
+  }, [native]);
+
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let lenis: Lenis | null = null;
     let tick: ((t: number) => void) | null = null;
 
     const start = () => {
-      if (lenis || reduced.matches) return;
+      if (lenis || reduced.matches || nativeRef.current) return;
       lenis = new Lenis({
         lerp: 0.1,
         smoothWheel: true,
@@ -40,6 +54,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       tick = null;
       setLenis(null);
     };
+    ctl.current = { start, stop };
     start();
     const onPref = () => (reduced.matches ? stop() : start());
     reduced.addEventListener("change", onPref);
@@ -88,6 +103,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       cancelAnimationFrame(raf);
       cancelIdle();
       ro.disconnect();
+      ctl.current = null;
       stop();
     };
   }, []);

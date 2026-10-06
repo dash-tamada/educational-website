@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { footerLinks } from "@/lib/landing-data";
 import { ArrowButton } from "@/components/decor/Bits";
@@ -15,6 +16,34 @@ const LEGAL = [
   { label: "Terms", href: "/terms" },
   { label: "Privacy", href: "/privacy" },
 ];
+
+/**
+ * Minimal footer for task pages (checkout, auth forms, learn gates; MOBILE_SPEC F-04):
+ * one row "© 2026 Tamada Media · Terms · Privacy · Help" with 44px-tall links, 24px
+ * padding and the safe-area inset. <SiteShell footer="minimal"> renders it; checkout
+ * pages get it automatically. Also exported for custom layouts (e.g. the auth layout).
+ *   <MinimalFooter />                 on the cream canvas
+ *   <MinimalFooter className="…" />
+ */
+export function MinimalFooter({ className }: { className?: string }) {
+  const links = [...LEGAL, { label: "Help", href: "/contact" }];
+  return (
+    <footer className={clsx("container-x pt-6 pb-[max(24px,calc(var(--sab)+12px))]", className)}>
+      <div className="flex flex-col items-center gap-x-4 gap-y-1 border-t-2 border-ink/8 pt-4 text-[14px] font-semibold text-ink/60 sm:flex-row sm:justify-between">
+        <span className="flex min-h-11 items-center">© {new Date().getFullYear()} Tamada Media</span>
+        <ul className="flex items-center gap-1">
+          {links.map((l) => (
+            <li key={l.href}>
+              <TransitionLink href={l.href} className="inline-flex min-h-11 items-center rounded-full px-3 hf:text-ink focus-visible:text-ink active:bg-ink/[0.05]">
+                {l.label}
+              </TransitionLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </footer>
+  );
+}
 
 // TODO: point these at the real Tamada Media profiles once the handles exist.
 const SOCIALS = [
@@ -83,16 +112,69 @@ function Rider({ kind }: { kind: "tami" | "buddy-a" | "buddy-b" }) {
 /**
  * Purple Aardvark footer: the brand lockup (Tami + light logo) on the purple field,
  * then a white Maxima content panel with the mailing list,
- * three link columns (underline draw), pink social circles, and a giant
+ * four link columns (Learn, Teach, Company, Account; underline draw), pink social circles, and a giant
  * flame/blue "tamada" wordmark whose letters rise in (R6) with characters riding them.
  */
-export function Footer() {
+const CREAM = "var(--color-cream)";
+
+/** Opaque background of the element right above the footer when it is a full-bleed
+ *  band (a .field); otherwise the cream canvas (inset .panel blocks sit on cream). */
+function useAutoEdge(ref: React.RefObject<HTMLElement | null>, enabled: boolean) {
+  const [color, setColor] = useState(CREAM);
+  useLayoutEffect(() => {
+    const footer = ref.current;
+    if (!enabled || !footer) return;
+    const read = () => {
+      let above = footer.previousElementSibling as HTMLElement | null;
+      // <main> (SiteShell) wraps the page: look at its last rendered block
+      while (above && above.lastElementChild && above.tagName === "MAIN") above = above.lastElementChild as HTMLElement;
+      if (!above) return setColor(CREAM);
+      const r = above.getBoundingClientRect();
+      const bg = getComputedStyle(above).backgroundColor;
+      const opaque = bg && !/^rgba\(.*,\s*0\)$/.test(bg) && bg !== "transparent";
+      const fullBleed = r.width >= footer.getBoundingClientRect().width - 1;
+      const touching = Math.abs(footer.getBoundingClientRect().top - r.bottom) < 2;
+      setColor(opaque && fullBleed && touching ? bg : CREAM);
+    };
+    read();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(read) : null;
+    ro?.observe(footer.parentElement ?? footer);
+    return () => ro?.disconnect();
+  }, [ref, enabled]);
+  return color;
+}
+
+export function Footer({
+  edge = "var(--color-flame)",
+  variant = "auto",
+}: {
+  /**
+   * Colour of the scalloped bumps hanging into the purple: the colour of whatever sits
+   * right above the footer. Landing: flame (the Final CTA continues). "auto" (SiteShell's
+   * default) uses the last full-bleed .field's colour, else the cream canvas.
+   */
+  edge?: string;
+  /** "full" = the purple footer; "minimal" = <MinimalFooter/>; "auto" (default) = minimal on
+   *  task pages (/checkout/*), full everywhere else */
+  variant?: "auto" | "full" | "minimal";
+} = {}) {
+  const pathname = usePathname() ?? "";
+  const minimal = variant === "minimal" || (variant === "auto" && /^\/checkout(\/|$)/.test(pathname));
+  if (minimal) return <MinimalFooter />;
+  return <FullFooter edge={edge} />;
+}
+
+function FullFooter({ edge }: { edge: string }) {
   const [sent, setSent] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+  const auto = useAutoEdge(ref, edge === "auto");
+  const edgeColor = edge === "auto" ? auto : edge;
 
   return (
-    <footer data-field="dark" className="field bg-purple text-ink">
-      {/* the flame Final CTA continues as bumps into the purple */}
-      <ScallopEdge placement="inside-top" color="var(--color-flame)" />
+    <footer ref={ref} data-field="dark" className="field bg-purple text-ink">
+      {/* whatever sits above (landing: the flame Final CTA; inner pages: the cream
+          canvas) continues as bumps into the purple */}
+      <ScallopEdge placement="inside-top" color={edgeColor} />
 
       <div className="px-inset pt-[calc(var(--scallop)/2+var(--panel-inset))] pb-inset">
         {/* brand row on the purple field: the official lockup (light logo) with
@@ -103,7 +185,7 @@ export function Footer() {
             aria-label="Tamada Media home"
             className="group tap inline-flex self-start py-2 [--lw:136px] sm:self-auto md:[--lw:164px] lg:[--lw:188px]"
           >
-            <BrandLockup light interactive sizes="(min-width: 1024px) 188px, (min-width: 768px) 164px, 136px" />
+            <BrandLockup light interactive loading="lazy" sizes="(min-width: 1024px) 188px, (min-width: 768px) 164px, 136px" />
           </TransitionLink>
           <p className="max-w-[24rem] text-[15px] leading-snug font-medium text-white/80 sm:text-right md:text-base">
             Video courses from real tutors. The first video of every course is
@@ -112,9 +194,9 @@ export function Footer() {
         </div>
 
         <div className="rounded-card-lg bg-white px-[max(24px,calc(var(--gutter)-var(--panel-inset)),calc(50%-var(--container)/2))] pt-10 pb-6 md:pt-14 md:pb-8">
-          <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
+          <div className="grid gap-12 xl:grid-cols-12 xl:gap-10">
             {/* mailing list */}
-            <div className="lg:col-span-5">
+            <div className="xl:col-span-5">
               <h2 className="t-chunky-card">Join our mailing list</h2>
               <p className="mt-2 text-[15px] font-medium text-ink/70">
                 New courses on the 1st of every month. No spam, promise.
@@ -148,16 +230,17 @@ export function Footer() {
             </div>
 
             {/* link columns */}
-            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:col-span-7 lg:pl-8">
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-[repeat(4,auto)] sm:justify-between xl:col-span-7 xl:pl-8">
               {footerLinks.map((col) => (
                 <div key={col.title}>
-                  <h2 className="t-eyebrow text-ink/50">{col.title}</h2>
-                  <ul className="mt-4 space-y-3">
+                  <h2 className="t-eyebrow text-ink/70">{col.title}</h2>
+                  {/* phones: each link is a 44px row (touch target); from sm the airy desktop list */}
+                  <ul className="mt-2 sm:mt-4 sm:space-y-3">
                     {col.links.map((l) => (
-                      <li key={l.label}>
+                      <li key={l.label} className="max-sm:flex max-sm:min-h-11 max-sm:items-center">
                         <TransitionLink
                           href={l.href}
-                          className="link-draw text-[17px] font-semibold whitespace-nowrap text-ink/80 transition-colors duration-200 ease-ui hover:text-ink"
+                          className="link-draw text-[17px] font-semibold text-ink/80 sm:whitespace-nowrap transition-colors duration-200 ease-ui hover:text-ink max-sm:py-2.5"
                         >
                           {l.label}
                         </TransitionLink>
@@ -166,8 +249,8 @@ export function Footer() {
                   </ul>
                 </div>
               ))}
-              <div className="col-span-2 sm:col-span-3">
-                <h2 className="t-eyebrow text-ink/50">Follow along</h2>
+              <div className="col-span-2 sm:col-span-4">
+                <h2 className="t-eyebrow text-ink/70">Follow along</h2>
                 <ul className="mt-4 flex gap-3">
                   {SOCIALS.map((s) => (
                     <li key={s.label}>
@@ -213,12 +296,12 @@ export function Footer() {
             ))}
           </p>
 
-          <div className="mt-8 flex flex-col gap-3 border-t-2 border-ink/8 pt-6 text-[13.5px] font-medium text-ink/60 md:flex-row md:items-center md:justify-between">
+          <div className="mt-8 flex flex-col gap-3 border-t-2 border-ink/8 pt-6 pb-[var(--sab)] text-[13.5px] font-medium text-ink/60 max-sm:gap-0 md:flex-row md:items-center md:justify-between md:pb-0">
             <span>© {new Date().getFullYear()} Tamada Media. Made for learners, by learners.</span>
             <ul className="flex gap-6">
               {LEGAL.map((l) => (
-                <li key={l.href}>
-                  <TransitionLink href={l.href} className="link-draw hover:text-ink">
+                <li key={l.href} className="max-sm:flex max-sm:min-h-11 max-sm:items-center">
+                  <TransitionLink href={l.href} className="link-draw hover:text-ink max-sm:py-3">
                     {l.label}
                   </TransitionLink>
                 </li>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import clsx from "clsx";
 import { Header } from "@/components/landing/Header";
 import { Mascot } from "@/components/decor/Mascot";
@@ -6,53 +7,95 @@ import { Cloud } from "@/components/decor/Cloud";
 import { ArrowButton, BlobSet, Eyebrow, type BlobTone, type BtnVariant } from "@/components/decor/Bits";
 import type { Tone } from "@/lib/landing-data";
 
-export const metadata: Metadata = {
-  title: "Coming soon",
-  robots: { index: false },
-};
-
-/** Route -> accent field (matches the route curtain's destination colour). */
-type Field = {
+/**
+ * "Coming soon" stand-ins for the few public URLs that are linked but not built
+ * yet. Only the slugs listed in SOON render here; every other unknown URL is a
+ * real 404 (src/app/not-found.tsx). Add a slug here when you link to a page that
+ * does not exist yet, and remove it when the real route lands.
+ */
+type Soon = {
   label: string;
-  bg: string;
   title: string;
   body: string;
+  /** field + text colours (one bold field per screen) */
+  bg: string;
+  heading: string;
+  copy: string;
   eyebrow: Tone;
-  button: BtnVariant;
   blob?: BlobTone;
   dark: boolean;
+  primary: { label: string; href: string; variant: BtnVariant };
+  secondary?: { label: string; href: string; variant: BtnVariant };
 };
 
-const FIELDS: Record<string, Field> = {
-  login: { label: "Log in", bg: "bg-blue", title: "text-white", body: "text-white/85", eyebrow: "sun", button: "paper", blob: "blue", dark: true },
-  signup: { label: "Sign up", bg: "bg-hotpink", title: "text-white", body: "text-white/90", eyebrow: "sun", button: "paper", dark: true },
-  courses: { label: "Courses", bg: "bg-sun", title: "text-ink", body: "text-ink/75", eyebrow: "blue", button: "pink", blob: "sun", dark: false },
-  "become-tutor": { label: "Become a tutor", bg: "bg-green", title: "text-mint", body: "text-white/90", eyebrow: "white", button: "forest", blob: "green", dark: true },
-  admin: { label: "Admin", bg: "bg-purple", title: "text-white", body: "text-white/80", eyebrow: "white", button: "paper", blob: "purple", dark: true },
+const SOON: Record<string, Soon> = {
+  faq: {
+    label: "FAQ",
+    title: "Help centre",
+    body: "The full help centre is still being written. The questions people ask most (free first videos, tests, refunds, certificates) are already answered on the home page.",
+    bg: "bg-blue",
+    heading: "text-white",
+    copy: "text-white/85",
+    eyebrow: "sun",
+    blob: "blue",
+    dark: true,
+    primary: { label: "Read the top questions", href: "/#faq", variant: "paper" },
+    secondary: { label: "Ask us directly", href: "/contact", variant: "sun" },
+  },
+  community: {
+    label: "Community",
+    title: "Community",
+    body: "A place to swap notes, share projects and find study buddies in your city. We are building it with our first learners, so it opens soon.",
+    bg: "bg-green",
+    heading: "text-mint",
+    copy: "text-white/90",
+    eyebrow: "white",
+    blob: "green",
+    dark: true,
+    primary: { label: "Browse courses", href: "/courses", variant: "paper" },
+    secondary: { label: "Start free", href: "/signup", variant: "forest" },
+  },
+  shop: {
+    label: "Shop",
+    title: "Merch shop",
+    body: "Tami tees, sticker sheets and desk notebooks are on the drawing board. Until then, the best thing we sell is a free first video.",
+    bg: "bg-hotpink",
+    heading: "text-white",
+    copy: "text-white/90",
+    eyebrow: "sun",
+    dark: true,
+    primary: { label: "Watch a free lesson", href: "/courses", variant: "paper" },
+    secondary: { label: "Back home", href: "/", variant: "sun" },
+  },
 };
 
-const fallback = (label: string): Field => ({
-  label,
-  bg: "bg-flame",
-  title: "text-butter",
-  body: "text-white/90",
-  eyebrow: "white",
-  button: "paper",
-  blob: "flame",
-  dark: true,
-});
+/** Prerender the known slugs; anything else is a 404 without running the page. */
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return Object.keys(SOON).map((slug) => ({ soon: [slug] }));
+}
 
-// Temporary stand-in for routes built in later milestones (login, catalog, dashboards…).
+function resolve(soon: string[]): Soon | null {
+  if (soon.length !== 1) return null;
+  const key = decodeURIComponent(soon[0] ?? "").toLowerCase();
+  return Object.hasOwn(SOON, key) ? SOON[key] : null;
+}
+
+export async function generateMetadata({ params }: PageProps<"/[...soon]">): Promise<Metadata> {
+  const s = resolve((await params).soon);
+  return { title: s ? `${s.title}: coming soon` : "Page not found", robots: { index: false } };
+}
+
 // The entrance uses the data-reveal API, which waits for the route curtain to reveal.
 export default async function ComingSoon({ params }: PageProps<"/[...soon]">) {
-  const { soon } = await params;
-  const key = decodeURIComponent(soon[0] ?? "").toLowerCase();
-  const f = FIELDS[key] ?? fallback(key.replace(/-/g, " ") || "This page");
+  const f = resolve((await params).soon);
+  if (!f) notFound();
 
   return (
     <>
       <Header light={f.dark} />
       <main
+        id="main"
         data-field={f.dark ? "dark" : undefined}
         className={clsx("field grid min-h-dvh place-items-center overflow-hidden", f.bg)}
       >
@@ -67,19 +110,23 @@ export default async function ComingSoon({ params }: PageProps<"/[...soon]">) {
             <Mascot interactive title="" className="w-full animate-float" style={{ transform: "rotate(-6deg)" }} />
           </div>
           <div data-reveal="pop" data-reveal-delay="0.1" className="mt-8">
-            <Eyebrow tone={f.eyebrow}>{f.label}</Eyebrow>
+            <Eyebrow tone={f.eyebrow}>{f.label}: coming soon</Eyebrow>
           </div>
-          <h1 data-reveal="lines" className={clsx("t-display-xxl mt-eyebrow", f.title)}>
-            Coming soon
+          <h1 data-reveal="lines" className={clsx("t-display-xxl mt-eyebrow", f.heading)}>
+            {f.title}
           </h1>
-          <p data-reveal="rise" data-reveal-delay="0.15" className={clsx("t-body-l mt-sub max-w-[30rem]", f.body)}>
-            We&apos;re still building this part of Tamada Media. Check back
-            shortly, or start with a free first video.
+          <p data-reveal="rise" data-reveal-delay="0.15" className={clsx("t-body-l mt-sub max-w-[32rem]", f.copy)}>
+            {f.body}
           </p>
           <div data-reveal="rise" data-reveal-delay="0.25" className="mt-cta flex flex-wrap justify-center gap-3">
-            <ArrowButton href="/" variant={f.button}>
-              Back home
+            <ArrowButton href={f.primary.href} variant={f.primary.variant}>
+              {f.primary.label}
             </ArrowButton>
+            {f.secondary && (
+              <ArrowButton href={f.secondary.href} variant={f.secondary.variant}>
+                {f.secondary.label}
+              </ArrowButton>
+            )}
           </div>
         </div>
       </main>

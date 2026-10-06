@@ -19,7 +19,8 @@ const SLOTS = [
   { pos: "right-[7%] bottom-[24%]", rotate: -6 },
 ] as const;
 
-const rowClass = "t-chunky-list inline-block leading-[0.9]!";
+/* touch: a 44px line box per row (0.9em line + padding up to 44px, any type size) */
+const rowClass = "t-chunky-list inline-block leading-[0.9]! coarse:py-[calc((2.75rem-0.9em)/2)]";
 
 /** Fine pointer only: touch never gets the hover swap or the covers. */
 const FINE = "(hover: hover) and (pointer: fine)";
@@ -95,6 +96,22 @@ export function CategoryList() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Touch: hover never fires, so a press shows the same face swap (white hand face)
+  // as tap feedback; a scroll (pointercancel) clears it at once.
+  const pressTimer = useRef(0);
+  const onListDown = (e: React.PointerEvent<HTMLUListElement>) => {
+    if (e.pointerType === "mouse") return;
+    window.clearTimeout(pressTimer.current);
+    const row = (e.target as Element).closest<HTMLElement>("[data-cat-row]");
+    setActive(row ? Number(row.dataset.catRow) : null);
+  };
+  const onListUp = (e: React.PointerEvent<HTMLUListElement>) => {
+    if (e.pointerType === "mouse") return;
+    window.clearTimeout(pressTimer.current);
+    pressTimer.current = window.setTimeout(() => setActive(null), e.type === "pointercancel" ? 0 : 450);
+  };
+  useEffect(() => () => window.clearTimeout(pressTimer.current), []);
 
   const onListMove = (e: React.PointerEvent<HTMLUListElement>) => {
     if (e.pointerType === "touch") return;
@@ -194,7 +211,10 @@ export function CategoryList() {
           data-reveal-stagger="rise"
           className="mt-sub flex flex-col items-center"
           onPointerMove={onListMove}
-          onPointerLeave={() => setActive(null)}
+          onPointerDown={onListDown}
+          onPointerUp={onListUp}
+          onPointerCancel={onListUp}
+          onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
           onBlur={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActive(null);
           }}
@@ -208,7 +228,7 @@ export function CategoryList() {
               className="w-fit"
             >
               <Row
-                href={`/courses?category=${encodeURIComponent(c.name.toLowerCase())}`}
+                href={`/courses?category=${c.name.toLowerCase().replace(/\s+/g, "-")}`}
                 label={c.name}
                 index={i}
                 on={active === i}

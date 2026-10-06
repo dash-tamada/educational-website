@@ -54,6 +54,12 @@ type SetupOpts = {
 
 const noop = () => {};
 
+/* Phones (< 640px, MOBILE_SPEC F-22): shorter travel (card 48px / 3deg, rise 24px), no
+   SplitText line masks (a single block rise instead: splitting costs layout time on
+   mid-range Android and re-splits on rotation; `letters` stays for the one giant word),
+   and staggers capped at 4 targets so long lists never trickle in. Read once per setup. */
+const isPhoneWidth = () => typeof window !== "undefined" && window.matchMedia("(max-width: 639.98px)").matches;
+
 /**
  * Wires one reveal on `el`. Returns a cleanup that reverts every tween/split it made.
  * Exported so custom components can reuse the recipes imperatively.
@@ -93,6 +99,7 @@ export function setupReveal(
         return cs.translate === "none" && cs.rotate === "none" && cs.scale === "none";
       });
       let split: SplitText | null = null;
+      const phone = isPhoneWidth();
       const tl = gsap.timeline({
         paused: true,
         delay,
@@ -115,9 +122,12 @@ export function setupReveal(
             gsap.set(clear, { clearProps: "translate,rotate,scale" });
         },
       });
-      const each = stagger ? STAGGER.items : 0;
+      const step = stagger ? STAGGER.items : 0;
+      // phones: the 5th+ targets start together with the 4th
+      const each: number | ((i: number) => number) = phone && step ? (i: number) => Math.min(i, 3) * step : step;
+      const mode: RevealEffect = phone && effect === "lines" ? "rise" : effect;
 
-      switch (effect) {
+      switch (mode) {
         case "fade":
           tl.to(targets, {
             opacity: 1,
@@ -137,8 +147,9 @@ export function setupReveal(
         case "card":
         case "card-sm": {
           const small = effect === "card-sm";
-          const travel = y ?? (small ? 36 : 140);
-          const tilt = small || travel < 80 ? 3 : 6;
+          const base = y ?? (small ? 36 : 140);
+          const travel = phone ? Math.min(base, 48) : base;
+          const tilt = phone || small || travel < 80 ? 3 : 6;
           tl.to(targets, { opacity: 1, duration: 0.45, ease: "power1.out", stagger: each }, 0);
           tl.from(
             targets,
@@ -191,11 +202,19 @@ export function setupReveal(
             { clipPath: "inset(-30% -10% -30% -10%)", duration: DUR.write, ease: EASE.write },
           );
           break;
-        default: // rise
-          tl.to(targets, { opacity: 1, duration: 0.6, ease: "power1.out", stagger: each }, 0);
-          tl.from(targets, { y: y ?? 40, duration: DUR.base + 0.1, ease: EASE.reveal, stagger: each }, 0);
+        default: // rise (and `lines` on phones)
+          tl.to(targets, { opacity: 1, duration: phone ? 0.5 : 0.6, ease: "power1.out", stagger: each }, 0);
+          tl.from(targets, { y: phone ? Math.min(y ?? 40, 24) : (y ?? 40), duration: phone ? 0.5 : DUR.base + 0.1, ease: EASE.reveal, stagger: each }, 0);
       }
 
+      // Already on the first screen when the page is ready: play now. Otherwise a
+      // block whose top sits between the trigger line ("top 85%") and the bottom of
+      // the viewport would stay invisible until the visitor scrolled.
+      const top = el.getBoundingClientRect().top;
+      if (top < window.innerHeight) {
+        tl.play();
+        return;
+      }
       ScrollTrigger.create({
         trigger: el,
         start,
@@ -206,7 +225,7 @@ export function setupReveal(
   };
   const stopWaiting = onPageReady(() => {
     // Split recipes measure lines/chars: wait for the display font first.
-    if ((effect === "lines" || effect === "letters") && document.fonts) {
+    if (((effect === "lines" && !isPhoneWidth()) || effect === "letters") && document.fonts) {
       document.fonts.ready.then(build);
     } else build();
   });

@@ -12,8 +12,12 @@ import { Parallax } from "@/components/motion/Parallax";
  * hand note and Tami on the left; a white content panel of questions on the right
  * (2px blue separators, bubblegum plus buttons, answers open via grid rows).
  */
+const PHONE_ROWS = 4;
+
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
+  /** phones: the first PHONE_ROWS questions, then "Show all" (Aardvark mobile) */
+  const [all, setAll] = useState(false);
   const uid = useId();
 
   return (
@@ -50,16 +54,24 @@ export function Faq() {
               const isOpen = open === i;
               const id = `${uid}-a${i}`;
               return (
-                <li key={f.q} className="border-b-2 border-blue/80 last:border-b-0">
+                <li
+                  key={f.q}
+                  className={clsx(
+                    "border-b-2 border-blue/80 last:border-b-0",
+                    !all && i >= PHONE_ROWS && "max-md:hidden",
+                    !all && i === PHONE_ROWS - 1 && "max-md:border-b-0",
+                  )}
+                >
                   <h3>
                     <button
                       type="button"
-                      className="group tap -mx-3 flex w-[calc(100%+1.5rem)] items-center justify-between gap-3 rounded-2xl px-3 py-5 md:gap-5 text-left transition-[color,background-color,scale] duration-300 ease-ui hf:bg-cyan/35 md:py-6"
+                      className="group tap flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl py-5 text-left transition-[color,background-color,scale] duration-300 ease-ui hf:bg-cyan/35 md:-mx-3 md:w-[calc(100%+1.5rem)] md:gap-5 md:px-3 md:py-6"
                       aria-expanded={isOpen}
+                      id={`${uid}-q${i}`}
                       aria-controls={id}
                       onClick={() => setOpen(isOpen ? null : i)}
                     >
-                      <span className="text-[17px] leading-snug font-semibold tracking-[-0.02em] md:text-xl">
+                      <span className="min-w-0 text-[17px] leading-snug font-semibold tracking-[-0.02em] break-words md:text-xl">
                         {f.q}
                       </span>
                       <span
@@ -94,6 +106,24 @@ export function Faq() {
               );
             })}
           </ul>
+          {!all && faqs.length > PHONE_ROWS && (
+            <div className="border-t-2 border-blue/80 pt-4 pb-3 md:hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setAll(true);
+                  // keyboard/SR: continue at the first newly shown question
+                  requestAnimationFrame(() => document.getElementById(`${uid}-q${PHONE_ROWS}`)?.focus());
+                }}
+                className="tap flex h-12 w-full items-center justify-center gap-2 rounded-full bg-blue text-[15px] font-bold text-white"
+              >
+                Show all {faqs.length} questions
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden>
+                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

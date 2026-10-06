@@ -20,7 +20,7 @@ export default function HomePage() {
     <>
       <IntroCurtain />
       <Header />
-      <main>
+      <main id="main">
         <Hero />
         <MarqueeTape />
         <CourseCarousel />

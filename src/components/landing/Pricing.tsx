@@ -55,12 +55,33 @@ function Check({ featured }: { featured?: boolean }) {
   );
 }
 
+function Perks({ perks, featured, className }: { perks: string[]; featured?: boolean; className?: string }) {
+  return (
+    <ul
+      className={clsx(
+        "grid gap-3 text-[15px] font-medium",
+        featured ? "md:max-lg:grid-cols-2 md:max-lg:gap-x-8" : "",
+        className,
+      )}
+    >
+      {perks.map((perk) => (
+        <li key={perk} className="flex items-center gap-3">
+          <Check featured={featured} />
+          <span>{perk}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * Three top-aligned, equal-width plans on the cream canvas. Side cards are white
  * (radius 32, soft shadow, lift on hover); the featured plan is a flame scalloped
  * card with butter text and a sun "Popular" scallop badge that spins on hover.
  * Every card has the same row structure so names, prices and buttons line up.
  * md: featured spans both columns on top; lg: 1-2-3 with the featured in the middle.
+ * Phones: the featured plan first and in full; the two side plans keep name, price
+ * and CTA, with their perks behind a native "What's included" disclosure.
  */
 export function Pricing() {
   return (
@@ -92,7 +113,7 @@ export function Pricing() {
           as="ul"
           stagger
           effect="card"
-          className="mt-head grid items-stretch gap-x-6 gap-y-10 md:grid-cols-2 md:gap-y-12 lg:grid-cols-3 lg:gap-x-9"
+          className="mt-head grid items-stretch gap-x-6 gap-y-6 sm:gap-y-10 md:grid-cols-2 md:gap-y-12 lg:grid-cols-3 lg:gap-x-9"
         >
           {pricing.map((p) => {
             const f = !!p.featured;
@@ -100,9 +121,10 @@ export function Pricing() {
               <li
                 key={p.name}
                 className={clsx(
-                  "group relative isolate flex flex-col rounded-[2rem] px-6 pt-9 pb-8 md:px-8",
+                  "group relative isolate flex flex-col rounded-[2rem] px-6 pt-9 md:px-8",
+                  f ? "pb-8" : "pb-3 sm:pb-8",
                   f
-                    ? "order-first mx-[14px] text-butter transition-[translate] duration-[350ms] ease-spring hf:-translate-y-2 md:col-span-2 lg:order-none lg:col-span-1 lg:mx-0"
+                    ? "order-first mx-[14px] mb-4 text-butter sm:mb-0 transition-[translate] duration-[350ms] ease-spring hf:-translate-y-2 md:col-span-2 lg:order-none lg:col-span-1 lg:mx-0"
                     : "hover-lift bg-white text-ink shadow-soft",
                 )}
               >
@@ -149,19 +171,28 @@ export function Pricing() {
                   {p.cta}
                 </ArrowButton>
 
-                <ul
-                  className={clsx(
-                    "mt-7 grid gap-3 border-t-2 pt-6 text-[15px] font-medium",
-                    f ? "border-butter/25 md:max-lg:grid-cols-2 md:max-lg:gap-x-8" : "border-ink/8",
-                  )}
-                >
-                  {p.perks.map((perk) => (
-                    <li key={perk} className="flex items-center gap-3">
-                      <Check featured={f} />
-                      <span>{perk}</span>
-                    </li>
-                  ))}
-                </ul>
+                {f ? (
+                  <Perks perks={p.perks} featured className="mt-7 border-t-2 border-butter/25 pt-6" />
+                ) : (
+                  <>
+                    <Perks perks={p.perks} className="mt-7 border-t-2 border-ink/8 pt-6 max-sm:hidden" />
+                    {/* phones: perks fold away (native, no JS); 48px summary row */}
+                    <details className="group/inc mt-5 border-t-2 border-ink/8 sm:hidden">
+                      <summary className="tap flex h-12 cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-bold [&::-webkit-details-marker]:hidden">
+                        What&apos;s included
+                        <span
+                          aria-hidden
+                          className="grid size-8 place-items-center rounded-full bg-cyan text-ink transition-[rotate] duration-300 ease-ui group-open/inc:rotate-45"
+                        >
+                          <svg viewBox="0 0 24 24" className="size-4" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+                          </svg>
+                        </span>
+                      </summary>
+                      <Perks perks={p.perks} className="pt-1 pb-5" />
+                    </details>
+                  </>
+                )}
               </li>
             );
           })}

@@ -6,7 +6,9 @@
  *
  *   node scripts/prod-check.mjs [--vp=desktop,mobile] [--cpu=4] [--name=prod] [--port=3100] [--keep]
  *   --name/--port let several agents run isolated checks at once (e.g. --name=prod-hero --port=3101).
- *   --keep leaves the production server running (kill it yourself when done).
+ *   --paths=/,/courses,/admin  measure several routes (default "/"); the demo session cookie can be
+ *     passed with --cookie="name=value" (forwarded to perf.mjs).
+ *   --keep leaves the production server running (detached; kill it yourself when done).
  */
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -41,7 +43,7 @@ if (b.status !== 0) {
 }
 console.log(buildOut.split("\n").filter((l) => /Route|○|ƒ|First Load|✓ Compiled/.test(l)).join("\n"));
 
-const server = spawn(process.execPath, [nextBin, "start", "-p", String(PORT)], { cwd: app, stdio: "ignore" });
+const server = spawn(process.execPath, [nextBin, "start", "-p", String(PORT)], { cwd: app, stdio: "ignore", detached: !!args.keep });
 const url = `http://localhost:${PORT}/`;
 for (let i = 0; i < 60; i++) {
   try {
@@ -52,13 +54,18 @@ for (let i = 0; i < 60; i++) {
 }
 
 const vps = (args.vp ?? "desktop,mobile").split(",");
-for (const vp of vps) {
-  const r = spawnSync(
-    process.execPath,
-    [path.join(root, "scripts", "perf.mjs"), `--url=${url}`, `--vp=${vp}`, `--cpu=${args.cpu ?? 4}`, `--out=${path.join(root, ".qa", NAME)}`],
-    { cwd: root, encoding: "utf8" },
-  );
-  console.log(`\n===== ${vp} (cpu x${args.cpu ?? 4}) =====\n` + (r.stdout || r.stderr));
+const paths = (args.paths ?? "/").split(",");
+for (const p of paths) {
+  const slug = p.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "home";
+  for (const vp of vps) {
+    const extra = args.cookie ? [`--cookie=${args.cookie}`] : [];
+    const r = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts", "perf.mjs"), `--url=${url.replace(/\/$/, "")}${p}`, `--vp=${vp}`, `--cpu=${args.cpu ?? 4}`, `--out=${path.join(root, ".qa", NAME, slug)}`, ...extra],
+      { cwd: root, encoding: "utf8" },
+    );
+    console.log(`\n===== ${p} ${vp} (cpu x${args.cpu ?? 4}) =====\n` + (r.stdout || r.stderr));
+  }
 }
 
 if (args.keep) {

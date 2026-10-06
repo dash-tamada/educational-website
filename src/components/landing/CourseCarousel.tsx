@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { courses, toneBg, type Tone } from "@/lib/landing-data";
 import { ArrowDot, HandNote, Sparkle, Tag } from "@/components/decor/Bits";
 import { Parallax, ParallaxImage } from "@/components/motion/Parallax";
+import { ScrollIndicator } from "./ScrollIndicator";
 
 /* =============================================================================
    "Fresh this month": Aardvark colour-card carousel on the cream canvas.
@@ -108,7 +109,7 @@ function CourseCard({ c, i }: { c: (typeof courses)[number]; i: number }) {
       as="li"
       y={depth[i % depth.length]}
       mobile={0.4}
-      className="w-[min(78vw,300px)] shrink-0 snap-start"
+      className="w-[min(78vw,300px)] shrink-0 snap-start max-sm:w-[min(82vw,340px)]"
     >
       {/* Tilt + hover layer (H5). GSAP never animates it: a GSAP transform tween
           writes inline `rotate/scale/translate: none` on its target, which would
@@ -141,7 +142,7 @@ function CourseCard({ c, i }: { c: (typeof courses)[number]; i: number }) {
               <ParallaxImage
                 src={c.img}
                 alt=""
-                sizes="300px"
+                sizes="(max-width: 639px) min(82vw, 340px), 300px"
                 amount={6}
                 className="aspect-[5/6]"
                 imgClassName="hover-zoom"
@@ -323,7 +324,8 @@ export function CourseCarousel() {
               us.
             </p>
           </div>
-          <div className="flex shrink-0 gap-3">
+          {/* Arrows on fine pointers only: touch swipes natively (progress track below). */}
+          <div className="flex shrink-0 gap-3 coarse:hidden">
             <Arrow
               dir="prev"
               disabled={edge.start}
@@ -339,6 +341,7 @@ export function CourseCarousel() {
       </div>
 
       <ul
+        id="courses-track"
         ref={track}
         data-cursor="grab"
         aria-label="New courses"
@@ -384,6 +387,13 @@ export function CourseCarousel() {
           </Link>
         </li>
       </ul>
+      {/* touch: 64px progress track in place of the arrows (sits in the track's bottom pad) */}
+      <div
+        className="relative z-10 container-x hidden coarse:block"
+        style={{ marginTop: -(TRACK_PAD - 20) }}
+      >
+        <ScrollIndicator target="courses-track" align="start" />
+      </div>
     </section>
   );
 }

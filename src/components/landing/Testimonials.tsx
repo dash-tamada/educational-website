@@ -4,6 +4,7 @@ import { ScallopBadge, ScallopEdge } from "@/components/decor/Scallop";
 import { Cloud } from "@/components/decor/Cloud";
 import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
+import { ScrollIndicator } from "./ScrollIndicator";
 
 /** Resting tilt per badge (inline, never Tailwind rotate classes). */
 const TILT = [-8, 5, -3, 7];
@@ -25,7 +26,7 @@ function Avatar({
   return (
     <svg
       viewBox="0 0 48 48"
-      className="size-11 shrink-0 transition-[scale,rotate] duration-[350ms] ease-spring group-hf:scale-[1.18] group-hf:rotate-[-8deg] md:size-12"
+      className="size-10 shrink-0 transition-[scale,rotate] duration-[350ms] ease-spring group-hf:scale-[1.18] group-hf:rotate-[-8deg] sm:size-11 md:size-12"
       aria-hidden
     >
       <circle cx="24" cy="24" r="24" fill={bg} />
@@ -90,8 +91,10 @@ export function Testimonials() {
         </Parallax>
       </div>
 
+      {/* < 768px: one badge per view in a snap row (+ dots); md: 2x2; xl: overlapping row */}
       <Reveal
         as="ul"
+        id="stories-track"
         stagger
         effect="card"
         aria-label="What learners say"
@@ -102,12 +105,13 @@ export function Testimonials() {
             as="li"
             key={t.name}
             y={DRIFT[i]}
+            mobile={0}
             className={`relative shrink-0 snap-center hover:z-10 ${i % 2 ? "xl:mt-14" : ""}`}
           >
             <ScallopBadge
               fill={toneHex[t.tone]}
               bumps={16}
-              className="group size-[272px] text-ink transition-[rotate,scale] duration-[350ms] ease-spring hf:scale-[1.04] hf:[rotate:var(--untilt)] md:size-[312px] xl:size-[318px]"
+              className="group size-[min(86vw,340px)] text-ink sm:size-[272px] transition-[rotate,scale] duration-[350ms] ease-spring hf:scale-[1.04] hf:[rotate:var(--untilt)] md:size-[312px] xl:size-[318px]"
               style={
                 {
                   transform: `rotate(${TILT[i]}deg)`,
@@ -117,7 +121,7 @@ export function Testimonials() {
             >
               <figure className="flex h-full flex-col items-center justify-center px-[19%] text-center">
                 <Avatar {...t.avatar} variant={i} />
-                <blockquote className="mt-3 line-clamp-5 text-[14.5px] leading-[1.38] font-semibold tracking-[-0.015em] md:text-[15.5px]">
+                <blockquote className="mt-3 line-clamp-5 text-base leading-[1.4] font-semibold tracking-[-0.015em] sm:text-[14.5px] sm:leading-[1.38] md:text-[15.5px]">
                   &ldquo;{t.quote}&rdquo;
                 </blockquote>
                 <figcaption className="mt-3 flex flex-col items-center">
@@ -133,6 +137,7 @@ export function Testimonials() {
           </Parallax>
         ))}
       </Reveal>
+      <ScrollIndicator target="stories-track" kind="dots" count={testimonials.length} tone="white" className="-mt-2 md:hidden" />
 
       {/* TODO(before launch): remove this note once real, consented reviews replace the samples. */}
       <p className="container-x mt-4 text-center text-[13px] font-semibold text-white/75">

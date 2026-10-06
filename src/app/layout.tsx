@@ -9,7 +9,10 @@ import {
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { RevealScanner } from "@/components/motion/Reveal";
 import { AnimationGate } from "@/components/motion/AnimationGate";
+import { PrePaint } from "@/components/motion/PrePaint";
 import { RouteTransitionProvider } from "@/components/transition/RouteTransition";
+import { Toaster } from "@/components/app/Toast";
+import { KeyboardInset } from "@/components/app/mobile";
 import "./globals.css";
 
 /** Display caps (Maxima-style tall, rounded, condensed). Only 900 is used. */
@@ -51,17 +54,15 @@ export const metadata: Metadata = {
     "Short video lessons, tests between modules and real tutors. The first video of every course is free.",
 };
 
+/* Mobile foundation (MOBILE_SPEC §1.11): draw under the notch / home indicator
+   (layouts pad with the --sat/--sab/--sal/--sar safe-area tokens) and let Android
+   resize the layout viewport for the keyboard so sticky bars ride above it.
+   Never maximumScale / userScalable: pinch zoom stays available. */
 export const viewport: Viewport = {
   themeColor: "#f5f0e3",
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
-
-/**
- * Runs before first paint (see docs: preventing-flash-before-hydration).
- * - data-motion="ok" | "reduce": CSS only pre-hides [data-reveal] targets when "ok",
- *   so no-JS and reduced-motion visitors always see static content.
- * - data-intro="done" on every route except "/" (the intro curtain only lives on home).
- */
-const prePaint = `(function(){var d=document.documentElement;try{var r=matchMedia("(prefers-reduced-motion: reduce)").matches;d.dataset.motion=r?"reduce":"ok";if(location.pathname!=="/"||r)d.dataset.intro="done";}catch(e){d.dataset.intro="done";}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   const fonts = [londrina, bricolage, caveat, yellowtail, dmSans]
@@ -70,7 +71,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={fonts} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: prePaint }} />
+        {/* Pre-paint <html> data attributes (motion, intro, session): see PrePaint. */}
+        <PrePaint />
       </head>
       <body className="min-h-dvh">
         <SmoothScroll>
@@ -78,6 +80,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
             <RevealScanner />
             <AnimationGate />
+            <Toaster />
+            <KeyboardInset />
           </RouteTransitionProvider>
         </SmoothScroll>
       </body>

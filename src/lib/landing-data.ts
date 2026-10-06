@@ -80,10 +80,10 @@ export const toneText: Record<Tone, string> = {
   aqua: "text-ink",
   turquoise: "text-ink",
   blue: "text-white",
-  green: "text-white",
+  green: "text-ink", // white is 2.8:1 on green, fails even large-text AA
   mint: "text-forest",
   forest: "text-mint",
-  lilac: "text-white",
+  lilac: "text-ink", // white is 3.2:1 on lilac
   purple: "text-white",
   indigo: "text-white",
   olive: "text-white",
@@ -121,12 +121,28 @@ export const toneHex: Record<Tone, string> = {
   ink: "#161616",
 };
 
-export const navLinks = [
-  { label: "Courses", href: "/#courses" },
+/**
+ * Primary nav. `href` is where the link goes from inner pages; `home` (optional)
+ * replaces it on the landing page itself, so the home nav still scrolls to its own
+ * section. `match` marks the link active (aria-current + resting highlight) when the
+ * pathname starts with it.
+ */
+export type NavLink = { label: string; href: string; home?: string; match?: string };
+export const navLinks: NavLink[] = [
+  { label: "Courses", href: "/courses", home: "/#courses", match: "/courses" },
   { label: "How it works", href: "/#how" },
-  { label: "For tutors", href: "/#tutors" },
+  { label: "For tutors", href: "/become-tutor", home: "/#tutors", match: "/become-tutor" },
   { label: "FAQ", href: "/#faq" },
 ];
+/** Resolve the nav for a pathname: landing-section hrefs on "/", real pages elsewhere. */
+export function navFor(pathname: string | null): (NavLink & { active: boolean })[] {
+  const onHome = pathname === "/";
+  return navLinks.map((l) => ({
+    ...l,
+    href: onHome && l.home ? l.home : l.href,
+    active: !!(l.match && pathname && (pathname === l.match || pathname.startsWith(l.match + "/"))),
+  }));
+}
 
 /**
  * Hero photo fan (7 cards, centre = index 3). The fan geometry (arc, tilt, overlap,
@@ -204,6 +220,12 @@ export type Course = {
   price: number;
 };
 
+/**
+ * Landing carousel cards. Kept as a small static list (the client carousel must
+ * not pull the whole mock catalogue into the landing bundle), but it MIRRORS the
+ * catalogue in src/lib/mock (same slugs, titles, tutors, prices, module + video
+ * counts); every card links to /courses/<slug>. Update both together.
+ */
 export const courses: Course[] = [
   {
     slug: "web-dev-from-zero",
@@ -216,7 +238,7 @@ export const courses: Course[] = [
     badge: "BESTSELLER",
     tags: ["Coding", "Beginner"],
     modules: 6,
-    lessons: 42,
+    lessons: 18,
     price: 1499,
   },
   {
@@ -229,7 +251,7 @@ export const courses: Course[] = [
     badge: "NEW",
     tags: ["Design", "All levels"],
     modules: 4,
-    lessons: 24,
+    lessons: 11,
     price: 999,
   },
   {
@@ -243,20 +265,20 @@ export const courses: Course[] = [
     badge: "JUST DROPPED",
     tags: ["Music", "Beginner"],
     modules: 5,
-    lessons: 30,
+    lessons: 13,
     price: 1199,
   },
   {
     slug: "money-basics",
     title: "Money Without the Ick",
     blurb: "Budgets, savings, investing basics. Explained like a friend would.",
-    tutor: "Priya Nair",
+    tutor: "Nisha Menon",
     img: u("photo-1633158829585-23ba8f7c8caf"),
     tone: "lilac",
     badge: "NEW",
     tags: ["Finance", "Life skills"],
     modules: 4,
-    lessons: 20,
+    lessons: 12,
     price: 799,
   },
   {
@@ -269,7 +291,7 @@ export const courses: Course[] = [
     badge: "BESTSELLER",
     tags: ["Photography", "All levels"],
     modules: 5,
-    lessons: 28,
+    lessons: 14,
     price: 1299,
   },
   {
@@ -281,8 +303,8 @@ export const courses: Course[] = [
     tone: "blue",
     badge: "NEW",
     tags: ["Science", "Exam prep"],
-    modules: 8,
-    lessons: 56,
+    modules: 6,
+    lessons: 16,
     price: 1599,
   },
   {
@@ -295,7 +317,7 @@ export const courses: Course[] = [
     badge: "JUST DROPPED",
     tags: ["Creator", "Beginner"],
     modules: 4,
-    lessons: 22,
+    lessons: 11,
     price: 899,
   },
 ];
@@ -636,6 +658,14 @@ export const footerLinks: { title: string; links: { label: string; href: string 
     links: [
       { label: "Become a tutor", href: "/become-tutor" },
       { label: "Tutor login", href: "/login" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About Tamada", href: "/about" },
+      { label: "Contact us", href: "/contact" },
+      { label: "Verify a certificate", href: "/certificates" },
     ],
   },
   {

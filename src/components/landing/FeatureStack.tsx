@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import { cropSrc } from "@/lib/img";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { features, toneBg, toneHex } from "@/lib/landing-data";
+import { features, toneBg, toneHex, toneText } from "@/lib/landing-data";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { ArrowButton, HighlightBox, SectionHead } from "@/components/decor/Bits";
 import { ScallopBadge } from "@/components/decor/Scallop";
 import { Mascot } from "@/components/decor/Mascot";
+import { snappedIndex } from "./ScrollIndicator";
 
 /** Sticky top of every folder (>=1024): header (~88px) + 24px breathing room. */
 const STACK_TOP = 112;
@@ -94,6 +95,102 @@ function Check() {
 }
 
 /**
+ * Phones (< 640px): ONE folder at a time. A sticky, horizontally scrollable row of
+ * folder tabs sits on top of a snap row of the four folder bodies; swiping the
+ * bodies moves the active tab (and scrolls it into view), tapping a tab slides to
+ * its folder. While stuck it rides below the marketing header when that is shown.
+ */
+function PhoneTabs({ active, onPick }: { active: number; onPick: (i: number) => void }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLDivElement>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
+
+  // keep the active tab in view (centred) when it changes
+  useEffect(() => {
+    const r = row.current;
+    const tab = r?.children[active] as HTMLElement | undefined;
+    if (!r || !tab || r.scrollWidth <= r.clientWidth) return;
+    const left = tab.offsetLeft - (r.clientWidth - tab.offsetWidth) / 2;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    r.scrollTo({ left: Math.max(0, left), behavior: reduce ? "auto" : "smooth" });
+  }, [active]);
+
+  // stuck state (solid backing) + ride below the header while it is shown
+  useEffect(() => {
+    const w = wrap.current;
+    const s = sentinel.current;
+    if (!w || !s) return;
+    const io = new IntersectionObserver(([e]) => w.toggleAttribute("data-stuck", !e.isIntersecting && e.boundingClientRect.top < 0), {
+      threshold: 0,
+    });
+    io.observe(s);
+    // mirror the Header's rule: shown near the top and on scroll up, hidden on scroll down
+    let last = window.scrollY;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      let shown = w.dataset.header !== "hidden";
+      if (y < 80) shown = true;
+      else if (Math.abs(y - last) > 6) shown = y < last;
+      if (y < 80 || Math.abs(y - last) > 6) last = y;
+      const header = document.querySelector<HTMLElement>("header.fixed");
+      w.dataset.header = shown ? "shown" : "hidden";
+      w.style.setProperty("--hdr", shown && header ? `${header.offsetHeight}px` : "0px");
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <>
+      <div ref={sentinel} aria-hidden className="mt-[calc(var(--gap-block)-9px)] h-px sm:hidden" />
+      <div
+        ref={wrap}
+        className="sticky top-[calc(max(0px,var(--sat))+var(--hdr,0px))] z-20 -mx-gutter px-gutter pt-2 transition-[top,background-color] duration-500 ease-ui data-[stuck]:bg-cream sm:hidden"
+      >
+        <div
+          ref={row}
+          role="group"
+          aria-label="Core features"
+          className="no-scrollbar -mb-px flex items-end gap-1.5 overflow-x-auto overscroll-x-contain"
+        >
+          {features.map((f, i) => {
+            const on = i === active;
+            return (
+              <button
+                key={f.tab}
+                type="button"
+                aria-current={on ? "true" : undefined}
+                aria-controls={`feature-body-${i + 1}`}
+                onClick={() => onPick(i)}
+                className={clsx(
+                  "tap flex shrink-0 items-center gap-2 rounded-t-[18px] px-4 transition-[height,background-color,color] duration-300 ease-ui",
+                  on ? clsx("h-12", toneBg[f.tone], toneText[f.tone]) : "h-11 bg-white text-ink/75",
+                )}
+              >
+                <span style={on ? undefined : { color: toneHex[f.tone] }} className="flex">
+                  <TabIcon name={f.icon} />
+                </span>
+                <span className="t-label whitespace-nowrap">{f.tab}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
  * Krackerz folder-tab stack, recoloured to Maxima fields (blue / green / flame /
  * purple). >=1024: every folder sticks at the SAME top and every body has the
  * SAME fixed height, so the incoming body covers the previous one completely and
@@ -103,6 +200,43 @@ function Check() {
  */
 export function FeatureStack() {
   const root = useRef<HTMLElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  // Phones: the folder bodies are a snap row; the snapped one is the active tab.
+  useEffect(() => {
+    const el = list.current;
+    if (!el) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      if (el.scrollWidth <= el.clientWidth + 2) return;
+      const bodies = Array.from(el.querySelectorAll<HTMLElement>("[data-feat-article]"));
+      // snappedIndex works on direct children; the articles are the only visible ones
+      const i = snappedIndex(el);
+      const kids = Array.from(el.children);
+      const idx = bodies.indexOf(kids[i] as HTMLElement);
+      if (idx >= 0) setActive(idx);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const pick = useCallback((i: number) => {
+    const el = list.current;
+    const art = el?.querySelectorAll<HTMLElement>("[data-feat-article]")[i];
+    if (!el || !art) return;
+    const left = el.scrollLeft + art.getBoundingClientRect().left - el.getBoundingClientRect().left;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ left, behavior: reduce ? "auto" : "smooth" });
+    setActive(i);
+  }, []);
 
   useGSAP(
     () => {
@@ -248,9 +382,16 @@ export function FeatureStack() {
           body="Everything you need to actually finish a course, not just start one."
         />
 
+        <PhoneTabs active={active} onPick={pick} />
+
         <div
+          ref={list}
           data-feat-list
-          className="mt-head"
+          className={clsx(
+            "mt-head",
+            // phones: one folder body per view, swipe between them
+            "max-sm:no-scrollbar max-sm:mt-0 max-sm:flex max-sm:snap-x max-sm:snap-mandatory max-sm:gap-3 max-sm:overflow-x-auto max-sm:overscroll-x-contain",
+          )}
           style={{
             ["--stack-top" as string]: `${STACK_TOP}px`,
             ["--tab-w" as string]: "min(260px, calc((100% + 72px) / 4))",
@@ -265,20 +406,23 @@ export function FeatureStack() {
                   id={`feature-${i + 1}`}
                   data-feat-marker
                   aria-hidden
-                  className="h-0"
+                  className="h-0 max-sm:hidden"
                   style={{ scrollMarginTop: STACK_TOP }}
                 />
                 <article
+                  id={`feature-body-${i + 1}`}
+                  data-feat-article
                   aria-labelledby={`feature-title-${i + 1}`}
                   className={clsx(
+                    "max-sm:flex max-sm:w-full max-sm:shrink-0 max-sm:snap-start max-sm:snap-always max-sm:flex-col",
                     // the article box is click-through, so a later (stacked) folder
                     // never blocks the earlier tabs that stay visible in the row
                     "pointer-events-none relative lg:motion-safe:sticky lg:motion-safe:top-[var(--stack-top)]",
-                    !last && "mb-5 md:mb-8 lg:mb-20",
+                    !last && "sm:mb-5 md:mb-8 lg:mb-20",
                   )}
                 >
-                  {/* tab row: transparent except this folder's own tab */}
-                  <div className="flex h-12 lg:h-14">
+                  {/* tab row: transparent except this folder's own tab (phones: PhoneTabs) */}
+                  <div className="flex h-12 max-sm:hidden lg:h-14">
                     <a
                       href={`#feature-${i + 1}`}
                       data-feat-tab
@@ -310,7 +454,7 @@ export function FeatureStack() {
                   <div
                     data-feat-body
                     className={clsx(
-                      "pointer-events-auto relative isolate overflow-hidden rounded-card text-white lg:h-[clamp(480px,calc(100svh-208px),580px)]",
+                      "pointer-events-auto relative isolate overflow-hidden rounded-card text-white max-sm:flex-1 lg:h-[clamp(480px,calc(100svh-208px),580px)]",
                       i === 0 ? "rounded-tl-none" : "max-lg:rounded-tl-none",
                       toneBg[f.tone],
                     )}
@@ -322,7 +466,7 @@ export function FeatureStack() {
                       {/* photo first on small screens, right column on desktop */}
                       <div data-feat-fade className="relative md:order-2 md:h-full">
                         <div className="hover-zoom-parent hover-lift h-full rounded-[20px] bg-white p-2 shadow-photo">
-                          <div className="relative aspect-[4/3] overflow-hidden rounded-[14px] bg-ink/10 md:aspect-auto md:h-full md:min-h-[340px] lg:min-h-0">
+                          <div className="relative aspect-[16/10] overflow-hidden rounded-[14px] bg-ink/10 sm:aspect-[4/3] md:aspect-auto md:h-full md:min-h-[340px] lg:min-h-0">
                             <div
                               data-feat-img
                               className="absolute inset-x-0"
@@ -369,7 +513,7 @@ export function FeatureStack() {
                         >
                           {f.title}
                         </h3>
-                        <ul className="t-body-l mt-5 space-y-3 md:mt-6">
+                        <ul className="t-body-l mt-4 space-y-3 sm:mt-5 md:mt-6">
                           {f.bullets.map((b) => (
                             <li key={b} data-feat-fade className="flex gap-3">
                               <Check />
@@ -377,7 +521,7 @@ export function FeatureStack() {
                             </li>
                           ))}
                         </ul>
-                        <div data-feat-fade className="mt-7 w-fit md:mt-auto md:pt-8">
+                        <div data-feat-fade className="mt-6 w-fit max-sm:mt-auto max-sm:pt-6 sm:mt-7 md:mt-auto md:pt-8">
                           <ArrowButton href={f.cta.href} variant="paper">
                             {f.cta.label}
                           </ArrowButton>

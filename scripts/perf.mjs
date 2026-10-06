@@ -34,6 +34,10 @@ const ctx = await browser.newContext({
   isMobile: vpName === "mobile",
   hasTouch: vpName === "mobile",
 });
+if (args.cookie) {
+  const [cname, ...cv] = args.cookie.split("=");
+  await ctx.addCookies([{ name: cname, value: cv.join("="), url }]);
+}
 await ctx.addInitScript(() => {
   try {
     sessionStorage.setItem("tm-intro-seen", "1");

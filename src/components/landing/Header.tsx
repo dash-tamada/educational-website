@@ -2,15 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { navLinks } from "@/lib/landing-data";
+import { navFor, type NavLink } from "@/lib/landing-data";
 import { Mascot } from "@/components/decor/Mascot";
 import { ArrowButton } from "@/components/decor/Bits";
 import { Cloud } from "@/components/decor/Cloud";
 import { ScallopEdge } from "@/components/decor/Scallop";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import { getLenis } from "@/lib/lenis";
+import { LOGO, LOGO_SRC } from "@/lib/brand";
+import type { Role } from "@/lib/mock/types";
+import { syncSessionHint, useDemoAuth, useDemoUser } from "@/lib/demo/session-client";
+import { DropdownMenu, type MenuItem } from "@/components/app/Overlay";
+import { Avatar } from "@/components/app/Display";
+import { useOverflowFade } from "@/components/app/Navigation";
+import { getCategories } from "@/lib/mock";
 
 /* =============================================================================
    Header (spec V2 §5): fixed, on the container column. Left:
@@ -20,10 +28,87 @@ import { getLenis } from "@/lib/lenis";
    ease-ui). Once the page scrolls the lockup gets a white pill backing and eases
    to 80% (same pill language as the nav). Below 1024px: lockup + compact flame
    pill + circle menu button opening a cream cloud sheet with big Londrina links.
+   Phones (MOBILE_SPEC §1.6): fits 320px (smaller lockup, 44px CTA + menu button at
+   < 360px), the compact CTA turns white when the field under it is flame / tangerine /
+   hot pink (it would vanish otherwise), the top padding clears the notch (--sat), and the
+   menu sheet scrolls, with a course search, a category chip rail and an account row.
    ============================================================================= */
 
-/** Official logo asset: 1665 x 546 px (ratio 3.05), trimmed, transparent. */
-export const LOGO = { w: 1665, h: 546 } as const;
+/* Fills the flame CTA would disappear on (rgb of flame, flame-deep, tangerine, hotpink, hotpink-deep). */
+const WARM_FILLS = ["253, 68, 1", "196, 52, 0", "249, 162, 32", "255, 0, 140", "214, 0, 111"];
+
+/** Is the element under `el` (ignoring the header itself) painted in a warm fill? Checked on
+ *  mount, on scroll (throttled) and on resize. */
+function useWarmBehind(el: React.RefObject<HTMLElement | null>, header: React.RefObject<HTMLElement | null>) {
+  const [warm, setWarm] = useState(false);
+  useEffect(() => {
+    let t = 0;
+    let last = 0;
+    const check = () => {
+      t = 0;
+      last = performance.now();
+      const n = el.current;
+      if (!n || !n.offsetParent) return;
+      const r = n.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      let hit = false;
+      for (const node of document.elementsFromPoint(x, y)) {
+        if (header.current?.contains(node) || node.closest("#mobile-menu")) continue;
+        const bg = getComputedStyle(node).backgroundColor;
+        const m = bg.match(/rgba?\(([^)]+)\)/);
+        if (!m) continue;
+        const parts = m[1].split(",").map((v) => v.trim());
+        if (parts.length === 4 && parseFloat(parts[3]) < 0.5) continue;
+        hit = WARM_FILLS.includes(parts.slice(0, 3).join(", "));
+        break;
+      }
+      setWarm(hit);
+    };
+    const schedule = () => {
+      if (t) return;
+      const wait = Math.max(0, 120 - (performance.now() - last));
+      t = window.setTimeout(check, wait);
+    };
+    check();
+    // fonts / images settle the layout after first paint
+    const late = window.setTimeout(check, 600);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(late);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [el, header]);
+  return warm;
+}
+
+/** Menu sheet: the first six categories as a swipeable chip rail. */
+function MenuCategories({ onGo }: { onGo: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void }) {
+  const row = useRef<HTMLDivElement>(null);
+  useOverflowFade(row);
+  const cats = getCategories().slice(0, 6);
+  return (
+    <div ref={row} className="h-scroller mt-3 gap-2 pb-1" data-lenis-prevent="">
+      {cats.map((c) => (
+        <Link
+          key={c.id}
+          href={`/courses?category=${c.slug}`}
+          data-no-transition=""
+          onClick={(e) => onGo(e, `/courses?category=${c.slug}`)}
+          className="tap inline-flex h-11 items-center rounded-full bg-white px-4 text-[15px] font-bold whitespace-nowrap text-ink shadow-soft active:bg-butter"
+        >
+          {c.name}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/** Official logo size: re-exported from the server-safe "@/lib/brand" (import it from there). */
+export { LOGO } from "@/lib/brand";
 
 /**
  * Brand lockup: Tami (the play-button mascot) stands on the LEFT of the official
@@ -39,10 +124,15 @@ export const LOGO = { w: 1665, h: 546 } as const;
  * lockup sits inside a `.group` and `interactive` is set).
  * `tamiClassName` / `logoClassName` land on GSAP-safe inner boxes (the resting
  * tilt lives on an outer box), e.g. for the intro curtain's entrance.
+ * Loading: the lockup almost always sits above the fold (header, app sidebar,
+ * learn top bar, role gate), where it is often the LCP image, so it loads
+ * eagerly by default. Pass `loading="lazy"` for below-the-fold uses (footer),
+ * or `preload` for the one lockup that should also get a <link rel=preload>.
  */
 export function BrandLockup({
   light,
   preload,
+  loading = "eager",
   sizes,
   interactive,
   className,
@@ -52,6 +142,8 @@ export function BrandLockup({
   /** white letters (dark / saturated fields); default ink letters */
   light?: boolean;
   preload?: boolean;
+  /** img loading; default "eager" (ignored when `preload` is set) */
+  loading?: "eager" | "lazy";
   /** next/image sizes: the logo width */
   sizes: string;
   interactive?: boolean;
@@ -86,14 +178,15 @@ export function BrandLockup({
         <Image
           src={
             light
-              ? "/brand/tamada-media-logo-light.png"
-              : "/brand/tamada-media-logo-dark.png"
+              ? LOGO_SRC.light
+              : LOGO_SRC.dark
           }
           alt="Tamada Media"
           width={LOGO.w}
           height={LOGO.h}
           sizes={sizes}
           preload={preload}
+          loading={preload ? undefined : loading}
           draggable={false}
           className="block h-auto w-(--lw) max-w-none select-none"
         />
@@ -104,7 +197,7 @@ export function BrandLockup({
 
 /**
  * Header / footer brand link = the lockup (logo 104px wide on phones, 92px under
- * 360px, 140px from 1024px). `light` = white letters for dark / saturated fields.
+ * 375px, 140px from 1024px). `light` = white letters for dark / saturated fields.
  * `compact` (header only): once the page scrolls, a white pill fades in behind the
  * lockup and the whole lockup eases down to 80% (transform only, no layout shift),
  * so Tami + logo stay together, match the 48/52px nav pills and never sit unbacked
@@ -127,7 +220,7 @@ export function Logo({
       href="/"
       aria-label="Tamada Media home"
       className={clsx(
-        "group tap relative flex h-12 shrink-0 items-center [--lw:104px] max-[359px]:[--lw:92px] lg:h-[52px] lg:[--lw:140px]",
+        "group tap relative flex h-12 shrink-0 items-center [--lw:104px] max-[374px]:[--lw:92px] phone-s:[--lw:84px] lg:h-[52px] lg:[--lw:140px]",
         className,
       )}
     >
@@ -178,28 +271,57 @@ function UserGlyph() {
   );
 }
 
-/** White link pill with one butter highlight that slides between links (clip-path, no layout). */
-function NavPill() {
+/**
+ * White link pill with one butter highlight that slides between links (clip-path, no layout).
+ * The current section (e.g. Courses on /courses/*) is marked aria-current and the highlight
+ * rests on it; hovering another link slides it over, leaving slides it back. Before the first
+ * measurement (SSR, hydration) the active link paints its own butter pill with the same
+ * geometry, so there is no flash.
+ */
+function NavPill({ links }: { links: (NavLink & { active: boolean })[] }) {
   const nav = useRef<HTMLElement>(null);
-  const [hl, setHl] = useState({ l: 0, r: 0, on: false, jump: true });
+  // jump: appear in place (fade) instead of sliding; snap: no transition at all (the
+  // hand-over from the active link's own pill to the highlight must not blink)
+  const [hl, setHl] = useState({ l: 0, r: 0, on: false, jump: true, snap: false });
+  const activeHref = links.find((l) => l.active)?.href ?? null;
 
+  const measure = (a: HTMLElement, p: HTMLElement) => ({ l: a.offsetLeft, r: p.clientWidth - (a.offsetLeft + a.offsetWidth) });
   const show = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
     const p = nav.current;
     if (!p) return;
-    const a = e.currentTarget;
-    const l = a.offsetLeft;
-    const r = p.clientWidth - (a.offsetLeft + a.offsetWidth);
-    setHl((h) => ({ l, r, on: true, jump: !h.on }));
+    const m = measure(e.currentTarget, p);
+    setHl((h) => ({ ...m, on: true, jump: !h.on, snap: false }));
   };
-  const hide = () => setHl((h) => ({ ...h, on: false }));
+  /** back to the current section (or off when there is none) */
+  const rest = useCallback(() => {
+    const p = nav.current;
+    const a = p?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (p && a) {
+      const m = measure(a, p);
+      setHl((h) => ({ ...m, on: true, jump: !h.on, snap: !h.on }));
+    } else setHl((h) => ({ ...h, on: false, snap: false }));
+  }, []);
+
+  useEffect(() => {
+    rest();
+    if (!activeHref) return;
+    // webfonts change the link widths after first paint
+    let alive = true;
+    document.fonts?.ready.then(() => alive && rest());
+    window.addEventListener("resize", rest);
+    return () => {
+      alive = false;
+      window.removeEventListener("resize", rest);
+    };
+  }, [activeHref, rest]);
 
   return (
     <nav
       ref={nav}
       aria-label="Primary"
-      onMouseLeave={hide}
+      onMouseLeave={rest}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) hide();
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) rest();
       }}
       className="relative flex h-[52px] items-center rounded-full bg-white px-1.5 shadow-soft"
     >
@@ -209,17 +331,21 @@ function NavPill() {
         style={{
           clipPath: `inset(0 ${hl.r}px 0 ${hl.l}px round 999px)`,
           opacity: hl.on ? 1 : 0,
-          transitionProperty: hl.jump ? "opacity" : "clip-path, opacity",
+          transitionProperty: hl.snap ? "none" : hl.jump ? "opacity" : "clip-path, opacity",
           transitionDuration: "300ms, 200ms",
         }}
       />
-      {navLinks.map((l) => (
+      {links.map((l) => (
         <Link
           key={l.href}
           href={l.href}
+          aria-current={l.active ? "page" : undefined}
           onMouseEnter={show}
           onFocus={show}
-          className="relative flex h-10 items-center rounded-full px-4 text-[16px] leading-none font-semibold tracking-[-0.01em]"
+          className={clsx(
+            "relative flex h-10 items-center rounded-full px-4 text-[16px] leading-none font-semibold tracking-[-0.01em]",
+            l.active && !hl.on && "bg-butter",
+          )}
         >
           {l.label}
         </Link>
@@ -228,20 +354,115 @@ function NavPill() {
   );
 }
 
-const menuLinks = [...navLinks, { label: "Log in", href: "/login" }];
+/**
+ * Logged-out auth links carry the page you are on as ?next= (the auth pages
+ * validate it and send you back after a demo login), so "Log in" from a course
+ * or checkout page lands you right back there. Home and the auth pages
+ * themselves are not worth returning to. Sign-up only returns to buying pages.
+ */
+function authLinks(pathname: string | null, returnHere = true) {
+  const back =
+    returnHere && pathname && pathname !== "/" && !/^\/(login|signup|forgot-password)(\/|$)/.test(pathname)
+      ? pathname
+      : null;
+  const q = back ? `?next=${encodeURIComponent(back)}` : "";
+  return {
+    login: `/login${q}`,
+    signup: back && /^\/(courses\/[^/]+|checkout\/[^/]+)/.test(back) ? `/signup${q}` : "/signup",
+  };
+}
+
+/** Logged-in header CTA per demo role (`short`: the compact pill below 1024px, where a
+ *  long label would eat the 20px right gutter at 375px; `tiny`: below 350px, so
+ *  lockup + CTA + menu button still fit a 320px phone). */
+const ROLE_CTA: Record<Role, { label: string; short: string; tiny: string; href: string }> = {
+  student: { label: "Continue learning", short: "Dashboard", tiny: "Learn", href: "/dashboard" },
+  tutor: { label: "Open studio", short: "Studio", tiny: "Studio", href: "/tutor" },
+  admin: { label: "Control room", short: "Admin", tiny: "Admin", href: "/admin" },
+};
+
+/** Compact-pill label that swaps to a shorter word below 350px. */
+function FitLabel({ label, tiny }: { label: string; tiny: string }) {
+  if (label === tiny) return <>{label}</>;
+  return (
+    <>
+      <span className="max-[349px]:hidden">{label}</span>
+      <span className="min-[350px]:hidden">{tiny}</span>
+    </>
+  );
+}
+
+/** Desktop avatar menu (logged in): role area, a couple of shortcuts, log out. */
+function AccountButton() {
+  const me = useDemoUser();
+  const { logout } = useDemoAuth();
+  if (!me) return null;
+  const extra: MenuItem[] =
+    me.role === "student"
+      ? [
+          { label: "My courses", icon: "book", href: "/dashboard/courses" },
+          { label: "Wishlist", icon: "heart", href: "/dashboard/wishlist" },
+        ]
+      : me.role === "tutor"
+        ? [{ label: "New course", icon: "plus", href: "/tutor/courses/new" }]
+        : [{ label: "Review queue", icon: "layers", href: "/admin/courses" }];
+  return (
+    <DropdownMenu
+      label={`Account menu for ${me.profile.name}`}
+      width={240}
+      triggerClassName="hover-icon grid size-[52px] place-items-center rounded-full bg-white shadow-soft"
+      trigger={<Avatar name={me.profile.name} src={me.profile.avatar} tone={me.profile.tone} size="md" decorative />}
+      header={
+        <div className="min-w-0">
+          <p className="truncate text-[14px] font-bold">{me.profile.name}</p>
+          <p className="truncate text-[12px] text-ink/55">Demo {me.meta.label.toLowerCase()} account</p>
+        </div>
+      }
+      items={[
+        { label: me.meta.area, icon: "home", href: me.meta.href },
+        ...extra,
+        { divider: true },
+        { label: "Log out", icon: "logout", danger: true, onSelect: () => logout({ redirectTo: "/" }) },
+      ]}
+    />
+  );
+}
 
 /**
  * `light`: white logo letters while the header sits over a dark / saturated
  * field at the top of the page (the compact white-pill state always uses the
  * ink logo). The coming-soon pages pass their field's `dark` flag.
+ * `loginNext={false}`: drop the ?next=<this page> return trip from Log in / Sign up
+ * (404 pages: returning the visitor to a broken URL after logging in is pointless).
  */
-export function Header({ light = false }: { light?: boolean } = {}) {
+export function Header({
+  light = false,
+  loginNext = true,
+}: { light?: boolean; loginNext?: boolean } = {}) {
   const [hidden, setHidden] = useState(false);
   const [compact, setCompact] = useState(false);
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLSpanElement>(null);
+  const warm = useWarmBehind(ctaRef, headerRef);
+  const [q, setQ] = useState("");
   const router = useTransitionRouter();
+  // Demo session: null during SSR/hydration (the pre-paint data-session hint hides
+  // the logged-out CTAs meanwhile), then the account state swaps in.
+  const me = useDemoUser();
+  const { logout } = useDemoAuth();
+  const cta = me ? ROLE_CTA[me.role] : null;
+  const pathname = usePathname();
+  const auth = authLinks(pathname, loginNext);
+  const nav = navFor(pathname);
+  const links: { label: string; href: string; active?: boolean }[] = me
+    ? [...nav, { label: me.role === "student" ? "Dashboard" : me.role === "tutor" ? "Studio" : "Control room", href: me.meta.href }]
+    : [...nav, { label: "Log in", href: auth.login }];
+  useEffect(() => {
+    syncSessionHint();
+  }, [me]);
 
   // Hide on scroll down, show on scroll up. The logo gets its white pill as soon as
   // the page moves (24px), so it is never unbacked over hero content (R1-09).
@@ -309,10 +530,18 @@ export function Header({ light = false }: { light?: boolean } = {}) {
 
   return (
     <>
+      {/* First focusable element on every public page: jump past the header (WCAG 2.4.1). */}
+      <a
+        href="#main"
+        className="fixed top-3 left-3 z-[60] -translate-y-[calc(100%+24px)] rounded-full bg-ink px-5 py-3 text-[15px] leading-none font-bold text-cream shadow-soft transition-transform duration-200 ease-ui focus:translate-y-0 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-blue"
+      >
+        Skip to content
+      </a>
       <header
+        ref={headerRef}
         onFocusCapture={() => setHidden(false)}
         className={clsx(
-          "fixed inset-x-0 top-0 z-50 pt-3 transition-transform duration-500 ease-ui md:pt-5",
+          "fixed inset-x-0 top-0 z-50 pt-[max(12px,var(--sat))] transition-transform duration-500 ease-ui md:pt-[max(20px,var(--sat))]",
           hidden && !open && "-translate-y-[140%]",
         )}
       >
@@ -321,36 +550,52 @@ export function Header({ light = false }: { light?: boolean } = {}) {
 
           {/* Desktop */}
           <div className="hidden items-center gap-2 lg:flex">
-            <NavPill />
-            <ArrowButton href="/signup" variant="flame">
-              Start free
-            </ArrowButton>
-            <Link
-              href="/login"
-              aria-label="Log in"
-              className="hover-icon grid size-[52px] place-items-center rounded-full bg-white text-ink shadow-soft"
-            >
-              <UserGlyph />
-            </Link>
+            <NavPill links={nav} />
+            {cta ? (
+              <>
+                <ArrowButton href={cta.href} variant="flame">
+                  {cta.label}
+                </ArrowButton>
+                <AccountButton />
+              </>
+            ) : (
+              <>
+                <span data-session-out="" className="flex">
+                  <ArrowButton href={auth.signup} variant="flame">
+                    Start free
+                  </ArrowButton>
+                </span>
+                <Link
+                  href={auth.login}
+                  aria-label="Log in"
+                  data-session-out=""
+                  className="hover-icon grid size-[52px] place-items-center rounded-full bg-white text-ink shadow-soft"
+                >
+                  <UserGlyph />
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile + tablet */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-2 phone-s:gap-1.5 lg:hidden">
             <span
+              ref={ctaRef}
               inert={open}
+              data-session-out={cta ? undefined : ""}
               className={clsx(
                 "transition-[opacity] duration-300 ease-ui",
                 open && "pointer-events-none opacity-0",
               )}
             >
-              <ArrowButton href="/signup" variant="flame" compact>
-                Start free
+              <ArrowButton href={cta?.href ?? auth.signup} variant={warm ? "paper" : "flame"} compact>
+                {cta ? <FitLabel label={cta.short} tiny={cta.tiny} /> : <FitLabel label="Start free" tiny="Start" />}
               </ArrowButton>
             </span>
             <button
               ref={toggleRef}
               type="button"
-              className="tap relative grid size-12 place-items-center rounded-full bg-white shadow-soft"
+              className="tap relative grid size-12 place-items-center rounded-full bg-white shadow-soft phone-s:size-11"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               aria-controls="mobile-menu"
@@ -407,17 +652,55 @@ export function Header({ light = false }: { light?: boolean } = {}) {
             flip
           />
         </div>
-        <div className="relative container-x flex h-full flex-col pt-[104px] pb-8 md:pt-[124px]">
-          <nav aria-label="Mobile" className="flex flex-col items-start gap-3">
-            {menuLinks.map((l, i) => (
+        <div className="relative h-full overflow-y-auto overscroll-contain" data-lenis-prevent="">
+        <div className="container-x flex min-h-full flex-col pt-[calc(96px+var(--sat))] pb-[max(32px,calc(var(--sab)+16px))] md:pt-[124px]">
+          <form
+            role="search"
+            className={clsx(
+              "relative transition-[translate,opacity] duration-[600ms] ease-expo",
+              open ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
+            )}
+            style={{ transitionDelay: open ? "100ms" : "0ms" }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const v = q.trim();
+              setOpen(false);
+              requestAnimationFrame(() => requestAnimationFrame(() => router.push(v ? `/courses?q=${encodeURIComponent(v)}` : "/courses")));
+            }}
+          >
+            <svg viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink/50" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" strokeLinecap="round" />
+            </svg>
+            <input
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search courses"
+              aria-label="Search courses"
+              className="h-12 w-full rounded-full bg-white pr-4 pl-12 text-base font-medium text-ink shadow-soft placeholder:text-ink/45 focus:ring-2 focus:ring-blue focus:outline-none"
+            />
+          </form>
+          <div
+            className={clsx("transition-[translate,opacity] duration-[600ms] ease-expo", open ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0")}
+            style={{ transitionDelay: open ? "130ms" : "0ms" }}
+          >
+            <MenuCategories onGo={go} />
+          </div>
+          <nav aria-label="Mobile" className="mt-6 flex flex-col items-start gap-1">
+            {links.map((l, i) => (
               <Link
                 key={l.href}
                 ref={i === 0 ? firstLinkRef : undefined}
                 href={l.href}
+                aria-current={l.active ? "page" : undefined}
                 data-no-transition=""
                 onClick={(e) => go(e, l.href)}
                 className={clsx(
-                  "font-display text-[clamp(3rem,14vw,4.5rem)] leading-[0.95] text-ink uppercase transition-[translate,opacity,color] duration-[600ms] ease-expo active:text-flame",
+                  "flex min-h-12 items-center font-display text-[clamp(2.75rem,13vw,4.5rem)] leading-[0.95] uppercase transition-[translate,opacity,color] duration-[600ms] ease-expo active:text-flame",
+                  l.active ? "text-flame-deep" : "text-ink",
                   open
                     ? "translate-y-0 opacity-100"
                     : "translate-y-10 opacity-0",
@@ -430,25 +713,46 @@ export function Header({ light = false }: { light?: boolean } = {}) {
           </nav>
           <div
             className={clsx(
-              "mt-auto flex items-end justify-between gap-4 transition-[translate,opacity] duration-[600ms] ease-expo",
+              "mt-auto flex items-end justify-between gap-4 pt-8 transition-[translate,opacity] duration-[600ms] ease-expo",
               open ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
             )}
             style={{ transitionDelay: open ? "420ms" : "0ms" }}
           >
-            <div>
+            <div className="min-w-0">
+              {me && (
+                <div className="mb-4 flex items-center gap-3">
+                  <Avatar name={me.profile.name} src={me.profile.avatar} tone={me.profile.tone} size="md" decorative />
+                  <div className="min-w-0">
+                    <p className="truncate text-[16px] leading-tight font-bold">{me.profile.name}</p>
+                    <p className="truncate text-[13px] leading-tight font-semibold text-ink/60">Demo {me.meta.label.toLowerCase()} account</p>
+                  </div>
+                </div>
+              )}
               <p
                 className="mb-3 t-hand text-indigo"
                 style={{ transform: "rotate(-4deg)" }}
               >
-                the first video is on us
+                {me ? `hey ${me.profile.name.split(" ")[0].toLowerCase()}, welcome back` : "the first video is on us"}
               </p>
               <ArrowButton
-                href="/signup"
+                href={cta?.href ?? auth.signup}
                 variant="flame"
                 onClick={() => setOpen(false)}
               >
-                Start free
+                {cta?.label ?? "Start free"}
               </ArrowButton>
+              {me && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    logout();
+                  }}
+                  className="mt-2 flex min-h-11 items-center text-[15px] font-bold text-ink/70 underline-offset-4 active:text-flame"
+                >
+                  Log out
+                </button>
+              )}
             </div>
             <Mascot
               title=""
@@ -456,6 +760,7 @@ export function Header({ light = false }: { light?: boolean } = {}) {
               style={{ transform: "rotate(8deg)" }}
             />
           </div>
+        </div>
         </div>
       </div>
     </>

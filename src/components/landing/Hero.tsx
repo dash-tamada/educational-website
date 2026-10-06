@@ -231,7 +231,7 @@ export function Hero() {
       ref={root}
       aria-labelledby="hero-title"
       bottomRadius="var(--panel-radius)"
-      className="field overflow-clip rounded-b-panel bg-sun pt-28 pb-10 md:pt-[128px] md:pb-12"
+      className="field overflow-clip rounded-b-panel bg-sun pt-28 pb-10 md:pt-[128px] md:pb-12 land:pt-[84px]"
     >
       {/* Background: wavy blobs lag behind the page (offset 0 at the top). */}
       <Parallax
@@ -299,15 +299,17 @@ export function Hero() {
       <Parallax className="relative z-20" y={[0, -40]} {...range}>
         <div className="container-x flex flex-col items-center text-center">
           <div className="hero-eyebrow" data-enter="">
-            <Eyebrow tone="blue">
+            <Eyebrow tone="blue" className="phone-s:tracking-[0.01em] phone-s:whitespace-nowrap">
               <PlayGlyph />
-              First video of every course is free
+              {/* < 360px: the short form keeps the capsule on one line */}
+              <span className="phone-s:hidden">First video of every course is free</span>
+              <span className="hidden phone-s:inline">1st video of every course is free</span>
             </Eyebrow>
           </div>
 
           <h1
             id="hero-title"
-            className="hero-h1 mt-eyebrow t-display-xxl text-ink"
+            className="hero-h1 mt-eyebrow t-display-xxl text-ink land:text-[2.75rem]"
             data-enter=""
           >
             {/* Inline on phones (natural balanced flow), one composed line each from 640px. */}
@@ -323,7 +325,7 @@ export function Hero() {
           </h1>
 
           <p
-            className="hero-fade mt-sub max-w-[33rem] t-body-l text-ink/80"
+            className="hero-fade mt-sub max-w-[33rem] t-body-l text-ink/80 land:mt-3 land:max-w-[44rem]"
             data-enter=""
           >
             Bite-size video lessons, tests between modules and tutors
@@ -332,7 +334,7 @@ export function Hero() {
           </p>
 
           <div
-            className="hero-fade mt-cta flex flex-wrap items-center justify-center gap-x-7 gap-y-4"
+            className="hero-fade mt-cta flex flex-wrap items-center justify-center gap-x-7 gap-y-4 land:mt-5"
             data-enter=""
           >
             <ArrowButton href="/courses" bubble icon="play">
@@ -340,7 +342,7 @@ export function Hero() {
             </ArrowButton>
             <Link
               href="/#how"
-              className="group tap inline-flex items-center gap-1.5 t-hand-lg text-indigo"
+              className="group tap inline-flex min-h-11 items-center gap-1.5 t-hand-lg text-indigo"
               style={{ transform: "rotate(-4deg)" }}
             >
               <span className="link-draw">how does it work?</span>

@@ -90,25 +90,44 @@ export function HandNote({
   rotate = -8,
   write = true,
   large,
+  as: Tag = "p",
+  style,
 }: {
   children: React.ReactNode;
+  /** layout classes (absolute, top-[..], max-w-[..], hidden md:block) apply to the note itself */
   className?: string;
   rotate?: number;
   /** write-on reveal (R7); set false when a parent already animates it */
   write?: boolean;
   /** 30px "Step #n" size */
   large?: boolean;
+  /** element; use "span" inside inline content or another <p> (a <p> in a <p> is invalid HTML) */
+  as?: "p" | "span" | "div";
+  /** extra inline styles; the tilt is applied via `transform` unless you pass your own */
+  style?: React.CSSProperties;
 }) {
   return (
-    <p
+    <Tag
       data-reveal={write ? "write" : undefined}
-      className={clsx(large ? "t-hand-lg" : "t-hand", "text-indigo", className)}
-      style={{ transform: `rotate(${rotate}deg)` }}
+      className={clsx(large ? "t-hand-lg" : "t-hand", "text-indigo", Tag === "span" && "block", className)}
+      style={{ transform: `rotate(${rotate}deg)`, ...style }}
     >
       {children}
-    </p>
+    </Tag>
   );
 }
+
+/* Eyebrows and tags are always SMALL text: on these mid-luminance fills white
+   fails AA (hotpink 3.7:1, flame 3.5:1, green 2.8:1, lilac 3.2:1), so they use a
+   deeper fill (white text) or ink text instead. */
+const SMALL_SAFE: Partial<Record<Tone, string>> = {
+  hotpink: "bg-hotpink-deep text-white",
+  flame: "bg-flame-deep text-white",
+  tomato: "bg-flame-deep text-white",
+  green: "bg-green text-ink",
+  lilac: "bg-lilac text-ink",
+};
+const smallTone = (tone: Tone) => SMALL_SAFE[tone] ?? clsx(toneBg[tone], toneText[tone]);
 
 /* ----------------------------------------------------------------------------- Eyebrow */
 /**
@@ -129,8 +148,7 @@ export function Eyebrow({
     <span
       className={clsx(
         "t-eyebrow inline-flex items-center gap-1.5 rounded-full px-3 py-[7px]",
-        toneBg[tone],
-        toneText[tone],
+        smallTone(tone),
         className,
       )}
     >
@@ -154,8 +172,7 @@ export function Tag({
     <span
       className={clsx(
         "t-tag inline-flex items-center gap-1 rounded-full px-2 py-[5px] whitespace-nowrap",
-        toneBg[tone],
-        toneText[tone],
+        smallTone(tone),
         className,
       )}
     >

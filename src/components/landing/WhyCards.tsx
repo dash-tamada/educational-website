@@ -5,13 +5,19 @@ import clsx from "clsx";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { BlobSet, Eyebrow } from "@/components/decor/Bits";
 import { Cloud } from "@/components/decor/Cloud";
+import { ScrollIndicator } from "./ScrollIndicator";
 
 /* =============================================================================
    WhyCards: Maxima service cards on a mint inset panel.
    >= 1024px with motion: an elastic card STACK (R4). The panel is tall, its stage
    is CSS-sticky (no GSAP pin, so no pin-spacer shifts other sections' triggers),
    and scrolling flings the top card up-left while the next one settles.
-   Below 1024px / reduced motion: the three cards sit in a zigzag column / row and
+   Phones (< 640px) with motion: a swipeable DECK (Maxima mobile). The cards stack
+   in one grid cell, the next ones peek behind; drag (or tap, or the Next button)
+   flings the top card away up-left/right, the next one settles elastically and
+   the flung card tucks in at the back, so the deck never runs out. Dots below.
+   Phones with reduced motion: a plain snap row.
+   640-1023px / reduced motion: the three cards sit in a zigzag column / row and
    rise in with the shared R6 card reveal. Hover H7 everywhere (fine pointer).
    ============================================================================= */
 
@@ -58,7 +64,7 @@ const cards: Card[] = [
 /** 120px flat geometric icons (no outlines), Maxima style. */
 function ServiceIcon({ name }: { name: Card["icon"] }) {
   return (
-    <svg viewBox="0 0 120 120" className="size-24 md:size-[120px]" aria-hidden>
+    <svg viewBox="0 0 120 120" className="size-[72px] sm:size-24 md:size-[120px]" aria-hidden>
       {name === "pace" && (
         <>
           <circle cx="60" cy="62" r="44" fill="#FFCF3F" />
@@ -99,8 +105,19 @@ function ServiceIcon({ name }: { name: Card["icon"] }) {
   );
 }
 
+const MQ_DECK = "(max-width: 639.98px) and (prefers-reduced-motion: no-preference)";
+/** Deck slots behind the top card: extra tilt, drop and scale per depth. */
+const SLOT_ROT = [0, 5, -5];
+const slot = (depth: number) => ({
+  x: 0,
+  y: Math.min(depth, 2) * 16,
+  rotate: SLOT_ROT[Math.min(depth, 2)] ?? 0,
+  scale: 1 - Math.min(depth, 2) * 0.045,
+});
+
 export function WhyCards() {
   const root = useRef<HTMLElement>(null);
+  const live = useRef<HTMLParagraphElement>(null);
 
   useGSAP(
     () => {
@@ -224,6 +241,126 @@ export function WhyCards() {
           };
         },
       );
+
+      // Phones: the swipe deck.
+      mm.add(MQ_DECK, () => {
+        const el = root.current!;
+        const deckEl = el.querySelector<HTMLElement>(".why-deck");
+        const nextBtn = el.querySelector<HTMLButtonElement>(".why-next");
+        const layers = gsap.utils.toArray<HTMLElement>(".why-layer", el);
+        const dots = gsap.utils.toArray<HTMLElement>(".why-mdot", el);
+        const n = layers.length;
+        if (!deckEl || n < 2) return;
+        let order = layers.map((_, i) => i); // order[0] = the card on top
+        let busy = false;
+
+        const layout = (animate: boolean, except?: HTMLElement) => {
+          order.forEach((idx, depth) => {
+            const card = layers[idx];
+            card.style.zIndex = String(n - depth);
+            if (card === except) return;
+            if (animate)
+              gsap.to(card, {
+                ...slot(depth),
+                duration: depth === 0 ? 0.9 : 0.6,
+                ease: depth === 0 ? "elastic.out(1, 0.75)" : "power3.out",
+                overwrite: "auto",
+              });
+            else gsap.set(card, slot(depth));
+          });
+          dots.forEach((d, k) => d.toggleAttribute("data-active", k === order[0]));
+        };
+        layout(false);
+
+        const fling = (dir: 1 | -1) => {
+          if (busy) return;
+          busy = true;
+          const top = layers[order[0]];
+          order = [...order.slice(1), order[0]];
+          // the next card settles (elastic) while the flung one leaves
+          layout(true, top);
+          top.style.zIndex = String(n + 1);
+          if (live.current) {
+            const t = layers[order[0]].querySelector("h3")?.textContent;
+            live.current.textContent = `Card ${order[0] + 1} of ${n}${t ? `: ${t}` : ""}`;
+          }
+          gsap
+            .timeline({ onComplete: () => void (busy = false) })
+            .to(top, {
+              x: dir * window.innerWidth * 0.85,
+              y: -window.innerHeight * 0.32,
+              rotate: dir * 18,
+              duration: 0.42,
+              ease: "power2.in",
+              overwrite: "auto",
+            })
+            // ...then tucks in at the back of the deck (under the others)
+            .set(top, { zIndex: 1 })
+            .to(top, { ...slot(n - 1), duration: 0.55, ease: "power3.out" });
+        };
+
+        // Drag: horizontal only (touch-action: pan-y keeps vertical page scroll native).
+        let drag: { id: number; x: number; y: number; t: number; dx: number; moved: boolean } | null = null;
+        const topCard = () => layers[order[0]];
+        const onDown = (e: PointerEvent) => {
+          if (busy || (e.pointerType === "mouse" && e.button !== 0)) return;
+          if (!topCard().contains(e.target as Node)) return;
+          drag = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, moved: false };
+        };
+        const onMove = (e: PointerEvent) => {
+          if (!drag || e.pointerId !== drag.id) return;
+          const dx = e.clientX - drag.x;
+          const dy = e.clientY - drag.y;
+          if (!drag.moved) {
+            if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+              drag = null;
+              return;
+            }
+            if (Math.abs(dx) < 6) return;
+            drag.moved = true;
+            try {
+              deckEl.setPointerCapture(e.pointerId);
+            } catch {}
+          }
+          drag.dx = dx;
+          gsap.set(topCard(), { x: dx, y: Math.abs(dx) * -0.08, rotate: dx * 0.06, overwrite: "auto" });
+        };
+        const onUp = (e: PointerEvent) => {
+          if (!drag || e.pointerId !== drag.id) return;
+          const { dx, moved, t } = drag;
+          drag = null;
+          const dt = Math.max(1, performance.now() - t);
+          if (!moved) {
+            if (dt < 400) fling(-1); // tap: next card
+            return;
+          }
+          if (Math.abs(dx) > 90 || Math.abs(dx / dt) > 0.6) fling(dx > 0 ? 1 : -1);
+          else gsap.to(topCard(), { ...slot(0), duration: 0.6, ease: "elastic.out(1, 0.6)", overwrite: "auto" });
+        };
+        const onCancel = () => {
+          if (drag?.moved) gsap.to(topCard(), { ...slot(0), duration: 0.5, ease: "power3.out", overwrite: "auto" });
+          drag = null;
+        };
+        const onNext = () => fling(-1);
+        deckEl.addEventListener("pointerdown", onDown);
+        deckEl.addEventListener("pointermove", onMove);
+        deckEl.addEventListener("pointerup", onUp);
+        deckEl.addEventListener("pointercancel", onCancel);
+        nextBtn?.addEventListener("click", onNext);
+        return () => {
+          deckEl.removeEventListener("pointerdown", onDown);
+          deckEl.removeEventListener("pointermove", onMove);
+          deckEl.removeEventListener("pointerup", onUp);
+          deckEl.removeEventListener("pointercancel", onCancel);
+          nextBtn?.removeEventListener("click", onNext);
+          gsap.killTweensOf(layers);
+          gsap.set(layers, { clearProps: "transform" });
+          layers.forEach((l, i) => {
+            l.style.zIndex = String(n - i);
+          });
+          dots.forEach((d) => d.removeAttribute("data-active"));
+        };
+      });
       return () => mm.revert();
     },
     { scope: root },
@@ -312,17 +449,25 @@ export function WhyCards() {
               </div>
             </div>
 
+            <div className="min-w-0">
             <ul
+              id="why-row"
+              aria-label="Why Tamada"
               className={clsx(
-                "relative mx-auto grid w-full max-w-[400px] gap-8 md:max-w-[640px] lg:max-w-none lg:grid-cols-3 lg:gap-6",
+                "why-deck relative mx-auto grid w-full max-w-[400px] gap-8 md:max-w-[640px] lg:max-w-none lg:grid-cols-3 lg:gap-6",
+                // phones: deck (all cards in one cell) / reduced motion: snap row
+                "max-sm:motion-safe:max-w-[340px] max-sm:motion-safe:touch-pan-y max-sm:motion-safe:select-none",
+                "max-sm:motion-reduce:h-scroller max-sm:motion-reduce:max-w-none max-sm:motion-reduce:py-6",
                 "lg:motion-safe:mx-0 lg:motion-safe:block lg:motion-safe:h-[440px] lg:motion-safe:w-[400px]",
               )}
+              style={{ "--gutter": "var(--gutter-in-panel)" } as React.CSSProperties}
             >
               {cards.map((c, i) => (
                 <li
                   key={c.title}
                   className={clsx(
                     "why-layer relative md:w-[440px] lg:w-auto",
+                    "max-sm:motion-safe:[grid-area:1/1] max-sm:motion-reduce:w-[min(80vw,320px)]",
                     i === 1 ? "md:justify-self-end" : "md:justify-self-start",
                     "lg:motion-safe:absolute lg:motion-safe:inset-0",
                   )}
@@ -344,7 +489,7 @@ export function WhyCards() {
                       data-reveal="card"
                       data-reveal-delay={String(i * 0.08)}
                       className={clsx(
-                        "relative flex h-full flex-col items-center rounded-card-lg px-8 pt-11 pb-10 text-center",
+                        "relative flex h-full flex-col items-center rounded-card-lg px-7 py-7 text-center sm:px-8 sm:pt-11 sm:pb-10",
                         "transition-shadow duration-[400ms] ease-ui group-hf:shadow-lift",
                         "lg:motion-safe:justify-center lg:motion-safe:rounded-[36px]",
                         c.bg,
@@ -359,12 +504,12 @@ export function WhyCards() {
                         >
                           {c.title}
                         </h3>
-                        <div className="my-6 group-hf:animate-wiggle">
+                        <div className="my-5 group-hf:animate-wiggle sm:my-6">
                           <ServiceIcon name={c.icon} />
                         </div>
                         <p
                           className={clsx(
-                            "max-w-[30ch] text-[17px] leading-[1.38] font-medium",
+                            "max-w-[30ch] text-base leading-[1.4] font-medium sm:text-[17px] sm:leading-[1.38]",
                             c.bodyColor,
                           )}
                         >
@@ -376,6 +521,32 @@ export function WhyCards() {
                 </li>
               ))}
             </ul>
+            {/* phone deck controls: dots + a 44px Next (tap/keyboard alternative to swiping) */}
+            <div className="mt-9 hidden items-center justify-center gap-5 max-sm:motion-safe:flex">
+              <div aria-hidden className="flex items-center gap-2">
+                {cards.map((c, i) => (
+                  <span
+                    key={c.title}
+                    data-active={i === 0 ? "" : undefined}
+                    className="why-mdot h-2 w-2 rounded-full bg-forest/25 transition-[width,background-color] duration-300 ease-ui data-[active]:w-6 data-[active]:bg-forest"
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="why-next tap grid size-11 place-items-center rounded-full bg-forest text-mint"
+                aria-label="Show the next card"
+              >
+                <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden>
+                  <path d="M4.5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <p ref={live} aria-live="polite" className="sr-only" />
+            </div>
+            <div className="mt-2 hidden max-sm:motion-reduce:block">
+              <ScrollIndicator target="why-row" kind="dots" count={cards.length} tone="forest" fade />
+            </div>
+            </div>
           </div>
         </div>
       </div>
