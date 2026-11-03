@@ -1,24 +1,32 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import clsx from "clsx";
-import { Button, Icon, Skeleton, StatusPill } from "@/components/app";
-import { ArrowButton, Eyebrow, HighlightBox, Sparkle } from "@/components/decor/Bits";
-import { BlockBuddy } from "@/components/decor/BlockBuddy";
-import { Mascot } from "@/components/decor/Mascot";
+import { Skeleton } from "@/components/app";
+import { ArrowLink, Button, Eyebrow, GridLines, RedWords } from "@/components/editorial";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { armEnter, markEntered, onPageReady, prefersReducedMotion } from "@/lib/motion";
 import { useDb, useStoreHydrated } from "@/lib/demo/store";
 import { useDemoSession } from "@/lib/demo/session-client";
 import { roleHome } from "@/lib/demo/session";
-import { toneBg } from "@/lib/landing-data";
 import { cropSrc } from "@/lib/img";
-import { formatDate, formatINR, getCourseProgress, getFirstFreeItem, getTutor, getOrder, getUser, isEnrolled, type OrderRow } from "@/lib/mock";
-import { firstName } from "@/lib/mock/extra/catalog";
+import { media } from "@/lib/media";
+import { COURSE_PAGE, SUCCESS } from "@/lib/content/course";
+import { formatDate, formatINR, getCertificates, getCourseProgress, getFirstFreeItem, getOrder, getTutor, getUser, isEnrolled, type OrderRow } from "@/lib/mock";
 import { LoginPrompt, StateCard } from "./CheckoutGate";
+import { CertificateTeaser } from "./course/Certificate";
+import { isFlagship } from "./course/state";
+import { MonoTag } from "./course/ui";
 
-/**
- * /checkout/success?order=<id>: reads the order from the demo store.
- * Only the buyer (or an admin) sees the receipt; everyone else gets a gate.
- */
+/* =============================================================================
+   /checkout/success?order=<id>: the "premiere" moment. A dark theatre page: the
+   order slate, a giant Anton line ("YOU'RE IN."), the red CTA into module 01 and
+   the certificate teaser with the buyer's name on it; then the three next steps
+   and a ruled receipt. Failed / pending / refunded / granted orders get honest
+   copy (never a celebration for a payment that failed). Only the buyer (or an
+   admin) sees the receipt; everyone else gets a gate.
+   ============================================================================= */
 export function CheckoutSuccess({ orderId }: { orderId: string | null }) {
   const db = useDb();
   const hydrated = useStoreHydrated();
@@ -28,26 +36,21 @@ export function CheckoutSuccess({ orderId }: { orderId: string | null }) {
 
   if (!session) {
     return (
-      <Narrow>
-        <LoginPrompt
-          as="h1"
-          next={next}
-          title="Log in to see your order."
-          body="Receipts live inside the account that paid. In this demo, Priya's student account is one click away."
-        />
-      </Narrow>
+      <Gate>
+        <LoginPrompt as="h1" next={next} title="Log in to see your order." body="Receipts live inside the account that paid. In this demo, Priya's student account is one click away." />
+      </Gate>
     );
   }
 
   if (!order && !hydrated) {
     return (
-      <div className="container-x pb-section" aria-busy="true" aria-label="Loading your order">
-        <Skeleton className="h-[360px] rounded-panel" />
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-64 rounded-card-lg" />
-          <Skeleton className="h-64 rounded-card-lg" />
+      <Gate>
+        <div aria-busy="true" aria-label="Loading your order">
+          <Skeleton className="h-3 w-48 opacity-30" />
+          <Skeleton className="mt-8 h-[clamp(5rem,12vw,11rem)] w-full max-w-[40rem] opacity-20" />
+          <Skeleton className="mt-8 h-12 w-64 opacity-20" />
         </div>
-      </div>
+      </Gate>
     );
   }
 
@@ -56,25 +59,28 @@ export function CheckoutSuccess({ orderId }: { orderId: string | null }) {
 
   if (!order || !order.course) {
     return (
-      <Narrow>
+      <Gate>
         <StateCard
           as="h1"
+          slate="Order not found"
           title="We couldn't find that order."
           body={
             orderId
               ? "The link may be from another browser (demo orders live in this browser only), or the demo data was reset."
-              : "This page needs an order link. You land here right after paying for a course."
+              : "This page needs an order link. You land here right after paying for the course."
           }
           action={
             <>
-              <Button href="/courses">Browse courses</Button>
-              <Button href={ordersHref} variant="secondary">
+              <Button href="/courses/ai-filmmaking" arrow>
+                See the course
+              </Button>
+              <Button href={ordersHref} variant="outline">
                 {ordersLabel}
               </Button>
             </>
           }
         />
-      </Narrow>
+      </Gate>
     );
   }
 
@@ -82,31 +88,40 @@ export function CheckoutSuccess({ orderId }: { orderId: string | null }) {
   if (!mine && session.role !== "admin") {
     const me = getUser(session.userId, db);
     return (
-      <Narrow>
+      <Gate>
         <StateCard
           as="h1"
-          art="buddy"
-          tone="cyan"
-          title="This order belongs to another account."
+          slate="Another account"
+          title="This order belongs to someone else."
           body={`You're signed in as ${me?.name ?? "someone else"}. Receipts are only shown to the person who paid. Switch accounts to see it, or head to your own orders.`}
           action={
             <>
-              <Button href="/courses">Browse courses</Button>
-              <Button href={ordersHref} variant="secondary">
+              <Button href="/courses/ai-filmmaking" arrow>
+                See the course
+              </Button>
+              <Button href={ordersHref} variant="outline">
                 {ordersLabel}
               </Button>
             </>
           }
         />
-      </Narrow>
+      </Gate>
     );
   }
 
   return mine ? <BuyerView order={order} userId={session.userId} /> : <AdminView order={order} />;
 }
 
-function Narrow({ children }: { children: React.ReactNode }) {
-  return <div className="container-x pb-section">{<div className="mx-auto max-w-[760px]">{children}</div>}</div>;
+/** Dark, flush page frame for the gates (the route opens on a dark ground). */
+function Gate({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="theatre relative min-h-[100svh] overflow-hidden">
+      <GridLines stops={[50, 75]} className="top-[calc(var(--header-offset)+var(--sat))] max-lg:hidden" />
+      <div className="container-wide relative flex min-h-[100svh] flex-col justify-center pt-[calc(var(--header-offset)+var(--sat)+40px)] pb-section">
+        <div className="max-w-[46rem]">{children}</div>
+      </div>
+    </section>
+  );
 }
 
 /* ----------------------------------------------------------------------------- order kind */
@@ -121,239 +136,195 @@ function orderKind(order: OrderRow): OrderKind {
   return "paid";
 }
 
-const HERO_BG: Record<OrderKind, string> = {
-  paid: "bg-sun",
-  grant: "bg-sun",
-  refunded: "bg-cyan",
-  failed: "bg-blush",
-  pending: "bg-butter",
+const SLATE: Record<OrderKind, string> = {
+  paid: "Order confirmed",
+  grant: "A gift from the Tamada team",
+  refunded: "Order refunded",
+  failed: "Payment didn't go through",
+  pending: "Waiting on the bank",
 };
 
 /* ----------------------------------------------------------------------------- buyer */
 function BuyerView({ order, userId }: { order: OrderRow; userId: string }) {
   const db = useDb();
+  const root = useRef<HTMLElement>(null);
   const course = order.course!;
   const tutor = getTutor(course.tutorId, db);
+  const buyer = getUser(userId, db);
   const kind = orderKind(order);
   const unlocked = (kind === "paid" || kind === "grant") && isEnrolled(userId, course.id, db);
-  // only ever the viewer's own progress (this is the buyer)
   const progress = getCourseProgress(userId, course.id, db);
   const free = getFirstFreeItem(course.id, db);
   const start = progress.resumeItemId ?? free?.id;
   const learnHref = `/learn/${course.slug}${start ? `/${start}` : ""}`;
   const freeHref = `/learn/${course.slug}${free ? `/${free.id}` : ""}`;
-  const first = firstName(tutor?.name);
-  const startLabel = progress.percent > 0 ? "Continue learning" : "Start learning";
+  const cert = getCertificates(userId, db).find((c) => c.courseId === course.id);
+  const started = progress.percent > 0;
 
-  const hero = (() => {
+  useGSAP(
+    () => {
+      const el = root.current;
+      if (!el || prefersReducedMotion()) return;
+      const q = gsap.utils.selector(el);
+      return onPageReady(() => {
+        armEnter(el);
+        gsap
+          .timeline({ defaults: { ease: "expo.out" } })
+          .fromTo(q("[data-sx-line]"), { autoAlpha: 0, yPercent: 105 }, { autoAlpha: 1, yPercent: 0, duration: 1.3, stagger: 0.1 }, 0.1)
+          .fromTo(q("[data-sx-fade]"), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.07 }, 0.45)
+          .fromTo(q("[data-sx-cert]"), { autoAlpha: 0, y: 48 }, { autoAlpha: 1, y: 0, duration: 1.4 }, 0.5)
+          .call(() => markEntered(q("[data-enter]")));
+      });
+    },
+    { scope: root },
+  );
+
+  const hero = ((): { lines: string[]; red: string[]; body: string; primary: { href: string; label: string }; secondary: { href: string; label: string } } => {
     switch (kind) {
       case "refunded":
         return {
-          eyebrow: { tone: "blue" as const, icon: "refresh", text: "Order refunded" },
-          title: (
-            <>
-              All <HighlightBox tone="hotpink">sorted.</HighlightBox>
-            </>
-          ),
-          body: `This order was refunded${order.refundedAt ? ` on ${formatDate(order.refundedAt, "medium")}` : ""}, so ${course.title} is locked again. The first video is still free whenever you want it.`,
-          actions: (
-            <>
-              <ArrowButton href={`/courses/${course.slug}`} variant="ink">
-                Back to the course
-              </ArrowButton>
-              <Button href="/dashboard/orders" variant="secondary" size="lg">
-                My orders
-              </Button>
-            </>
-          ),
+          lines: ["All", "sorted."],
+          red: ["sorted"],
+          body: `This order was refunded${order.refundedAt ? ` on ${formatDate(order.refundedAt, "medium")}` : ""}, so ${course.title} is locked again. The first lesson stays free whenever you want it.`,
+          primary: { href: `/courses/${course.slug}`, label: "Back to the course" },
+          secondary: { href: "/dashboard/orders", label: "My orders" },
         };
       case "failed":
         return {
-          eyebrow: { tone: "flame" as const, icon: "alert", text: "Payment didn't go through" },
-          title: (
-            <>
-              Not this <HighlightBox tone="sun">time.</HighlightBox>
-            </>
-          ),
-          body: `No money moved and nothing was charged. ${course.title} is still locked, but you can try again in a few seconds, and the first video stays free either way.`,
-          actions: (
-            <>
-              <ArrowButton href={`/checkout/${course.slug}`} variant="ink">
-                Try again
-              </ArrowButton>
-              {free && (
-                <Button href={freeHref} variant="secondary" size="lg" icon="play">
-                  Watch the free video
-                </Button>
-              )}
-            </>
-          ),
+          lines: ["Not this", "time."],
+          red: ["time"],
+          body: `No money moved and nothing was charged. ${course.title} is still locked; try again in a few seconds. The first lesson stays free either way.`,
+          primary: { href: `/checkout/${course.slug}`, label: "Try again" },
+          secondary: { href: freeHref, label: "Watch free lesson" },
         };
       case "pending":
         return {
-          eyebrow: { tone: "blue" as const, icon: "clock", text: "Waiting on the bank" },
-          title: (
-            <>
-              Almost <HighlightBox tone="hotpink">there.</HighlightBox>
-            </>
-          ),
-          body: `Your bank hasn't confirmed this payment yet. Most clear in a few minutes. ${course.title} unlocks the moment it does, and if it fails, no money moves.`,
-          actions: (
-            <>
-              <ArrowButton href="/dashboard/orders" variant="ink">
-                Check my orders
-              </ArrowButton>
-              {free && (
-                <Button href={freeHref} variant="secondary" size="lg" icon="play">
-                  Watch the free video
-                </Button>
-              )}
-            </>
-          ),
+          lines: ["Almost", "there."],
+          red: ["there"],
+          body: `Your bank hasn't confirmed this payment yet. Most clear in a few minutes. ${course.title} unlocks the moment it does; if it fails, no money moves.`,
+          primary: { href: "/dashboard/orders", label: "Check my orders" },
+          secondary: { href: freeHref, label: "Watch free lesson" },
         };
       case "grant":
         return {
-          eyebrow: { tone: "blue" as const, icon: "sparkles", text: "A gift from the Tamada team" },
-          title: (
-            <>
-              It&apos;s <HighlightBox tone="hotpink">yours.</HighlightBox>
-            </>
-          ),
-          body: `An admin gave you full access to ${course.title}. No payment, every lesson and tiny test, yours for life.`,
-          actions: (
-            <>
-              <ArrowButton href={unlocked ? learnHref : `/courses/${course.slug}`} variant="ink" icon={unlocked ? "play" : undefined}>
-                {unlocked ? startLabel : "Course page"}
-              </ArrowButton>
-              <Button href="/dashboard" variant="secondary" size="lg">
-                Go to my dashboard
-              </Button>
-            </>
-          ),
+          lines: ["It's", "yours."],
+          red: ["yours"],
+          body: `An admin gave you full access to ${course.title}. No payment: every lesson and checkpoint, yours for life.`,
+          primary: { href: unlocked ? learnHref : `/courses/${course.slug}`, label: unlocked ? (started ? "Continue learning" : "Start module 01") : "Course page" },
+          secondary: { href: "/dashboard", label: "Go to my dashboard" },
         };
       default:
         return {
-          eyebrow: { tone: "blue" as const, icon: "check", text: "Order confirmed" },
-          title: (
-            <>
-              You&apos;re <HighlightBox tone="hotpink">in.</HighlightBox>
-            </>
-          ),
-          body: `${course.title} is unlocked. Every lesson, every tiny test, yours for life. Time to press play.`,
-          actions: (
-            <>
-              <ArrowButton href={unlocked ? learnHref : `/courses/${course.slug}`} variant="ink" icon={unlocked ? "play" : undefined}>
-                {unlocked ? startLabel : "Course page"}
-              </ArrowButton>
-              <Button href="/dashboard" variant="secondary" size="lg">
-                Go to my dashboard
-              </Button>
-            </>
-          ),
+          lines: ["You're", "in."],
+          red: ["in"],
+          body: `${course.title} is unlocked. Every lesson, every checkpoint, the capstone and the certificate: yours for life. Lights down. Press play.`,
+          primary: { href: unlocked ? learnHref : `/courses/${course.slug}`, label: unlocked ? (started ? "Continue learning" : "Start module 01") : "Course page" },
+          secondary: { href: "/dashboard", label: "Go to my dashboard" },
         };
     }
   })();
-
-  const strip =
-    kind === "refunded"
-      ? "Changed your mind again? The course is a click away."
-      : kind === "failed"
-        ? "Card or UPI acting up? Pick another method on the checkout page. It's all demo money anyway."
-        : kind === "pending"
-          ? "Still pending after an hour? It usually means the bank dropped it. You can safely try again."
-          : `Stuck on a lesson? Ask under the video and ${first} replies.`;
+  const celebrate = kind === "paid" || kind === "grant";
+  const poster = isFlagship(course) ? media(COURSE_PAGE.hero.poster) : { src: course.thumbnail, pos: undefined };
 
   return (
     <>
-      <section aria-labelledby="success-title" className={clsx("panel py-12 md:py-16 lg:py-20", HERO_BG[kind])}>
-        <Sparkle fill="#ff008c" className="pointer-events-none absolute top-10 left-[8%] hidden size-8 md:block" />
-        <Sparkle fill="#2668fd" className="pointer-events-none absolute right-[12%] bottom-12 size-10" />
-        <Sparkle fill="#ffffff" className="pointer-events-none absolute top-16 right-[30%] hidden size-6 md:block" />
-        <div className="container-x relative grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_auto]">
-          <div className="app-enter">
-            <Eyebrow tone={hero.eyebrow.tone}>
-              <Icon name={hero.eyebrow.icon} className="size-3.5" strokeWidth={2.8} />
-              {hero.eyebrow.text}
-            </Eyebrow>
-            <h1 id="success-title" className="t-display-l mt-eyebrow">
-              {hero.title}
+      <section ref={root} aria-labelledby="success-title" className="theatre relative isolate overflow-hidden">
+        {/* the poster, far back and dim: the house lights going down */}
+        <div aria-hidden className="absolute inset-0 -z-10">
+          <Image src={cropSrc(poster.src, 0.6)} alt="" fill preload sizes="100vw" className="object-cover opacity-25" style={{ objectPosition: poster.pos ?? "50% 50%" }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/85 to-ink/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink to-transparent" />
+        </div>
+        <GridLines stops={[50, 75]} className="top-[calc(var(--header-offset)+var(--sat))] max-lg:hidden" />
+        <div className="container-wide edit-grid relative min-h-[100svh] items-end gap-y-12 pt-[calc(var(--header-offset)+var(--sat)+40px)] pb-[clamp(40px,8vh,96px)]">
+          <div className="col-span-12 lg:col-span-7">
+            <p data-sx-fade="" data-enter="" className="t-timecode flex flex-wrap items-center gap-x-3 gap-y-2 text-cream/85">
+              <span aria-hidden className={clsx("block size-[7px]", kind === "failed" ? "bg-ash" : "animate-rec bg-red")} />
+              {SLATE[kind]} · {order.number}
+            </p>
+            <h1 id="success-title" className="mt-8 font-display text-[clamp(5.5rem,2rem+15vw,15rem)] leading-[0.8] uppercase">
+              {hero.lines.map((l) => (
+                <span key={l} className="line-mask">
+                  <span data-sx-line="" data-enter="" className="block">
+                    <RedWords text={l} red={hero.red} />
+                  </span>
+                </span>
+              ))}
             </h1>
-            <p className="t-body-l mt-sub max-w-[32rem]">{hero.body}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">{hero.actions}</div>
+            <p data-sx-fade="" data-enter="" className="t-body-l mt-8 max-w-[34rem] text-cream/80">
+              {hero.body}
+            </p>
+            <div data-sx-fade="" data-enter="" className="mt-10 flex flex-wrap items-center gap-3 [&>*]:max-sm:w-full">
+              <Button href={hero.primary.href} size="lg" arrow>
+                {hero.primary.label}
+              </Button>
+              <Button href={hero.secondary.href} variant="outline" size="lg">
+                {hero.secondary.label}
+              </Button>
+            </div>
           </div>
-          <div className="relative hidden items-end gap-2 md:flex" aria-hidden>
-            {kind === "failed" || kind === "pending" ? (
-              <>
-                <BlockBuddy body="#2668fd" head="#ffcf3f" className="w-16" />
-                <Mascot title="" className="w-32" style={{ transform: "rotate(-4deg)" }} />
-              </>
-            ) : (
-              <>
-                <BlockBuddy body="#2668fd" head="#ff008c" wave className="w-16" />
-                <Mascot title="" className="w-36" style={{ transform: "rotate(6deg)" }} />
-                <BlockBuddy body="#00b351" head="#ffcf3f" hat="#ff008c" wave className="w-14" />
-              </>
-            )}
-          </div>
+          {celebrate && course.hasCertificate && (
+            <div className="col-span-12 sm:col-span-10 md:col-span-8 lg:col-span-5 lg:pb-4">
+              <div className="rotate-[-2deg] motion-reduce:rotate-0">
+                <div data-sx-cert="" data-enter="">
+                <CertificateTeaser
+                  title={course.certificateTitle ?? course.title}
+                  name={buyer?.name ?? "You"}
+                  course={course.title}
+                  director={tutor?.name ?? "Arjun Rao"}
+                  code={cert?.code ?? "Issued on completion"}
+                />
+                </div>
+              </div>
+              <p data-sx-fade="" data-enter="" className="t-timecode mt-5 text-ash">
+                {cert ? "Already earned · verify it any time" : "Yours when you premiere your capstone"}
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
-      <div className="container-x grid gap-4 pt-8 pb-section md:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start">
-        <section aria-labelledby="next-title" className="rounded-card-lg bg-white p-5 shadow-soft md:p-7">
-          <CourseLine order={order} tutorName={tutor?.name} id="next-title" />
-          {unlocked && (
-            <ol className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-              {[
-                { icon: "play-circle", tone: "bg-[#dfe8ff] text-blue", t: "Watch at your pace", b: "Short lessons. Progress saves itself." },
-                { icon: "quiz", tone: "bg-butter", t: "Pass the tiny tests", b: "They unlock the next module." },
-                { icon: "award", tone: "bg-mint text-forest", t: "Collect your certificate", b: "Finish everything, get a verifiable code." },
-              ].map((s, i) => (
-                <li key={s.t} className="flex items-start gap-3 rounded-card bg-cream p-4 sm:block lg:flex xl:block">
-                  <span className={clsx("grid size-10 shrink-0 place-items-center rounded-full", s.tone)} aria-hidden>
-                    <Icon name={s.icon} className="size-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="t-app-h3 sm:mt-3 lg:mt-0 xl:mt-3">
-                      {i + 1}. {s.t}
-                    </p>
-                    <p className="mt-1 text-[13.5px] text-ink/70">{s.b}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-          {(kind === "failed" || kind === "pending") && (
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-              <li className="flex items-start gap-3 rounded-card bg-cream p-4">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-mint text-forest" aria-hidden>
-                  <Icon name="shield" className="size-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="t-app-h3">Nothing was charged</p>
-                  <p className="mt-1 text-[13.5px] text-ink/70">{kind === "failed" ? "A failed payment never takes money." : "If the bank drops it, the hold is released."}</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3 rounded-card bg-cream p-4">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#dfe8ff] text-blue" aria-hidden>
-                  <Icon name="play-circle" className="size-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="t-app-h3">The first video is free</p>
-                  <p className="mt-1 text-[13.5px] text-ink/70">Watch it while you wait. No payment needed.</p>
-                </div>
-              </li>
-            </ul>
-          )}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-card bg-butter px-4 py-3.5">
-            <p className="min-w-0 flex-1 text-[14px] font-semibold">{strip}</p>
-            <Button href={kind === "failed" ? `/checkout/${course.slug}` : `/courses/${course.slug}`} variant="secondary" size="sm">
-              {kind === "failed" ? "Back to checkout" : "Course page"}
-            </Button>
+      {/* next steps + receipt */}
+      <section aria-labelledby="next-title" className="theatre-night relative">
+        <div className="container-wide edit-grid gap-y-14 py-section">
+          <div className="col-span-12 lg:col-span-7">
+            <Eyebrow index="02">{celebrate ? "What happens next" : "Good to know"}</Eyebrow>
+            <h2 id="next-title" className="t-headline-l mt-6 max-w-[16ch]">
+              {celebrate ? "From lesson one to your premiere." : kind === "failed" ? "Nothing was charged." : "The first lesson is still free."}
+            </h2>
+            {celebrate ? (
+              <ol className="mt-10 grid border-t border-line-strong sm:grid-cols-3">
+                {SUCCESS.next.map((st, i) => (
+                  <li key={st.title} className="border-b border-line py-6 sm:border-r sm:border-b-0 sm:px-5 sm:first:pl-0 sm:last:border-r-0">
+                    <p className="t-timecode text-red-lite">{String(i + 1).padStart(2, "0")}</p>
+                    <h3 className="mt-6 font-heading text-[1.25rem] leading-[1.1] font-semibold tracking-[-0.025em]">{st.title}</h3>
+                    <p className="t-small mt-2 text-cream/65">{st.body}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="t-body-l mt-6 max-w-[34rem] text-cream/75">
+                {kind === "failed"
+                  ? "A failed payment never takes money. Card or UPI acting up? Pick another method on the checkout page: it's all demo money anyway."
+                  : kind === "pending"
+                    ? "Still pending after an hour? It usually means the bank dropped it. You can safely try again."
+                    : "Changed your mind again? The course is a click away, and lesson one is open to everyone."}
+              </p>
+            )}
+            <div className="mt-10">
+              <ArrowLink href={kind === "failed" ? `/checkout/${course.slug}` : `/courses/${course.slug}`} size="lg">
+                {kind === "failed" ? "Back to checkout" : "Back to the course page"}
+              </ArrowLink>
+            </div>
           </div>
-        </section>
-
-        <Receipt order={order} footer={<Button href="/dashboard/orders" variant="ghost" fullWidth icon="receipt" className="mt-3">All my orders</Button>} />
-      </div>
+          <div className="col-span-12 lg:col-span-4 lg:col-start-9">
+            <Receipt order={order} />
+            <div className="mt-6">
+              <ArrowLink href="/dashboard/orders">All my orders</ArrowLink>
+            </div>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
@@ -375,74 +346,53 @@ function adminSentence(order: OrderRow, kind: OrderKind): string {
     case "refunded":
       return `${who} bought ${what} on ${when}. It was refunded${order.refundedAt ? ` on ${formatDate(order.refundedAt, "medium")}` : ""}${order.refundReason ? ` (${order.refundReason.replace(/\.$/, "").replace(/^./, (c) => c.toLowerCase())})` : ""}, so access was revoked.`;
     default:
-      return `${who} bought ${what} on ${when}. Learners see a celebration here; you see the paperwork.`;
+      return `${who} bought ${what} on ${when}. Learners see a premiere here; you see the paperwork.`;
   }
 }
 
 function AdminView({ order }: { order: OrderRow }) {
-  const db = useDb();
-  const course = order.course!;
-  const tutor = getTutor(course.tutorId, db);
   const kind = orderKind(order);
+  const course = order.course!;
   return (
-    <div className="container-x pb-section">
-      <div className="mb-8">
-        <Eyebrow tone="purple">
-          <Icon name="shield" className="size-3.5" strokeWidth={2.6} />
-          Admin view
-        </Eyebrow>
-        <h1 className="t-display-m mt-eyebrow">Order {order.number}</h1>
-        <p className="t-body mt-3 max-w-[40rem] text-ink/70">{adminSentence(order, kind)}</p>
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button href={`/admin/orders?q=${encodeURIComponent(order.number)}`} icon="shield">
-            Open in admin
-          </Button>
-          <Button href={`/courses/${course.slug}`} variant="secondary">
-            Course page
-          </Button>
-        </div>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start">
-        <section aria-labelledby="admin-course" className="rounded-card-lg bg-white p-5 shadow-soft md:p-7">
-          <CourseLine order={order} tutorName={tutor?.name} id="admin-course" />
-          <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+    <section aria-labelledby="admin-order" className="theatre relative min-h-[100svh]">
+      <div className="container-wide edit-grid gap-y-12 pt-[calc(var(--header-offset)+var(--sat)+48px)] pb-section">
+        <div className="col-span-12 lg:col-span-7">
+          <Eyebrow>Admin view</Eyebrow>
+          <h1 id="admin-order" className="t-headline-xl mt-8">
+            Order {order.number}
+          </h1>
+          <p className="t-body-l mt-6 max-w-[40rem] text-cream/75">{adminSentence(order, kind)}</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button href={`/admin/orders?q=${encodeURIComponent(order.number)}`} arrow>
+              Open in admin
+            </Button>
+            <Button href={`/courses/${course.slug}`} variant="outline">
+              Course page
+            </Button>
+          </div>
+          <dl className="mt-12 grid border-t border-line-strong sm:grid-cols-2 sm:gap-x-[var(--grid-gap)]">
             {[
               [kind === "grant" ? "Granted to" : "Buyer", order.user?.name ?? "Unknown"],
               ["Email", order.user?.email ?? "Unknown"],
               ["City", order.user?.city ?? "Unknown"],
               ["Provider", PROVIDER_LABEL[order.provider] ?? order.provider],
             ].map(([k, v]) => (
-              <div key={k} className="rounded-card bg-cream px-4 py-3">
-                <dt className="text-[12.5px] font-bold text-ink/60">{k}</dt>
-                <dd className="mt-0.5 truncate text-[15px] font-semibold">{v}</dd>
+              <div key={k} className="border-b border-line py-4">
+                <dt className="t-label text-ash">{k}</dt>
+                <dd className="mt-1.5 truncate">{v}</dd>
               </div>
             ))}
           </dl>
-        </section>
-        <Receipt order={order} audience="admin" />
+        </div>
+        <div className="col-span-12 lg:col-span-4 lg:col-start-9">
+          <Receipt order={order} audience="admin" />
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-/* ----------------------------------------------------------------------------- shared bits */
-function CourseLine({ order, tutorName, id }: { order: OrderRow; tutorName?: string; id: string }) {
-  const course = order.course!;
-  return (
-    <div className="flex gap-4">
-      <div className={clsx("relative size-24 shrink-0 overflow-hidden rounded-img", toneBg[course.tone])}>
-        <Image src={cropSrc(course.thumbnail, 1)} alt="" fill sizes="96px" className="object-cover" />
-      </div>
-      <div className="min-w-0">
-        <h2 id={id} className="t-app-h2">
-          {course.title}
-        </h2>
-        {tutorName && <p className="mt-1 text-[14px] font-semibold text-ink/65">with {tutorName}</p>}
-      </div>
-    </div>
-  );
-}
-
+/* ----------------------------------------------------------------------------- receipt */
 const TOTAL_LABEL: Record<OrderKind, string> = {
   paid: "Total paid",
   grant: "Granted",
@@ -451,7 +401,6 @@ const TOTAL_LABEL: Record<OrderKind, string> = {
   pending: "Amount due",
 };
 
-/** Same notes from the admin's side: it's the learner's inbox and account, not theirs. */
 const RECEIPT_NOTE_ADMIN: Record<OrderKind, string> = {
   paid: "Demo payment: no money moved. In the real app the GST invoice goes to the learner's inbox.",
   grant: "Granted by an admin: nothing to pay, so there's no invoice.",
@@ -468,62 +417,60 @@ const RECEIPT_NOTE: Record<OrderKind, string> = {
   pending: "Demo payment, still pending: nothing has been charged yet.",
 };
 
-function Receipt({ order, footer, audience = "buyer" }: { order: OrderRow; footer?: React.ReactNode; audience?: "buyer" | "admin" }) {
+const STATUS_TAG: Record<OrderKind, string> = { paid: "Paid", grant: "Granted", refunded: "Refunded", failed: "Failed", pending: "Pending" };
+
+function Receipt({ order, audience = "buyer" }: { order: OrderRow; audience?: "buyer" | "admin" }) {
   const kind = orderKind(order);
   const rows: [string, string][] = [
-    ["Order number", order.number],
+    ["Order", order.number],
     ["Date", formatDate(order.createdAt, "datetime")],
-    kind === "grant"
-      ? ["Access", "Granted by an admin"]
-      : [kind === "failed" ? "Tried with" : kind === "pending" ? "Paying with" : "Paid with", `${order.method} (demo)`],
+    kind === "grant" ? ["Access", "Granted by an admin"] : [kind === "failed" ? "Tried with" : kind === "pending" ? "Paying with" : "Paid with", `${order.method} (demo)`],
     ["Reference", order.providerRef],
   ];
+  const price = kind === "grant" ? (order.course?.price ?? order.subtotal) : order.subtotal;
   return (
-    <section aria-labelledby="receipt-title" className="rounded-card-lg bg-white p-5 shadow-soft md:p-7">
+    <section aria-labelledby="receipt-title" className="border border-line-strong p-5 md:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="receipt-title" className="t-app-h2">
+        <h2 id="receipt-title" className="t-label">
           {kind === "failed" || kind === "pending" ? "Payment details" : "Receipt"}
         </h2>
-        <StatusPill status={kind === "grant" ? "grant" : order.status} />
+        <MonoTag tone={kind === "paid" || kind === "grant" ? "red" : "line"}>{STATUS_TAG[kind]}</MonoTag>
       </div>
-      <dl className="mt-4 space-y-2.5 text-[14px] font-semibold">
+      <dl className="mt-4">
         {rows.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-4">
-            <dt className="shrink-0 text-ink/60">{k}</dt>
-            <dd className="min-w-0 truncate text-right">{v}</dd>
+          <div key={k} className="flex justify-between gap-4 border-b border-line py-2.5">
+            <dt className="t-small shrink-0 text-muted">{k}</dt>
+            <dd className="t-small min-w-0 truncate text-right font-mono tracking-[0.02em]">{v}</dd>
           </div>
         ))}
-      </dl>
-      <dl className="mt-4 space-y-2.5 border-t border-ink/[0.07] pt-4 text-[14px] font-semibold">
-        <div className="flex justify-between gap-4">
-          <dt>Course price</dt>
-          <dd>{kind === "grant" ? formatINR(order.course?.price ?? order.subtotal) : formatINR(order.subtotal)}</dd>
+        <div className="flex justify-between gap-4 border-b border-line py-2.5">
+          <dt className="t-small">Course price</dt>
+          <dd className="t-small">{formatINR(price)}</dd>
         </div>
         {kind === "grant" && (
-          <div className="flex justify-between gap-4 text-forest">
-            <dt>Admin grant</dt>
-            <dd>−{formatINR(order.course?.price ?? order.subtotal)}</dd>
+          <div className="flex justify-between gap-4 border-b border-line py-2.5">
+            <dt className="t-small">Admin grant</dt>
+            <dd className="t-small">−{formatINR(price)}</dd>
           </div>
         )}
         {order.discount > 0 && (
-          <div className="flex justify-between gap-4 text-forest">
-            <dt>Coupon{order.couponCode ? ` (${order.couponCode})` : ""}</dt>
-            <dd>−{formatINR(order.discount)}</dd>
+          <div className="flex justify-between gap-4 border-b border-line py-2.5">
+            <dt className="t-small">Coupon{order.couponCode ? ` (${order.couponCode})` : ""}</dt>
+            <dd className="t-small">−{formatINR(order.discount)}</dd>
           </div>
         )}
         {order.tax > 0 && (
-          <div className="flex justify-between gap-4 text-ink/60">
-            <dt>GST included</dt>
-            <dd>{formatINR(order.tax)}</dd>
+          <div className="flex justify-between gap-4 border-b border-line py-2.5 text-muted">
+            <dt className="t-small">GST included</dt>
+            <dd className="t-small">{formatINR(order.tax)}</dd>
           </div>
         )}
-        <div className="flex items-end justify-between gap-4 border-t border-ink/[0.07] pt-3">
-          <dt className="text-[16px] font-bold">{TOTAL_LABEL[kind]}</dt>
-          <dd className={clsx("font-display text-[2rem] leading-none font-black", kind === "failed" && "text-ink/45")}>{formatINR(order.amount)}</dd>
+        <div className="flex items-end justify-between gap-4 pt-4">
+          <dt className="t-label">{TOTAL_LABEL[kind]}</dt>
+          <dd className={clsx("font-display text-[2.75rem] leading-[0.85]", kind === "failed" && "text-muted")}>{formatINR(order.amount)}</dd>
         </div>
       </dl>
-      <p className={clsx("mt-4 rounded-tag px-3 py-2.5 text-[13px] font-semibold", kind === "failed" ? "bg-blush text-[#8a0a4c]" : "bg-butter text-[#6b5400]")}>{(audience === "admin" ? RECEIPT_NOTE_ADMIN : RECEIPT_NOTE)[kind]}</p>
-      {footer}
+      <p className="t-caption mt-5">{(audience === "admin" ? RECEIPT_NOTE_ADMIN : RECEIPT_NOTE)[kind]}</p>
     </section>
   );
 }

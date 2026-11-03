@@ -6,13 +6,11 @@ import {
   BarChart,
   Button,
   Card,
-  CardHeader,
   ConfirmDialog,
   DataTable,
   PageHeader,
+  Section,
   Select,
-  StatGrid,
-  StatTile,
   StatusPill,
   toast,
   type MenuItem,
@@ -28,6 +26,8 @@ import {
   plural,
   type Payout,
 } from "@/lib/mock";
+import { Idx, MonoMeta } from "@/components/tutor/editorial";
+import { WideSection } from "./ledgerKit";
 import {
   COMPACT_BOX,
   COMPACT_TABLE,
@@ -43,7 +43,21 @@ import {
   type FitColumn,
 } from "./shared";
 
+/* =============================================================================
+   /admin/payouts (design system v2). The month's payout run is the page's one ink
+   panel: net to tutors in Anton, gross / fee / held as figures, and the red "Mark
+   paid" for every payable row. Then the 12-month trend, how a payout moves, and
+   the per-tutor awards table (select rows to mark a few paid).
+   ============================================================================= */
+
 type Status = Payout["status"];
+
+const STEPS: [Status, string, string][] = [
+  ["scheduled", "Scheduled", "The month is still running. Sales keep adding up."],
+  ["processing", "Processing", "Month closed. Finance checks refunds, then sends the bank transfer."],
+  ["paid", "Paid", "Money sent. The bank reference (UTR) is saved for the tutor."],
+  ["on_hold", "On hold", "Something needs a look, like tax details or a dispute."],
+];
 
 export function PayoutsView() {
   const db = useDb();
@@ -67,6 +81,7 @@ export function PayoutsView() {
   const fee = rows.reduce((s, p) => s + p.platformFee, 0);
   const net = rows.reduce((s, p) => s + p.net, 0);
   const held = rows.filter((p) => p.status === "on_hold");
+  const paidRows = rows.filter((p) => p.status === "paid");
   const monthly = useMemo(
     () =>
       // last 12 months only: month names stay unique (they key the bars)
@@ -84,6 +99,7 @@ export function PayoutsView() {
    *  released first, and a paid row keeps its original bank reference. */
   const isPayable = (p: Payout) =>
     !isCurrent && (p.status === "processing" || p.status === "scheduled");
+  const payableAll = rows.filter(isPayable);
   const bulkRows = bulk ? rows.filter((p) => bulk.includes(p.id)) : [];
   const bulkPayable = bulkRows.filter(isPayable);
   const bulkHeld = bulkRows.filter((p) => p.status === "on_hold");
@@ -181,7 +197,7 @@ export function PayoutsView() {
                 sub={`${plural(p.sales, "sale")} · gross ${formatINR(p.gross, { compact: true })}`}
               />
               <CompactFacts>
-                <span className="text-[13.5px] font-bold text-ink">
+                <span className="font-heading text-[14px] font-semibold text-fg tabular-nums">
                   Net {formatINR(p.net)}
                 </span>
                 <StatusPill status={p.status} size="sm" />
@@ -211,7 +227,11 @@ export function PayoutsView() {
           key: "sales",
           header: "Sales",
           align: "right",
-          cell: (p) => formatNumber(p.sales),
+          cell: (p) => (
+            <span className="font-mono text-[13px] tabular-nums">
+              {formatNumber(p.sales)}
+            </span>
+          ),
           sortValue: (p) => p.sales,
         },
         {
@@ -219,7 +239,11 @@ export function PayoutsView() {
           header: "Gross",
           align: "right",
           minBox: 760,
-          cell: (p) => formatINR(p.gross),
+          cell: (p) => (
+            <span className="font-mono text-[13px] whitespace-nowrap tabular-nums">
+              {formatINR(p.gross)}
+            </span>
+          ),
           sortValue: (p) => p.gross,
         },
         {
@@ -228,7 +252,9 @@ export function PayoutsView() {
           align: "right",
           minBox: 1000,
           cell: (p) => (
-            <span className="whitespace-nowrap text-ink/60">−{formatINR(p.platformFee)}</span>
+            <span className="font-mono text-[13px] whitespace-nowrap text-muted tabular-nums">
+              −{formatINR(p.platformFee)}
+            </span>
           ),
           sortValue: (p) => p.platformFee,
         },
@@ -236,7 +262,11 @@ export function PayoutsView() {
           key: "net",
           header: "Net payout",
           align: "right",
-          cell: (p) => <span className="font-bold whitespace-nowrap">{formatINR(p.net)}</span>,
+          cell: (p) => (
+            <span className="font-heading text-[16px] font-semibold tracking-[-0.015em] whitespace-nowrap tabular-nums">
+              {formatINR(p.net)}
+            </span>
+          ),
           sortValue: (p) => p.net,
         },
         {
@@ -251,14 +281,14 @@ export function PayoutsView() {
           minBox: 880,
           cell: (p) =>
             p.paidAt ? (
-              <span className="block text-[13px] whitespace-nowrap">
+              <span className="block font-mono text-[12px] whitespace-nowrap tabular-nums">
                 {formatDate(p.paidAt)}
-                <span className="block font-mono text-[11.5px] text-ink/45">
+                <span className="block text-[10.5px] tracking-[0.04em] text-muted">
                   {p.reference}
                 </span>
               </span>
             ) : (
-              <span className="text-[13px] text-ink/40">—</span>
+              <span className="text-[13px] text-muted">—</span>
             ),
           sortValue: (p) => p.paidAt ?? "",
         },
@@ -266,12 +296,23 @@ export function PayoutsView() {
   const columns = fitColumns(allColumns, boxW);
   const { initialSort, sortKey } = pickSort(columns, { key: "net", dir: "desc" });
 
+  const payReason = isCurrent
+    ? "This month is still running, so nothing can be paid out yet."
+    : payableAll.length
+      ? `${plural(payableAll.length, "payout")} ready · ${formatINR(payableAll.reduce((s, p) => s + p.net, 0))}`
+      : held.length
+        ? "Everything else is paid. Release the holds to pay them."
+        : "Every payout this month is paid.";
+
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Money"
-        eyebrowTone="purple"
-        title="Pay the people who teach."
+        eyebrow="Control room · Money"
+        title={
+          <>
+            Pay the people who <em>teach</em>.
+          </>
+        }
         description="Monthly tutor payouts after the platform fee. Payouts go out by the 10th of the following month."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
@@ -285,7 +326,7 @@ export function PayoutsView() {
               setPeriod(e.target.value);
               setSelected([]);
             }}
-            className="w-full sm:max-w-[230px] sm:min-w-[230px]"
+            className="w-full sm:max-w-[240px] sm:min-w-[240px]"
             options={periods.map((p, i) => ({
               value: p,
               label: `${periodLabel(p)}${i === 0 ? " (projected)" : ""}`,
@@ -295,54 +336,104 @@ export function PayoutsView() {
       />
       <MoneyTabs current="payouts" />
 
-      <StatGrid className="mb-6">
-        <StatTile
-          label="Gross sales"
-          value={formatINR(gross, { compact: true })}
-          tone="sun"
-          icon="trend"
-          hint={periodLabel(period)}
-        />
-        <StatTile
-          label="Platform fee"
-          value={formatINR(fee, { compact: true })}
-          tone="lilac"
-          icon="layers"
-          hint={
-            gross
-              ? `${formatPercent((fee / gross) * 100, 1)} of gross`
-              : "Nothing sold yet"
-          }
-        />
-        <StatTile
-          label="Net to tutors"
-          value={formatINR(net, { compact: true })}
-          tone="mint"
-          icon="wallet"
-          hint={plural(rows.length, "tutor")}
-        />
-        <StatTile
-          label="On hold"
-          value={held.length}
-          tone={held.length ? "butter" : "white"}
-          icon="lock"
-          hint={
-            held.length
-              ? formatINR(held.reduce((s, p) => s + p.net, 0))
-              : "Nothing held"
-          }
-        />
-      </StatGrid>
+      {/* the payout run: the page's one ink panel */}
+      <Card
+        variant="ink"
+        padding="none"
+        as="section"
+        aria-labelledby="run-title"
+        className="overflow-hidden"
+      >
+        <div className="grid lg:grid-cols-12">
+          <div className="p-6 md:p-9 lg:col-span-7">
+            <p className="flex items-center gap-3 text-[11px] font-semibold tracking-[0.16em] text-cream/75 uppercase">
+              <span className="font-mono text-[10.5px] tracking-[0.04em] text-red-lite">
+                {isCurrent ? "REC" : "RUN"}
+              </span>
+              <span id="run-title">
+                Payout run · {periodLabel(period)}
+                {isCurrent ? " (projected)" : ""}
+              </span>
+            </p>
+            <p className="t-display-xl mt-5 tabular-nums md:mt-7">
+              {formatINR(net, { compact: true })}
+            </p>
+            <p className="mt-4 max-w-[46ch] text-[14.5px] leading-snug text-cream/75">
+              Net to {plural(rows.length, "tutor")}
+              {isCurrent
+                ? ", still adding up while the month runs."
+                : `, ${paidRows.length === rows.length && rows.length ? "all paid" : `${paidRows.length} of ${rows.length} paid so far`}.`}
+            </p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Button
+                variant="red"
+                icon="check-circle"
+                disabled={payableAll.length === 0}
+                aria-describedby="pay-reason"
+                onClick={() => setBulk(payableAll.map((p) => p.id))}
+              >
+                Mark {payableAll.length} paid
+              </Button>
+              <p id="pay-reason" className="font-mono text-[11px] tracking-[0.06em] text-cream/65 uppercase">
+                {payReason}
+              </p>
+            </div>
+          </div>
+          <dl className="grid grid-cols-1 border-t border-white/[0.14] sm:grid-cols-3 lg:col-span-5 lg:grid-cols-1 lg:border-t-0 lg:border-l">
+            {[
+              { k: "Gross sales", v: formatINR(gross, { compact: true }), h: periodLabel(period, true) },
+              {
+                k: "Platform fee",
+                v: formatINR(fee, { compact: true }),
+                h: gross ? `${formatPercent((fee / gross) * 100, 1)} of gross` : "Nothing sold yet",
+              },
+              {
+                k: "On hold",
+                v: String(held.length),
+                h: held.length ? formatINR(held.reduce((s, p) => s + p.net, 0)) : "Nothing held",
+                alert: held.length > 0,
+              },
+            ].map((f, i) => (
+              <div
+                key={f.k}
+                className="flex min-w-0 items-baseline justify-between gap-4 border-white/[0.14] px-6 py-4 max-sm:[&:not(:first-child)]:border-t sm:block sm:p-4 sm:[&:not(:first-child)]:border-l md:p-6 lg:flex lg:[&:not(:first-child)]:border-t lg:[&:not(:first-child)]:border-l-0"
+              >
+                <dt className="text-[10.5px] leading-[1.35] font-semibold tracking-[0.14em] text-cream/70 uppercase">
+                  <span className="mr-2 font-mono tracking-[0.04em] text-red-lite" aria-hidden>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  {f.k}
+                </dt>
+                <dd className="min-w-0 text-right sm:mt-2 sm:text-left lg:mt-0 lg:text-right">
+                  <span className="block font-display text-[clamp(1.5rem,1.1rem+1.4vw,2.5rem)] leading-none tabular-nums">
+                    {f.v}
+                  </span>
+                  <span
+                    className={
+                      f.alert
+                        ? "mt-1.5 block truncate font-mono text-[11px] text-red-lite"
+                        : "mt-1.5 block truncate font-mono text-[11px] text-cream/60"
+                    }
+                  >
+                    {f.h}
+                  </span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </Card>
 
-      <div className="mb-6 grid gap-4 md:gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader
-            title="Net payouts by month"
-            description="What tutors took home over the last 12 months. October is a projection while the month runs."
-          />
+      <div className="mt-14 space-y-14 md:mt-20 md:space-y-20">
+        <Section
+          index="01"
+          label="Trend"
+          note="What tutors took home over the last 12 months. October is a projection while the month runs. The red bar is the month you're looking at."
+          title="Net payouts by month"
+        >
           <BarChart
             data={monthly}
-            tone="green"
+            tone="ink"
             highlight={
               periods.indexOf(period) >= 0 && periods.indexOf(period) < 12
                 ? monthly.length - 1 - periods.indexOf(period)
@@ -350,106 +441,118 @@ export function PayoutsView() {
             }
             format={(n) => formatINR(n, { compact: true })}
             ariaLabel="Net tutor payouts by month"
-            height={220}
+            height={240}
           />
-        </Card>
-        <Card tone="butter">
-          <CardHeader as="h3" title="How payouts work" />
-          <ol className="space-y-3 text-[14px] leading-snug">
-            {[
-              [
-                "Scheduled",
-                "The month is still running. Sales keep adding up.",
-              ],
-              [
-                "Processing",
-                "Month closed. Finance checks refunds, then sends the bank transfer.",
-              ],
-              [
-                "Paid",
-                "Money sent. The bank reference (UTR) is saved for the tutor.",
-              ],
-              [
-                "On hold",
-                "Something needs a look, like tax details or a dispute.",
-              ],
-            ].map(([t, b]) => (
-              <li key={t}>
-                <span className="font-bold">{t}.</span>{" "}
-                <span className="opacity-80">{b}</span>
+        </Section>
+
+        <Section
+          index="02"
+          label="How it works"
+          note="Every payout moves through the same four states."
+          title="From sale to bank transfer"
+        >
+          <ol className="grid border-t border-fg sm:grid-cols-2">
+            {STEPS.map(([s, t, b], i) => (
+              <li
+                key={s}
+                className="flex gap-4 border-b border-line py-5 sm:odd:pr-8 sm:even:border-l sm:even:pl-8"
+              >
+                <Idx n={i + 1} className="mt-1" />
+                <div className="min-w-0">
+                  <StatusPill status={s} size="sm" />
+                  <p className="t-small mt-2.5 text-fg/80">
+                    <span className="sr-only">{t}: </span>
+                    {b}
+                  </p>
+                </div>
               </li>
             ))}
           </ol>
-        </Card>
-      </div>
+        </Section>
 
-      <div ref={boxRef}>
-      <DataTable<Payout>
-        key={sortKey}
-        caption={`Payouts for ${periodLabel(period)}`}
-        rows={rows}
-        columns={columns}
-        getRowId={(p) => p.id}
-        pageSize={12}
-        selectable
-        selected={selected}
-        onSelectedChange={setSelected}
-        bulkNote={(ids) => {
-          const picked = rows.filter((p) => ids.includes(p.id));
-          if (picked.some(isPayable)) return null;
-          return isCurrent
-            ? "Month still running"
-            : picked.some((p) => p.status === "on_hold") &&
-                picked.every((p) => p.status === "on_hold" || p.status === "paid")
-              ? "Release the hold first"
-              : "Already paid";
-        }}
-        bulkActions={(ids, _clear, meta) => {
-          const payable = rows.filter((p) => ids.includes(p.id)).filter(isPayable).length;
-          return (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon="check-circle"
-              onClick={() => setBulk(ids)}
-              disabled={payable === 0}
-              aria-describedby={payable === 0 ? meta?.noteId : undefined}
-            >
-              Mark {payable} paid
-            </Button>
-          );
-        }}
-        rowActions={actionsFor}
-        mobileRow={(p) => {
-          const t = getUser(p.tutorId, db);
-          return (
-            <PhoneRow
-              leading={t && <Avatar name={t.name} src={t.avatar} tone={t.tone} size="md" decorative />}
-              title={t?.name ?? "Deleted account"}
-              lines={[
-                [plural(p.sales, "sale"), `gross ${formatINR(p.gross, { compact: true })}`],
-                [<StatusPill key="s" status={p.status} />, p.paidAt && `Paid ${smartDate(p.paidAt)}`],
-              ]}
-              trailing={formatINR(p.net)}
-              badge={<span className="text-[12px] font-semibold text-ink/55">net</span>}
+        <WideSection
+          index="03"
+          label="Tutors"
+          note={
+            isCurrent
+              ? "This month is still running, so it can't be paid out yet."
+              : "Select rows to mark a few paid, or use the row menu to hold or release one."
+          }
+          title={`Payouts for ${periodLabel(period)}`}
+          action={
+            <MonoMeta as="span" className="text-fg">
+              {plural(rows.length, "tutor")} · {formatINR(net)} net
+            </MonoMeta>
+          }
+        >
+          <div ref={boxRef}>
+            <DataTable<Payout>
+              key={sortKey}
+              caption={`Payouts for ${periodLabel(period)}`}
+              rows={rows}
+              columns={columns}
+              getRowId={(p) => p.id}
+              pageSize={12}
+              selectable
+              selected={selected}
+              onSelectedChange={setSelected}
+              bulkNote={(ids) => {
+                const picked = rows.filter((p) => ids.includes(p.id));
+                if (picked.some(isPayable)) return null;
+                return isCurrent
+                  ? "Month still running"
+                  : picked.some((p) => p.status === "on_hold") &&
+                      picked.every((p) => p.status === "on_hold" || p.status === "paid")
+                    ? "Release the hold first"
+                    : "Already paid";
+              }}
+              bulkActions={(ids, _clear, meta) => {
+                const payable = rows.filter((p) => ids.includes(p.id)).filter(isPayable).length;
+                return (
+                  <Button
+                    size="sm"
+                    variant="cream"
+                    icon="check-circle"
+                    onClick={() => setBulk(ids)}
+                    disabled={payable === 0}
+                    aria-describedby={payable === 0 ? meta?.noteId : undefined}
+                  >
+                    Mark {payable} paid
+                  </Button>
+                );
+              }}
+              rowActions={actionsFor}
+              mobileRow={(p) => {
+                const t = getUser(p.tutorId, db);
+                return (
+                  <PhoneRow
+                    leading={t && <Avatar name={t.name} src={t.avatar} tone={t.tone} size="md" decorative />}
+                    title={t?.name ?? "Deleted account"}
+                    lines={[
+                      [plural(p.sales, "sale"), `gross ${formatINR(p.gross, { compact: true })}`],
+                      [<StatusPill key="s" status={p.status} />, p.paidAt && `Paid ${smartDate(p.paidAt)}`],
+                    ]}
+                    trailing={formatINR(p.net)}
+                    badge={
+                      <span className="font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase">
+                        net
+                      </span>
+                    }
+                  />
+                );
+              }}
+              initialSort={initialSort}
+              empty={{
+                title: "No payouts for this month.",
+                body: "Pick another month.",
+              }}
+              dense={boxW != null && boxW < 1000}
+              minWidth={compact ? 0 : 600}
+              className={compact ? COMPACT_TABLE : undefined}
             />
-          );
-        }}
-        initialSort={initialSort}
-        empty={{
-          title: "No payouts for this month.",
-          body: "Pick another month.",
-        }}
-        dense={boxW != null && boxW < 1000}
-        minWidth={compact ? 0 : 600}
-        className={compact ? COMPACT_TABLE : undefined}
-      />
+          </div>
+        </WideSection>
       </div>
-      {isCurrent && (
-        <p className="mt-3 t-small text-ink/55">
-          This month is still running, so it can&apos;t be paid out yet.
-        </p>
-      )}
 
       <ConfirmDialog
         open={!!bulk}
@@ -492,7 +595,7 @@ function withReason(label: string, reason?: string) {
   return (
     <span className="block">
       <span className="block truncate">{label}</span>
-      <span className="block truncate text-[12px] font-semibold opacity-80">
+      <span className="block truncate text-[12px] opacity-75">
         {reason}
       </span>
     </span>

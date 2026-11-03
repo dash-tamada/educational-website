@@ -120,6 +120,6 @@ export function getItemAccessMap(user: AccessUser, course: Course, db: Db = SEED
 export const accessCopy: Record<Exclude<AccessReason, "free" | "enrolled" | "owner" | "admin">, { title: string; body: string; cta: string }> = {
   paywall: { title: "This lesson is part of the full course.", body: "The first video is free. Unlock the course to keep going, with lifetime access.", cta: "Unlock the course" },
   login: { title: "Log in to keep watching.", body: "The first video is free for everyone. Log in or create an account to unlock the rest.", cta: "Log in" },
-  gated: { title: "Pass the checkpoint first.", body: "This course uses tiny tests as checkpoints. Pass the one before this lesson to unlock it.", cta: "Take the test" },
+  gated: { title: "Pass the checkpoint first.", body: "This course uses short tests as checkpoints. Pass the one before this lesson to unlock it.", cta: "Take the test" },
   unavailable: { title: "This course isn't available.", body: "It's not published right now. Browse the library for something just as good.", cta: "Browse courses" },
 };

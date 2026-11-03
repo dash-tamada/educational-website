@@ -16,6 +16,7 @@ import {
   PageHeader,
   ProgressBar,
   RadioGroup,
+  Section,
   Segmented,
   StatGrid,
   StatTile,
@@ -39,6 +40,8 @@ import {
   plural,
   type Coupon,
 } from "@/lib/mock";
+import { MonoMeta } from "@/components/tutor/editorial";
+import { CodeSlate, WideSection } from "./ledgerKit";
 import {
   COMPACT_TABLE,
   COUPON_STATE_META,
@@ -140,7 +143,7 @@ export function CouponsView() {
       .join(", ");
     return (
       <span
-        className="block text-[12px] font-semibold text-ink/55"
+        className="block font-mono text-[10.5px] tracking-[0.04em] text-muted uppercase"
         title={names}
       >
         {!c.courseIds
@@ -161,18 +164,16 @@ export function CouponsView() {
     );
   };
   const codeChip = (c: Coupon) => (
-    <span className="flex items-center gap-1.5">
-      <span className="rounded-md bg-cream px-2 py-0.5 font-mono text-[14px] font-bold tracking-wide">
-        {c.code}
-      </span>
+    <span className="flex items-center gap-1">
+      <CodeSlate code={c.code} />
       <Tooltip label="Copy code">
         <button
           type="button"
           onClick={() => copy(c.code)}
           aria-label={`Copy ${c.code}`}
-          className="hit grid size-7 place-items-center rounded-full text-ink/45 hf:bg-ink/[0.06] hf:text-ink"
+          className="hit grid size-7 place-items-center text-muted transition-colors hf:text-red-deep focus-visible:outline-2 focus-visible:outline-red"
         >
-          <Icon name="copy" className="size-3.5" />
+          <Icon name="copy" strokeWidth={1.6} className="size-3.5" />
         </button>
       </Tooltip>
     </span>
@@ -187,15 +188,15 @@ export function CouponsView() {
               <span className="flex items-center justify-between gap-2">
                 {codeChip(c)}
                 <span className="text-right whitespace-nowrap">
-                  <span className="block font-bold">{discountLabel(c)}</span>
+                  <span className="block font-heading font-semibold tabular-nums">{discountLabel(c)}</span>
                   {c.minAmount ? (
-                    <span className="block text-[12px] font-semibold text-ink/55">
+                    <span className="block font-mono text-[10.5px] tracking-[0.04em] text-muted uppercase">
                       Min {formatINR(c.minAmount)}
                     </span>
                   ) : null}
                 </span>
               </span>
-              <span className="mt-1 line-clamp-1 text-[13px] text-ink/60">
+              <span className="mt-1.5 line-clamp-1 text-[13px] text-muted">
                 {c.description}
               </span>
               <CompactFacts>
@@ -235,7 +236,7 @@ export function CouponsView() {
           cell: (c) => (
             <span className="flex min-w-[170px] flex-col">
               {codeChip(c)}
-              <span className="mt-1 line-clamp-1 text-[13px] text-ink/60">
+              <span className="mt-1.5 line-clamp-1 text-[13px] text-muted">
                 {c.description}
               </span>
             </span>
@@ -248,9 +249,9 @@ export function CouponsView() {
           header: "Discount",
           cell: (c) => (
             <span className="whitespace-nowrap">
-              <span className="block font-bold">{discountLabel(c)}</span>
+              <span className="block font-heading text-[15px] font-semibold tracking-[-0.01em] tabular-nums">{discountLabel(c)}</span>
               {c.minAmount ? (
-                <span className="block text-[12px] font-semibold text-ink/55">
+                <span className="block font-mono text-[10.5px] tracking-[0.04em] text-muted uppercase">
                   Min {formatINR(c.minAmount)}
                 </span>
               ) : null}
@@ -266,7 +267,7 @@ export function CouponsView() {
           cell: (c) =>
             c.courseIds ? (
               <span
-                className="line-clamp-2 min-w-[140px] text-[13px]"
+                className="line-clamp-2 min-w-[140px] text-[13px] text-fg/85"
                 title={c.courseIds
                   .map((id) => getCourseById(id, db)?.title)
                   .join(", ")}
@@ -290,18 +291,18 @@ export function CouponsView() {
           width: "140px",
           cell: (c) => (
             <span className="block min-w-[110px]">
-              <span className="text-[13px] font-bold whitespace-nowrap">
+              <span className="font-mono text-[12.5px] whitespace-nowrap tabular-nums">
                 {formatNumber(c.redemptions)}{" "}
-                <span className="font-semibold text-ink/45">
+                <span className="text-muted">
                   / {formatNumber(c.maxRedemptions)}
                 </span>
               </span>
               <ProgressBar
                 value={(c.redemptions / Math.max(1, c.maxRedemptions)) * 100}
                 size="sm"
-                tone={c.redemptions >= c.maxRedemptions ? "flame" : "purple"}
+                tone={c.redemptions >= c.maxRedemptions ? "flame" : "ink"}
                 label={`${c.code} usage`}
-                className="mt-1"
+                className="mt-2"
               />
             </span>
           ),
@@ -312,7 +313,7 @@ export function CouponsView() {
           header: "Runs",
           minBox: 900,
           cell: (c) => (
-            <span className="text-[13px] whitespace-nowrap text-ink/75">
+            <span className="font-mono text-[12px] whitespace-nowrap text-muted tabular-nums">
               {smartDate(c.startsAt)} – {smartDate(c.endsAt)}
             </span>
           ),
@@ -345,9 +346,12 @@ export function CouponsView() {
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Money"
-        eyebrowTone="purple"
-        title="Small codes, happy carts."
+        eyebrow="Control room · Money"
+        title={
+          <>
+            Small <em>codes</em>, happy carts.
+          </>
+        }
         description="Create a code, choose how much it takes off, cap how many people can use it, and set when it runs."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
@@ -355,7 +359,7 @@ export function CouponsView() {
         ]}
         actions={
           <Button
-            variant="accent"
+            variant="red"
             icon="plus"
             onClick={() => setEditing("new")}
           >
@@ -365,37 +369,45 @@ export function CouponsView() {
       />
       <MoneyTabs current="coupons" />
 
-      <StatGrid className="mb-6">
+      <StatGrid>
         <StatTile
+          index="01"
           label="Live now"
           value={live}
-          tone="mint"
-          icon="ticket"
           hint={`${coupons.length} codes in total`}
         />
         <StatTile
+          index="02"
           label="Scheduled"
           value={scheduled}
-          tone="cyan"
-          icon="calendar"
           hint={scheduled ? "Starting soon" : "Nothing queued"}
         />
         <StatTile
+          index="03"
           label="Redemptions"
           value={formatNumber(redemptions)}
-          tone="sun"
-          icon="users"
           hint="All time, all codes"
         />
         <StatTile
+          index="04"
           label="Discount given"
           value={formatINR(discountGiven, { compact: true })}
-          tone="white"
-          icon="wallet"
           hint="Estimated, all redemptions"
         />
       </StatGrid>
 
+      <div className="mt-14 space-y-14 md:mt-20 md:space-y-20">
+      <WideSection
+        index="01"
+        label="Codes"
+        note="Flip the switch to pause a code. Edit, copy or delete it from the row menu."
+        title="Every code, latest first"
+        action={
+          <MonoMeta as="span" className="text-fg">
+            {plural(coupons.length, "code")} · {formatNumber(redemptions)} used
+          </MonoMeta>
+        }
+      >
       <div ref={boxRef}>
       <DataTable<Coupon>
         key={sortKey}
@@ -412,7 +424,7 @@ export function CouponsView() {
           const m = COUPON_STATE_META[couponState(c)];
           return (
             <PhoneRow
-              title={<span className="font-mono tracking-wide">{c.code}</span>}
+              title={<span className="font-mono tracking-[0.06em]">{c.code}</span>}
               lines={[
                 c.description,
                 [
@@ -455,10 +467,35 @@ export function CouponsView() {
         className={compact ? COMPACT_TABLE : undefined}
       />
       </div>
-      <p className="mt-3 t-small text-ink/55">
-        Codes are checked at checkout: on, inside their dates, not used up,
-        valid for that course, and at or above any minimum price.
-      </p>
+      </WideSection>
+
+      <Section
+        index="02"
+        label="How codes work"
+        note="Every rule is checked again at checkout, so a mistake here can't overcharge anyone."
+        title="Five checks before a discount lands"
+      >
+        <ol className="grid border-t border-fg sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            ["Switched on", "Off means nobody can use it, even inside its dates."],
+            ["Inside its dates", "Starts at midnight IST, ends at 11:59 pm on the last day."],
+            ["Not used up", "The usage limit counts every redemption, by everyone."],
+            ["Valid for the course", "Global codes work everywhere; scoped codes only on their courses."],
+            ["Above the minimum", "An optional floor keeps a flat discount off cheap courses."],
+          ].map(([t, b], i) => (
+            <li key={t} className="flex gap-4 border-b border-line py-5 pr-6">
+              <span aria-hidden className="mt-[3px] w-5 shrink-0 font-mono text-[11px] text-red-deep tabular-nums">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-semibold tracking-[-0.01em]">{t}</span>
+                <span className="t-small mt-1 block text-muted">{b}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </Section>
+      </div>
 
       {editing && (
         <CouponForm
@@ -537,7 +574,7 @@ function CouponForm({
   const num = Number(value);
   const sample =
     (scope === "some" ? courses.find((c) => courseIds.includes(c.id)) : null) ??
-    courses.find((c) => c.slug === "web-dev-from-zero") ??
+    courses.find((c) => c.slug === "ai-filmmaking") ??
     courses[0];
   const min = minAmount.trim() ? Number(minAmount) : 0;
   const sampleBelowMin = !!sample && min > 0 && sample.price < min;
@@ -618,14 +655,15 @@ function CouponForm({
       open
       onClose={onClose}
       size="lg"
+      eyebrow={base ? `Coupon · ${base.code}` : "Coupon · new"}
       title={base ? `Edit ${base.code}` : "New coupon"}
       description="Every field is checked again at checkout, so a mistake here can't overcharge anyone."
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="coupon-form" icon="check">
+          <Button type="submit" form="coupon-form" variant="red" icon="check">
             {base ? "Save coupon" : "Create coupon"}
           </Button>
         </>
@@ -652,7 +690,7 @@ function CouponForm({
             />
           </Field>
           <div>
-            <p className="mb-1.5 text-[14px] font-bold">Discount type</p>
+            <p className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] uppercase">Discount type</p>
             <Segmented
               label="Discount type"
               value={kind}
@@ -710,7 +748,7 @@ function CouponForm({
               prefix={kind === "flat" ? "₹" : undefined}
               suffix={
                 kind === "percent" ? (
-                  <span className="pr-2 text-[15px] font-bold text-ink/55">
+                  <span className="pr-2 font-mono text-[14px] text-muted">
                     %
                   </span>
                 ) : undefined
@@ -823,8 +861,8 @@ function CouponForm({
                 data-invalid={errors.courses ? "true" : undefined}
                 aria-describedby="coupon-courses-msg"
                 className={clsx(
-                  "app-scroll max-h-56 space-y-2.5 overflow-y-auto rounded-tag bg-cream p-3",
-                  errors.courses && "ring-2 ring-flame",
+                  "app-scroll max-h-56 space-y-2.5 overflow-y-auto border border-line bg-paper p-3",
+                  errors.courses && "border-red ring-1 ring-red",
                 )}
                 data-lenis-prevent=""
                 role="group"
@@ -850,8 +888,8 @@ function CouponForm({
               <p
                 id="coupon-courses-msg"
                 className={clsx(
-                  "mt-1.5 text-[13px] font-semibold",
-                  errors.courses ? "text-[#c13500]" : "text-ink/55",
+                  "mt-2 text-[12.5px]",
+                  errors.courses ? "font-medium text-red-deep" : "font-mono tracking-[0.04em] text-muted uppercase",
                 )}
                 role={errors.courses ? "alert" : undefined}
               >

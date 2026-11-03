@@ -51,7 +51,7 @@ export type CourseSeed = Omit<
   Course,
   "currency" | "rating" | "reviewCount" | "learners" | "hasCertificate"
 > & {
-  /** short code used to build item ids, e.g. "wd" -> wd-1-1 */
+  /** short code used to build item ids, e.g. "af" -> af-1-1 */
   code: string;
   rating: number;
   learners: number;

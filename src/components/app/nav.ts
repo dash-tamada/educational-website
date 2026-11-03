@@ -1,5 +1,5 @@
 import type { Role } from "@/lib/mock/types";
-import type { Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import type { IconName } from "./icons";
 
 /* Sidebar navigation per app area. `badge` names a live count computed by the
@@ -52,7 +52,7 @@ export interface AreaConfig {
   short: string;
   home: string;
   tone: Tone;
-  /** active nav item colours */
+  /** legacy: active nav item colours (the v2 shell marks the active item with a red rule instead) */
   activeClass: string;
   nav: NavItem[];
   secondary: NavItem[];
@@ -74,7 +74,7 @@ export const AREAS: Record<AreaKey, AreaConfig> = {
     short: "Student",
     home: "/dashboard",
     tone: "hotpink",
-    activeClass: "bg-hotpink-deep text-white",
+    activeClass: "bg-ink text-cream",
     nav: [
       { label: "Dashboard", href: "/dashboard", icon: "home", exact: true },
       { label: "My courses", href: "/dashboard/courses", icon: "book" },
@@ -101,7 +101,7 @@ export const AREAS: Record<AreaKey, AreaConfig> = {
     short: "Tutor",
     home: "/tutor",
     tone: "green",
-    activeClass: "bg-green text-ink",
+    activeClass: "bg-ink text-cream",
     nav: [
       { label: "Studio", href: "/tutor", icon: "home", exact: true },
       { label: "Courses", href: "/tutor/courses", icon: "layers", badge: "drafts" },
@@ -132,7 +132,7 @@ export const AREAS: Record<AreaKey, AreaConfig> = {
     short: "Admin",
     home: "/admin",
     tone: "purple",
-    activeClass: "bg-purple text-white",
+    activeClass: "bg-ink text-cream",
     nav: [
       { label: "Control room", href: "/admin", icon: "home", exact: true },
       { label: "People", href: "/admin/users", icon: "users" },

@@ -9,8 +9,12 @@ import { pushEscape } from "./layers";
 import { useIsClient, useLayer } from "./overlay-core";
 import { useIsCoarse, useIsPhone } from "./mobile";
 import { ActionSheet, BottomSheet, FullScreenSheet } from "./Sheet";
+import { CREAM_SURFACE, INK_SURFACE } from "./surfaces";
 
 /* =============================================================================
+   Overlays, design system v2: square cream panels framed by a hairline, one faint drop,
+   an ink/55 scrim. Titles in Inter Tight; an optional tiny-caps `eyebrow` above them.
+   Drawers run full height, flush to the edge. Menus are square paper lists.
    Overlays: Modal, Drawer, ConfirmDialog, DropdownMenu, Tooltip.
    Modal/Drawer: portal, focus trap, Esc + overlay click to close, focus returns
    to the trigger, page scroll locked (Lenis stopped), data-lenis-prevent inside.
@@ -41,6 +45,8 @@ export function Modal({
   className,
   mobile = "sheet",
   mobileFooter = "fill",
+  eyebrow,
+  surface = "cream",
 }: {
   open: boolean;
   onClose: () => void;
@@ -49,6 +55,10 @@ export function Modal({
   children?: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
+  /** tiny caps line above the title */
+  eyebrow?: React.ReactNode;
+  /** panel ground: cream (default) or ink (theatre: cinematic confirmations, media previews) */
+  surface?: "cream" | "ink";
   initialFocus?: React.RefObject<HTMLElement | null>;
   hideClose?: boolean;
   className?: string;
@@ -77,14 +87,17 @@ export function Modal({
         initialFocus={initialFocus}
         hideClose={hideClose}
         footerLayout={mobileFooter === "stack" ? "stack" : "fill"}
+        eyebrow={eyebrow}
+        surface={surface}
       >
         {children}
       </BottomSheet>
     );
   if (!client || !open) return null;
+  const ink = surface === "ink";
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6" data-lenis-prevent="">
-      <div className="app-fade absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="app-fade absolute inset-0 bg-ink/55" onClick={onClose} aria-hidden />
       <div
         ref={panel}
         role="dialog"
@@ -92,8 +105,10 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
+        data-field={ink ? "dark" : undefined}
         className={clsx(
-          "app-enter app-scroll relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-card-lg bg-white shadow-lift focus:outline-none sm:rounded-card-lg",
+          "app-enter app-scroll relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-none shadow-2xl focus:outline-none",
+          ink ? "theatre-night" : "ground-cream",
           size === "sm" && "sm:max-w-[420px]",
           size === "md" && "sm:max-w-[560px]",
           size === "lg" && "sm:max-w-[760px]",
@@ -101,24 +116,25 @@ export function Modal({
           className,
         )}
       >
-        <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-3 md:px-7 md:pt-7">
+        <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 md:px-8 md:pt-7">
           <div className="min-w-0">
-            <h2 id={titleId} className="t-app-h2">
+            {eyebrow && <p className="t-label mb-3 text-muted">{eyebrow}</p>}
+            <h2 id={titleId} className="font-heading text-[clamp(1.375rem,1.2rem+0.6vw,1.75rem)] leading-[1.08] font-semibold tracking-[-0.035em]">
               {title}
             </h2>
             {description && (
-              <p id={descId} className="t-small mt-1.5 text-ink/65">
+              <p id={descId} className="t-small mt-2 max-w-[56ch] text-muted">
                 {description}
               </p>
             )}
           </div>
-          {!hideClose && <Button variant="ghost" size="sm" iconOnly icon="x" aria-label="Close" onClick={onClose} className="-mt-1 -mr-2" data-overlay-close="" />}
+          {!hideClose && <Button variant="ghost" size="sm" iconOnly icon="x" aria-label="Close" onClick={onClose} className="-mt-1.5 -mr-2.5" data-overlay-close="" />}
         </div>
-        <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5 md:px-7 md:pb-6" data-lenis-prevent="" data-overlay-body="">
+        <div className="app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-6 md:px-8 md:pb-7" data-lenis-prevent="" data-overlay-body="">
           {children}
         </div>
         {footer && (
-          <div data-overlay-footer="" className="flex flex-wrap items-center justify-end gap-2 border-t border-ink/[0.07] bg-cream/50 px-5 py-4 md:px-7">
+          <div data-overlay-footer="" className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-4 md:px-8">
             {footer}
           </div>
         )}
@@ -142,6 +158,8 @@ export function Drawer({
   className,
   bodyClassName,
   mobile = "full",
+  eyebrow,
+  surface = "cream",
 }: {
   open: boolean;
   onClose: () => void;
@@ -158,6 +176,10 @@ export function Drawer({
    *  "sheet" = BottomSheet at the full detent (filters, lists, "Your path");
    *  "side" = keep the side panel */
   mobile?: "full" | "sheet" | "side";
+  /** tiny caps line above the title */
+  eyebrow?: React.ReactNode;
+  /** panel ground: cream (default) or ink (theatre surfaces such as the learn player) */
+  surface?: "cream" | "ink";
 }) {
   const client = useIsClient();
   const phone = useIsPhone();
@@ -178,6 +200,8 @@ export function Drawer({
         detent="full"
         bodyClassName={bodyClassName}
         footerLayout="fill"
+        eyebrow={eyebrow}
+        surface={surface}
       >
         {children}
       </Sheet>
@@ -186,35 +210,40 @@ export function Drawer({
   if (!client || !open) return null;
   return createPortal(
     <div className="fixed inset-0 z-[200]" data-lenis-prevent="">
-      <div className="app-fade absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="app-fade absolute inset-0 bg-ink/55" onClick={onClose} aria-hidden />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        data-field={surface === "ink" ? "dark" : undefined}
         style={{ maxWidth: `min(${width}px, calc(100vw - 32px))` }}
         className={clsx(
-          "absolute inset-y-2 flex w-full flex-col overflow-hidden rounded-card-lg bg-white shadow-lift focus:outline-none",
-          side === "right" ? "right-2 [animation:drawer-r_.28s_var(--ease-ui)_backwards]" : "left-2 [animation:drawer-l_.28s_var(--ease-ui)_backwards]",
+          surface === "ink" ? INK_SURFACE : CREAM_SURFACE,
+          "absolute inset-y-0 flex w-full flex-col overflow-hidden rounded-none shadow-2xl focus:outline-none",
+          side === "right"
+            ? "right-0 border-l border-line-strong [animation:drawer-r_.42s_var(--ease-expo)_backwards]"
+            : "left-0 border-r border-line-strong [animation:drawer-l_.42s_var(--ease-expo)_backwards]",
           className,
         )}
       >
-        <style>{`@keyframes drawer-r{from{translate:24px 0;opacity:0}}@keyframes drawer-l{from{translate:-24px 0;opacity:0}}`}</style>
-        <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-3">
+        <style>{`@keyframes drawer-r{from{translate:48px 0;opacity:0}}@keyframes drawer-l{from{translate:-48px 0;opacity:0}}`}</style>
+        <div className="flex items-start justify-between gap-4 border-b border-line px-6 pt-6 pb-5">
           <div className="min-w-0">
-            <h2 id={titleId} className="t-app-h2">
+            {eyebrow && <p className="t-label mb-3 text-muted">{eyebrow}</p>}
+            <h2 id={titleId} className="font-heading text-[clamp(1.375rem,1.2rem+0.6vw,1.75rem)] leading-[1.08] font-semibold tracking-[-0.035em]">
               {title}
             </h2>
-            {description && <p className="t-small mt-1.5 text-ink/65">{description}</p>}
+            {description && <p className="t-small mt-2 text-muted">{description}</p>}
           </div>
-          <Button variant="ghost" size="sm" iconOnly icon="x" aria-label="Close" onClick={onClose} className="-mt-1 -mr-2" data-overlay-close="" />
+          <Button variant="ghost" size="sm" iconOnly icon="x" aria-label="Close" onClick={onClose} className="-mt-1.5 -mr-2.5" data-overlay-close="" />
         </div>
-        <div className={clsx("app-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-5", bodyClassName)} data-lenis-prevent="" data-overlay-body="">
+        <div className={clsx("app-scroll min-h-0 flex-1 overflow-y-auto px-6 pt-5 pb-6", bodyClassName)} data-lenis-prevent="" data-overlay-body="">
           {children}
         </div>
         {footer && (
-          <div data-overlay-footer="" className="flex flex-wrap items-center justify-end gap-2 border-t border-ink/[0.07] bg-cream/50 px-5 py-4">
+          <div data-overlay-footer="" className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-6 py-4">
             {footer}
           </div>
         )}
@@ -234,6 +263,9 @@ export function ConfirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   tone = "default",
+  eyebrow,
+  surface = "cream",
+  confirmIcon,
   children,
 }: {
   open: boolean;
@@ -243,20 +275,28 @@ export function ConfirmDialog({
   description?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  tone?: "default" | "danger";
+  /** default = ink button; danger = destructive; red = the one cinematic "go" action (publish, buy) */
+  tone?: "default" | "danger" | "red";
+  /** tiny caps line above the title */
+  eyebrow?: React.ReactNode;
+  /** panel ground: cream (default) or ink (theatre: the learn player, cinematic confirmations) */
+  surface?: "cream" | "ink";
+  /** icon on the confirming button */
+  confirmIcon?: IconName;
   children?: React.ReactNode;
 }) {
   // phones: full-width stacked buttons, the confirming action on top (MOBILE_SPEC §1.7)
   const phone = useIsPhone();
   const cancel = (
-    <Button key="cancel" variant="secondary" onClick={onClose} data-overlay-safe="" className="max-sm:h-12">
+    <Button key="cancel" variant="outline" onClick={onClose} data-overlay-safe="" className="max-sm:h-12">
       {cancelLabel}
     </Button>
   );
   const confirm = (
     <Button
       key="confirm"
-      variant={tone === "danger" ? "danger" : "primary"}
+      variant={tone === "danger" ? "danger" : tone === "red" ? "red" : "primary"}
+      icon={confirmIcon}
       className="max-sm:h-12"
       onClick={() => {
         onConfirm();
@@ -267,7 +307,17 @@ export function ConfirmDialog({
     </Button>
   );
   return (
-    <Modal open={open} onClose={onClose} size="sm" title={title} description={description} mobileFooter="stack" footer={phone ? [confirm, cancel] : [cancel, confirm]}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="sm"
+      title={title}
+      description={description}
+      eyebrow={eyebrow}
+      surface={surface}
+      mobileFooter="stack"
+      footer={phone ? [confirm, cancel] : [cancel, confirm]}
+    >
       {children}
     </Modal>
   );
@@ -393,7 +443,7 @@ export function DropdownMenu({
         aria-controls={open ? id : undefined}
         aria-label={label}
         onClick={() => setOpen((o) => !o)}
-        className={clsx("tap inline-flex items-center justify-center", triggerClassName ?? "size-9 rounded-full text-ink/70 hf:bg-ink/[0.06] hf:text-ink")}
+        className={clsx("tap inline-flex items-center justify-center", triggerClassName ?? "size-9 text-fg/70 transition-colors hf:bg-fg/[0.06] hf:text-fg")}
       >
         {trigger}
       </button>
@@ -409,12 +459,12 @@ export function DropdownMenu({
             aria-label={label}
             data-lenis-prevent=""
             style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, width }}
-            className={clsx("app-fade fixed z-[310] overflow-hidden rounded-[18px] bg-white p-1.5 shadow-lift ring-1 ring-ink/[0.06]", menuClassName)}
+            className={clsx("app-fade fixed z-[310] overflow-hidden rounded-none border border-line-strong py-1.5 shadow-xl", CREAM_SURFACE, menuClassName)}
           >
-            {header && <div className="border-b border-ink/[0.07] px-3 pt-2 pb-3">{header}</div>}
+            {header && <div className="mb-1.5 border-b border-line px-4 pt-2.5 pb-3">{header}</div>}
             {items.map((it, i) =>
               it.divider ? (
-                <div key={i} role="separator" className="my-1 h-px bg-ink/[0.07]" />
+                <div key={i} role="separator" className="my-1.5 h-px bg-line" />
               ) : it.href ? (
                 <a
                   key={i}
@@ -428,9 +478,9 @@ export function DropdownMenu({
                   }}
                   className={itemCls(it.danger, it.disabled)}
                 >
-                  {it.icon && <Icon name={it.icon} className="size-[18px] opacity-80" />}
+                  {it.icon && <Icon name={it.icon} className="size-[17px] opacity-70" strokeWidth={1.7} />}
                   <span className="min-w-0 flex-1 truncate">{it.label}</span>
-                  {it.hint && <span className="text-[12px] font-semibold opacity-70">{it.hint}</span>}
+                  {it.hint && <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase opacity-60">{it.hint}</span>}
                 </a>
               ) : (
                 <button
@@ -449,9 +499,9 @@ export function DropdownMenu({
                   }}
                   className={itemCls(it.danger, it.disabled)}
                 >
-                  {it.icon && <Icon name={it.icon} className="size-[18px] opacity-80" />}
+                  {it.icon && <Icon name={it.icon} className="size-[17px] opacity-70" strokeWidth={1.7} />}
                   <span className="min-w-0 flex-1 truncate text-left">{it.label}</span>
-                  {it.hint && <span className="text-[12px] font-semibold opacity-70">{it.hint}</span>}
+                  {it.hint && <span className="font-mono text-[10.5px] tracking-[0.06em] uppercase opacity-60">{it.hint}</span>}
                 </button>
               ),
             )}
@@ -463,8 +513,9 @@ export function DropdownMenu({
 }
 const itemCls = (danger?: boolean, disabled?: boolean) =>
   clsx(
-    "flex h-10 w-full items-center gap-2.5 rounded-[12px] px-3 text-[14px] font-semibold outline-none",
-    danger ? "text-[#c13500] hf:bg-[#ffe1d4] focus-visible:bg-[#ffe1d4]" : "text-ink hf:bg-butter focus-visible:bg-butter",
+    "relative flex h-10 w-full items-center gap-3 rounded-none px-4 text-[14px] font-medium tracking-[-0.005em] outline-none transition-colors duration-150",
+    "focus-visible:before:absolute focus-visible:before:inset-y-1.5 focus-visible:before:left-0 focus-visible:before:w-[2px] focus-visible:before:bg-red",
+    danger ? "text-red-deep hf:bg-red/[0.07] focus-visible:bg-red/[0.07]" : "text-ink hf:bg-cream-2 focus-visible:bg-cream-2",
     disabled && "pointer-events-none opacity-40",
   );
 
@@ -556,7 +607,7 @@ export function Tooltip({ label, children, side = "top", className }: { label: s
             id={id}
             role="tooltip"
             className={clsx(
-              "pointer-events-none fixed top-0 left-0 z-[260] max-w-[min(320px,calc(100vw-16px))] rounded-full bg-ink px-2.5 py-1 text-[12px] font-semibold text-cream transition-opacity duration-150",
+              "pointer-events-none fixed top-0 left-0 z-[260] max-w-[min(320px,calc(100vw-16px))] rounded-none bg-ink px-2.5 py-1.5 text-[11.5px] leading-none font-medium text-cream transition-opacity duration-150",
               "truncate whitespace-nowrap opacity-0",
             )}
           >

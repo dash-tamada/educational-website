@@ -2,23 +2,21 @@
 
 import Link from "next/link";
 import clsx from "clsx";
-import { Button } from "@/components/app";
-import { BlockBuddy } from "@/components/decor/BlockBuddy";
-import { Mascot } from "@/components/decor/Mascot";
-import { toneBg, type Tone } from "@/lib/landing-data";
+import { Button } from "@/components/editorial";
 import { useDemoAuth } from "@/lib/demo/session-client";
 
-/**
- * A full-width state card for the checkout pages (log in, wrong account, not
- * found). Same look as the app EmptyState, but the title can be the page's h1.
- */
+/* =============================================================================
+   Editorial state blocks for checkout + the order page (log in, wrong account,
+   not found, already owned). A ruled block: mono slate, an Inter Tight title
+   (the page h1 when it IS the page), body, actions, footnote. Follows the ground
+   it sits on (cream or theatre) through the context tokens.
+   ============================================================================= */
 export function StateCard({
   title,
   body,
   action,
   footnote,
-  art = "tami",
-  tone = "butter",
+  slate,
   as: H = "h2",
   titleId,
   className,
@@ -27,49 +25,64 @@ export function StateCard({
   body?: React.ReactNode;
   action?: React.ReactNode;
   footnote?: React.ReactNode;
-  art?: "tami" | "buddy" | "buddies";
-  tone?: Tone;
+  /** tiny mono caps line above the title */
+  slate?: React.ReactNode;
   as?: "h1" | "h2";
   titleId?: string;
   className?: string;
 }) {
   return (
-    <div className={clsx("app-fade flex flex-col items-center rounded-card-lg bg-white px-6 py-12 text-center shadow-soft md:py-16", className)}>
-      <div className={clsx("relative grid size-32 place-items-center rounded-full md:size-36", toneBg[tone])} aria-hidden>
-        {art === "tami" && <Mascot title="" className="w-[4.5rem] md:w-20" style={{ transform: "rotate(-6deg)" }} />}
-        {art === "buddy" && <BlockBuddy body="#2668fd" head="#ffcf3f" wave className="w-12 md:w-14" />}
-        {art === "buddies" && (
-          <span className="flex items-end gap-1">
-            <BlockBuddy body="#ff008c" head="#ffcf3f" hat="#2668fd" className="w-10" />
-            <BlockBuddy body="#00b351" head="#f780d4" wave className="w-11" />
-          </span>
-        )}
-      </div>
-      <H id={titleId} className={clsx("mt-5 max-w-[22ch]", H === "h1" ? "t-display-m" : "t-app-h2")}>
+    <div className={clsx("border-t border-fg pt-8 md:pt-10", className)}>
+      {slate && (
+        <p className="t-timecode flex items-center gap-3 text-muted">
+          <span aria-hidden className="block size-[7px] bg-red" />
+          {slate}
+        </p>
+      )}
+      <H id={titleId} className={clsx("max-w-[18ch]", slate && "mt-6", H === "h1" ? "t-headline-xl" : "t-headline-l")}>
         {title}
       </H>
-      {body && <p className="t-body mt-3 max-w-[40ch] text-ink/70">{body}</p>}
-      {action && <div className="mt-6 flex flex-wrap justify-center gap-2">{action}</div>}
-      {footnote && <p className="mt-5 text-[13px] font-semibold text-ink/60">{footnote}</p>}
+      {body && <p className="t-body-l mt-5 max-w-[36rem] text-muted">{body}</p>}
+      {action && <div className="mt-8 flex flex-wrap items-center gap-3">{action}</div>}
+      {footnote && <p className="t-small mt-6 text-muted">{footnote}</p>}
     </div>
   );
 }
 
-/** "Log in to …" card: one click into Priya's student demo, or the real login with ?next=. */
-export function LoginPrompt({ next, title, body, as, titleId }: { next: string; title: React.ReactNode; body: React.ReactNode; as?: "h1" | "h2"; titleId?: string }) {
+/** "Log in to …": one click into Priya's student demo, or the real login with ?next=. */
+export function LoginPrompt({
+  next,
+  title,
+  body,
+  as,
+  titleId,
+  className,
+  demo,
+}: {
+  next: string;
+  title: React.ReactNode;
+  body: React.ReactNode;
+  as?: "h1" | "h2";
+  titleId?: string;
+  className?: string;
+  /** the one-click demo login (default: Priya, the default student) */
+  demo?: { label: string; onClick: () => void };
+}) {
   const { loginAs } = useDemoAuth();
   return (
     <StateCard
       as={as}
       titleId={titleId}
+      className={className}
+      slate="Account needed"
       title={title}
       body={body}
       action={
         <>
-          <Button variant="accent" icon="user" onClick={() => loginAs("student")} className="h-auto! min-h-11 max-w-full py-2.5 text-center leading-tight! whitespace-normal!">
-            Continue as Priya (student demo)
+          <Button onClick={demo?.onClick ?? (() => loginAs("student"))} arrow className="max-sm:w-full">
+            {demo?.label ?? "Continue as Priya · demo"}
           </Button>
-          <Button href={`/login?next=${encodeURIComponent(next)}`} variant="secondary">
+          <Button href={`/login?next=${encodeURIComponent(next)}`} variant="outline" className="max-sm:w-full">
             Log in
           </Button>
         </>
@@ -77,7 +90,7 @@ export function LoginPrompt({ next, title, body, as, titleId }: { next: string; 
       footnote={
         <>
           New here?{" "}
-          <Link href="/signup" className="font-bold text-blue underline-offset-4 hf:underline">
+          <Link href="/signup" className="link-draw text-fg">
             Create an account
           </Link>
         </>

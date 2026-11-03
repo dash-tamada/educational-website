@@ -54,37 +54,37 @@ export const FILE_META: Record<
   pdf: {
     label: "PDF",
     ext: "pdf",
-    tone: "bg-[#ffe1d4] text-[#b02f00]",
+    tone: "text-fg ring-1 ring-line-strong ring-inset",
     icon: "file",
   },
   template: {
     label: "Template",
     ext: "pdf",
-    tone: "bg-[#e7e0fb] text-indigo",
+    tone: "text-fg ring-1 ring-line-strong ring-inset",
     icon: "layers",
   },
   zip: {
     label: "ZIP",
     ext: "zip",
-    tone: "bg-butter text-[#6b5400]",
+    tone: "text-fg ring-1 ring-line-strong ring-inset",
     icon: "download",
   },
   sheet: {
     label: "Sheet",
     ext: "csv",
-    tone: "bg-mint text-forest",
+    tone: "text-fg ring-1 ring-line-strong ring-inset",
     icon: "grid",
   },
   link: {
     label: "Link",
     ext: "",
-    tone: "bg-[#dfe8ff] text-blue",
+    tone: "text-fg ring-1 ring-line-strong ring-inset",
     icon: "link",
   },
   audio: {
     label: "Audio",
     ext: "txt",
-    tone: "bg-blush text-[#8a0d55]",
+    tone: "text-fg ring-1 ring-line-strong ring-inset",
     icon: "music",
   },
 };

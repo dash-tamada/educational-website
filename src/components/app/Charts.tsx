@@ -2,13 +2,19 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { toneHex, type Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import { formatCompact } from "@/lib/mock/format";
 
 /* =============================================================================
    Lightweight SVG charts (no chart library). Rendered at the measured pixel
    width (crisp text), tooltips on hover AND keyboard focus (arrow keys), and a
-   visually hidden data table for screen readers. Colours = palette tones.
+   visually hidden data table for screen readers.
+   Design system v2: thin marks, square bars, hairline grid, mono tick labels, and
+   only ink / red / greys. `tone` props are kept for compatibility and folded in:
+     bars    ink (the `highlight` bar turns RED, the others go stone)
+     lines   series 1 red, series 2 ink, then smoke / stone; area = a faint red wash
+     donut   slices by order: ink, red, smoke, stone, sand (tones ignored)
+     a red-family tone (hotpink / flame / tomato / magenta) always draws in red.
 
      <BarChart data={series.map(p => ({ label: p.label, value: p.value }))} format={(n) => formatINR(n, { compact: true })} tone="blue" ariaLabel="Revenue by month" />
      <BarChart layout="horizontal" data={…} tone="green" format={(n) => `${n}%`} />
@@ -62,6 +68,18 @@ function niceMax(max: number): { top: number; step: number; ticks: number } {
 }
 
 const defaultFmt = (n: number) => formatCompact(n);
+
+/* ---- editorial chart palette ------------------------------------------------ */
+const C = { ink: "#0b0b0b", red: "#e3061b", smoke: "#6b665e", stone: "#b3ab9d", sand: "#d9d2c5", line: "rgb(11 11 11 / 0.09)", base: "rgb(11 11 11 / 0.45)" };
+const RED_TONES = new Set<Tone>(["hotpink", "flame", "tomato", "magenta"]);
+/** Bars: ink unless the tone is a red one. */
+const barColor = (tone: Tone) => (RED_TONES.has(tone) ? C.red : C.ink);
+/** Line series by order (a red-family tone keeps red). */
+const LINE_SEQ = [C.red, C.ink, C.smoke, C.stone];
+const lineColor = (tone: Tone, i: number) => (RED_TONES.has(tone) ? C.red : (LINE_SEQ[i] ?? C.stone));
+/** Donut slices by order. */
+const SLICE_SEQ = [C.ink, C.red, C.smoke, C.stone, C.sand, "#ece5d8"];
+const sliceColor = (i: number) => SLICE_SEQ[i % SLICE_SEQ.length];
 
 function SrTable({
   caption,
@@ -135,15 +153,15 @@ function Tip({
   return (
     <div
       ref={ref}
-      className="pointer-events-none absolute z-10 rounded-[12px] bg-ink px-2.5 py-1.5 text-[12px] leading-tight font-semibold whitespace-nowrap text-cream shadow-lift"
+      className="pointer-events-none absolute z-10 rounded-none bg-ink px-3 py-2 font-mono text-[11.5px] leading-tight font-medium whitespace-nowrap text-cream"
       style={{ left, top, visibility: size.w ? "visible" : "hidden" }}
       aria-hidden
     >
-      <div className="opacity-75">{title}</div>
+      <div className="text-[10px] tracking-[0.08em] uppercase opacity-60">{title}</div>
       {lines.map((l, i) => (
-        <div key={i} className="mt-0.5 flex items-center gap-1.5">
+        <div key={i} className="mt-1 flex items-center gap-1.5">
           <span
-            className="size-2 rounded-full"
+            className="size-2 ring-1 ring-cream/40"
             style={{ background: l.color }}
           />
           {l.text}
@@ -155,9 +173,9 @@ function Tip({
 
 /* x-axis label position: centred under its bar/point, but pinned inside the svg
    when that would spill past an edge (e.g. "4 Oct" under the last of 30 bars).
-   Width is estimated (11px semibold ≈ 6.2px per glyph), no layout read needed. */
+   Width is estimated (10.5px mono ≈ 6.4px per glyph), no layout read needed. */
 function axisLabelPos(cx: number, label: string, width: number): { x: number; textAnchor: "start" | "middle" | "end" } {
-  const half = (String(label).length * 6.2) / 2;
+  const half = (String(label).length * 6.4) / 2;
   if (cx + half > width - 1) return { x: width - 1, textAnchor: "end" };
   if (cx - half < 1) return { x: 1, textAnchor: "start" };
   return { x: cx, textAnchor: "middle" };
@@ -188,7 +206,7 @@ export function BarChart({
   const [hover, setHover] = useState<number | null>(null);
   // keyboard focus on the plot: draw a ring on the active bar (visible even for zero values)
   const [kbd, setKbd] = useState(false);
-  const color = toneHex[tone];
+  const color = barColor(tone);
   const max = Math.max(0, ...data.map((d) => d.value));
   const { top, step, ticks } = niceMax(max);
 
@@ -203,11 +221,10 @@ export function BarChart({
     const barW = Math.max(10, width - labelW - valueW - 12);
     const barFill = (d: Datum, i: number) => (
       <span
-        className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-expo"
+        className="absolute inset-y-0 left-0 transition-[width] duration-700 ease-expo"
         style={{
           width: `${max ? (d.value / (max || 1)) * 100 : 0}%`,
-          background:
-            highlight === undefined || highlight === i ? color : `${color}66`,
+          background: highlight === undefined ? color : highlight === i ? C.red : C.stone,
         }}
       />
     );
@@ -223,17 +240,17 @@ export function BarChart({
                 {data.map((d, i) => (
                   <li key={i} className="text-[13px]">
                     <span
-                      className="line-clamp-2 font-semibold leading-snug text-ink/75"
+                      className="line-clamp-2 leading-snug text-fg/80"
                       title={d.label}
                     >
                       {d.label}
                     </span>
                     <span className="mt-1 flex items-center gap-3">
-                      <span className="relative h-3.5 min-w-0 flex-1 overflow-hidden rounded-full bg-ink/[0.06]">
+                      <span className="relative h-[6px] min-w-0 flex-1 overflow-hidden bg-ink/[0.07]">
                         {barFill(d, i)}
                       </span>
                       <span
-                        className="shrink-0 text-right font-bold tabular-nums"
+                        className="shrink-0 text-right font-mono text-[12px] tabular-nums"
                         style={{ minWidth: 44 }}
                       >
                         {format(d.value)}
@@ -251,20 +268,20 @@ export function BarChart({
                     style={{ height: rowH - 6 }}
                   >
                     <span
-                      className="truncate font-semibold text-ink/75"
+                      className="truncate text-fg/80"
                       style={{ width: labelW }}
                       title={d.label}
                     >
                       {d.label}
                     </span>
                     <span
-                      className="relative h-3.5 overflow-hidden rounded-full bg-ink/[0.06]"
+                      className="relative h-[6px] overflow-hidden bg-ink/[0.07]"
                       style={{ width: barW }}
                     >
                       {barFill(d, i)}
                     </span>
                     <span
-                      className="shrink-0 text-right font-bold tabular-nums"
+                      className="shrink-0 text-right font-mono text-[12px] tabular-nums"
                       style={{ width: valueW }}
                     >
                       {format(d.value)}
@@ -292,7 +309,7 @@ export function BarChart({
   const innerW = Math.max(0, width - padL - 4);
   const innerH = height - padB - padT;
   const slot = data.length ? innerW / data.length : 0;
-  const bw = Math.max(4, Math.min(44, slot * 0.62));
+  const bw = Math.max(2, Math.min(26, slot * 0.42));
   const every = Math.max(
     1,
     Math.ceil(data.length / Math.max(1, Math.floor(innerW / 46))),
@@ -337,9 +354,8 @@ export function BarChart({
               y={padT}
               width={Math.max(0, slot - 2 * Math.min(3, slot * 0.08))}
               height={innerH}
-              rx={10}
-              fill="#161616"
-              fillOpacity={0.045}
+              fill="#0b0b0b"
+              fillOpacity={0.04}
               aria-hidden
             />
           )}
@@ -352,16 +368,16 @@ export function BarChart({
                   x2={width - 4}
                   y1={y(v)}
                   y2={y(v)}
-                  stroke="#161616"
-                  strokeOpacity={i ? 0.07 : 0.18}
-                  strokeDasharray={i ? "3 4" : undefined}
+                  stroke={i ? C.line : C.base}
+                  strokeWidth={1}
+                  shapeRendering="crispEdges"
                 />
                 <text
                   x={padL - 8}
                   y={y(v)}
                   dy="0.32em"
                   textAnchor="end"
-                  className="fill-ink/65 text-[11px] font-semibold"
+                  className="fill-muted font-mono text-[10.5px]"
                 >
                   {format(v)}
                 </text>
@@ -382,9 +398,8 @@ export function BarChart({
                   y={padT + innerH - h}
                   width={bw}
                   height={h}
-                  rx={Math.min(8, bw / 2)}
-                  fill={color}
-                  fillOpacity={hover === i ? 1 : dim ? 0.4 : 0.92}
+                  fill={highlight === i ? C.red : dim ? C.stone : color}
+                  fillOpacity={hover === null || hover === i ? 1 : 0.75}
                   className="transition-[fill-opacity] duration-150"
                 />
                 {kbd && hover === i && (
@@ -393,10 +408,9 @@ export function BarChart({
                     y={padT + innerH - Math.max(h, 8) - 3}
                     width={bw + 6}
                     height={Math.max(h, 8) + 6}
-                    rx={Math.min(10, bw / 2 + 3)}
                     fill="none"
-                    stroke="#161616"
-                    strokeWidth={2}
+                    stroke={C.red}
+                    strokeWidth={1.5}
                     aria-hidden
                   />
                 )}
@@ -404,7 +418,7 @@ export function BarChart({
                   <text
                     {...axisLabelPos(padL + slot * i + slot / 2, d.label, width)}
                     y={height - 8}
-                    className="fill-ink/65 text-[11px] font-semibold"
+                    className={clsx("font-mono text-[10.5px]", highlight === i ? "fill-fg" : "fill-muted")}
                   >
                     {d.label}
                   </text>
@@ -420,7 +434,6 @@ export function BarChart({
               y={padT}
               width={innerW}
               height={innerH}
-              rx={12}
               fill="transparent"
               tabIndex={0}
               role="img"
@@ -442,7 +455,7 @@ export function BarChart({
                 setKbd(true);
                 onBarKey(e);
               }}
-              className="outline-none focus-visible:stroke-blue/60 focus-visible:stroke-[1.5]"
+              className="outline-none focus-visible:stroke-red focus-visible:stroke-[1.5]"
             />
           )}
         </svg>
@@ -455,7 +468,7 @@ export function BarChart({
           x={padL + slot * hover + slot / 2}
           y={Math.min(y(data[hover].value), padT + innerH - 8) - (kbd ? 4 : 0)}
           title={data[hover].label}
-          lines={[{ color, text: format(data[hover].value) }]}
+          lines={[{ color: highlight === hover ? C.red : color, text: format(data[hover].value) }]}
           width={width}
         />
       )}
@@ -540,12 +553,12 @@ export function LineChart({
   return (
     <div className={clsx("relative w-full min-w-0", className)}>
       {legend && (
-        <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold text-ink/70">
-          {series.map((s) => (
-            <li key={s.name} className="flex items-center gap-1.5">
+        <ul className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
+          {series.map((s, si) => (
+            <li key={s.name} className="flex items-center gap-2">
               <span
-                className="h-2.5 w-4 rounded-full"
-                style={{ background: toneHex[s.tone] }}
+                className="h-[2px] w-5"
+                style={{ background: lineColor(s.tone, si) }}
                 aria-hidden
               />
               {s.name}
@@ -572,13 +585,13 @@ export function LineChart({
               >
                 <stop
                   offset="0%"
-                  stopColor={toneHex[series[0].tone]}
-                  stopOpacity={0.28}
+                  stopColor={lineColor(series[0].tone, 0)}
+                  stopOpacity={0.14}
                 />
                 <stop
                   offset="100%"
-                  stopColor={toneHex[series[0].tone]}
-                  stopOpacity={0.02}
+                  stopColor={lineColor(series[0].tone, 0)}
+                  stopOpacity={0}
                 />
               </linearGradient>
             </defs>
@@ -591,16 +604,16 @@ export function LineChart({
                     x2={width - padR}
                     y1={y(v)}
                     y2={y(v)}
-                    stroke="#161616"
-                    strokeOpacity={i ? 0.07 : 0.18}
-                    strokeDasharray={i ? "3 4" : undefined}
+                    stroke={i ? C.line : C.base}
+                    strokeWidth={1}
+                    shapeRendering="crispEdges"
                   />
                   <text
                     x={padL - 8}
                     y={y(v)}
                     dy="0.32em"
                     textAnchor="end"
-                    className="fill-ink/65 text-[11px] font-semibold"
+                    className="fill-muted font-mono text-[10.5px]"
                   >
                     {format(v)}
                   </text>
@@ -614,7 +627,7 @@ export function LineChart({
                     key={i}
                     {...axisLabelPos(x(i), l, width)}
                     y={height - 8}
-                    className="fill-ink/65 text-[11px] font-semibold"
+                    className="fill-muted font-mono text-[10.5px]"
                   >
                     {l}
                   </text>
@@ -626,15 +639,15 @@ export function LineChart({
                 fill={`url(#lg-${series[0].tone})`}
               />
             )}
-            {series.map((s) => (
+            {series.map((s, si) => (
               <path
                 key={s.name}
                 d={path(s.data)}
                 fill="none"
-                stroke={toneHex[s.tone]}
-                strokeWidth={2.6}
+                stroke={lineColor(s.tone, si)}
+                strokeWidth={1.75}
                 strokeLinejoin="round"
-                strokeLinecap="round"
+                strokeLinecap="square"
               />
             ))}
             {idx !== null && (
@@ -644,19 +657,20 @@ export function LineChart({
                   x2={x(idx)}
                   y1={padT}
                   y2={padT + innerH}
-                  stroke="#161616"
-                  strokeOpacity={0.25}
-                  strokeDasharray="3 3"
+                  stroke={C.ink}
+                  strokeOpacity={0.35}
+                  shapeRendering="crispEdges"
                 />
-                {series.map((s) => (
-                  <circle
+                {series.map((s, si) => (
+                  <rect
                     key={s.name}
-                    cx={x(idx)}
-                    cy={y(s.data[idx]?.value ?? 0)}
-                    r={5}
-                    fill="#fff"
-                    stroke={toneHex[s.tone]}
-                    strokeWidth={2.6}
+                    x={x(idx) - 4}
+                    y={y(s.data[idx]?.value ?? 0) - 4}
+                    width={8}
+                    height={8}
+                    fill="#fdf8ee"
+                    stroke={lineColor(s.tone, si)}
+                    strokeWidth={1.75}
                   />
                 ))}
               </g>
@@ -666,7 +680,6 @@ export function LineChart({
               y={padT}
               width={innerW}
               height={innerH}
-              rx={12}
               fill="transparent"
               tabIndex={0}
               role="img"
@@ -676,7 +689,7 @@ export function LineChart({
               onFocus={() => setIdx((i) => i ?? n - 1)}
               onBlur={() => setIdx(null)}
               onKeyDown={onKey}
-              className="outline-none focus-visible:stroke-blue/60 focus-visible:stroke-[1.5]"
+              className="outline-none focus-visible:stroke-red focus-visible:stroke-[1.5]"
             />
           </svg>
         )}
@@ -690,8 +703,8 @@ export function LineChart({
             x={x(idx)}
             y={Math.min(...series.map((s) => y(s.data[idx]?.value ?? 0)))}
             title={labels[idx]}
-            lines={series.map((s) => ({
-              color: toneHex[s.tone],
+            lines={series.map((s, si) => ({
+              color: lineColor(s.tone, si),
               text: `${series.length > 1 ? `${s.name}: ` : ""}${format(s.data[idx]?.value ?? 0)}`,
             }))}
             width={width}
@@ -722,7 +735,7 @@ export const AreaChart = (
 export function Donut({
   data,
   size = 180,
-  thickness = 26,
+  thickness = 14,
   centerLabel,
   centerValue,
   format = (n: number) => String(n),
@@ -762,13 +775,14 @@ export function Donut({
             cy={size / 2}
             r={r}
             fill="none"
-            stroke="#161616"
+            stroke="#0b0b0b"
             strokeOpacity={0.06}
-            strokeWidth={thickness}
+            strokeWidth={Math.min(thickness, 16)}
           />
           {data.map((d, i) => {
             const len = (d.value / total) * c;
-            const gap = data.length > 1 ? Math.min(3, len / 3) : 0;
+            const gap = data.length > 1 ? Math.min(2, len / 3) : 0;
+            const sw = Math.min(thickness, 16);
             const el = (
               <circle
                 key={i}
@@ -776,8 +790,8 @@ export function Donut({
                 cy={size / 2}
                 r={r}
                 fill="none"
-                stroke={toneHex[d.tone]}
-                strokeWidth={hover === i ? thickness + 4 : thickness}
+                stroke={sliceColor(i)}
+                strokeWidth={hover === i ? sw + 4 : sw}
                 strokeDasharray={`${Math.max(0, len - gap)} ${c - Math.max(0, len - gap)}`}
                 strokeDashoffset={-offsets[i]}
                 className="transition-[stroke-width] duration-150"
@@ -790,10 +804,10 @@ export function Donut({
         </svg>
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
           <div>
-            <div className="t-stat text-[1.9rem]">
+            <div className="t-stat text-[2.25rem]">
               {hover !== null ? format(data[hover].value) : centerValue}
             </div>
-            <div className="mt-1 text-[12px] font-semibold text-ink/60">
+            <div className="mt-1.5 text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase">
               {hover !== null ? data[hover].label : centerLabel}
             </div>
           </div>
@@ -802,25 +816,25 @@ export function Donut({
       {legend && (
         /* the legend is its own container: under ~240px the % stacks under the value
            instead of running past the card edge */
-        <ul className="@container min-w-0 flex-1 basis-[190px] space-y-2 text-[13.5px]">
+        <ul className="@container min-w-0 flex-1 basis-[190px] divide-y divide-line border-y border-line text-[13.5px]">
           {data.map((d, i) => (
             <li
               key={i}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2.5 py-2"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             >
               <span
-                className="size-3 shrink-0 rounded-full"
-                style={{ background: toneHex[d.tone] }}
+                className="size-2.5 shrink-0"
+                style={{ background: sliceColor(i) }}
                 aria-hidden
               />
-              <span className="min-w-0 flex-1 truncate font-semibold text-ink/75">
+              <span className="min-w-0 flex-1 truncate text-fg/85">
                 {d.label}
               </span>
               <span className="flex shrink-0 items-baseline justify-end gap-2 @max-[15rem]:flex-col @max-[15rem]:items-end @max-[15rem]:gap-0">
-                <span className="font-bold tabular-nums">{format(d.value)}</span>
-                <span className="w-10 text-right text-ink/65 tabular-nums @max-[15rem]:w-auto @max-[15rem]:text-[12px] @max-[15rem]:leading-tight">
+                <span className="font-mono text-[12.5px] tabular-nums">{format(d.value)}</span>
+                <span className="w-10 text-right font-mono text-[11.5px] text-muted tabular-nums @max-[15rem]:w-auto @max-[15rem]:leading-tight">
                   {Math.round((d.value / total) * 100)}%
                 </span>
               </span>
@@ -864,7 +878,7 @@ export function Sparkline({
   const d = pts
     .map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`)
     .join(" ");
-  const color = toneHex[tone];
+  const color = RED_TONES.has(tone) || tone === "green" ? C.red : C.ink;
   return (
     <svg
       width={width}
@@ -878,21 +892,22 @@ export function Sparkline({
         <path
           d={`${d} L${pts[pts.length - 1][0]},${height} L${pts[0][0]},${height} Z`}
           fill={color}
-          fillOpacity={0.16}
+          fillOpacity={0.08}
         />
       )}
       <path
         d={d}
         fill="none"
         stroke={color}
-        strokeWidth={2.2}
-        strokeLinecap="round"
+        strokeWidth={1.5}
+        strokeLinecap="square"
         strokeLinejoin="round"
       />
-      <circle
-        cx={pts[pts.length - 1][0]}
-        cy={pts[pts.length - 1][1]}
-        r={2.8}
+      <rect
+        x={pts[pts.length - 1][0] - 2.5}
+        y={pts[pts.length - 1][1] - 2.5}
+        width={5}
+        height={5}
         fill={color}
       />
     </svg>

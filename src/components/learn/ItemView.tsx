@@ -3,14 +3,14 @@
 import Image from "next/image";
 import { useEffect } from "react";
 import clsx from "clsx";
-import { Badge, Button, Card, Icon, Skeleton, toast } from "@/components/app";
-import { Mascot } from "@/components/decor/Mascot";
+import { Badge, Button, Eyebrow, Icon, Skeleton, toast } from "@/components/app";
 import { cropSrc } from "@/lib/img";
 import {
   formatINR,
   getFirstFreeItem,
   getCourseStats,
   itemTitle,
+  pad2,
   plural,
   type ItemContext,
   type ModuleItem,
@@ -42,16 +42,36 @@ import {
   posterUrl,
 } from "./media";
 
-/* One item of the course: the stage (video / test / resource / lock screen), the
-   lesson header with actions and "Up next", then the Overview / Q&A / Notes /
-   Resources tabs. */
+/* One item of the course, on the theatre: the stage (video in a letterboxed
+   frame / exam sheet / download / lock screen), the lesson header (mono slate,
+   Anton title, actions, Up next), then the Overview / Q&A / Notes / Resources
+   tabs. */
 
 const kindLabel = (item: ModuleItem) =>
   item.type === "video"
     ? "Lesson"
     : item.type === "quiz"
-      ? "Tiny test"
+      ? "Test"
       : "Resource";
+
+/** "MODULE 05 / LESSON 02" -> "Module 05 · Lesson 02" */
+const slate = (label: string) => label.replace(" / ", " · ");
+
+/** 1000s -> "00:16:40:00" (an SMPTE-style slate timecode, frames always 00). */
+export function smpte(sec: number) {
+  const s = Math.max(0, Math.round(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${pad2(h)}:${pad2(m)}:${pad2(s % 60)}:00`;
+}
+
+/** "05.02": the mono index of an item in its module (the path panel's numbering). */
+export function itemIndex(flat: ItemContext[], id: string): string | null {
+  const x = flat.find((f) => f.item.id === id);
+  if (!x) return null;
+  const i = x.module.items.findIndex((it) => it.id === id);
+  return `${pad2(x.module.position)}.${pad2(i + 1)}`;
+}
 
 export function ItemView({ itemId }: { itemId: string }) {
   const L = useLearn();
@@ -77,8 +97,9 @@ export function ItemView({ itemId }: { itemId: string }) {
         ? L.flat.find((x) => x.item.id === L.progress.resumeItemId)
         : undefined;
     return (
-      <Card className="mx-auto max-w-[720px]">
+      <div className="mx-auto max-w-[1120px] border-t border-line">
         <LearnEmpty
+          eyebrow="404 · Missing frame"
           title="That lesson wandered off."
           body={
             resume
@@ -90,6 +111,7 @@ export function ItemView({ itemId }: { itemId: string }) {
               {resume && (
                 <Button
                   href={learnHref(L.course.slug, resume.item.id)}
+                  variant="red"
                   iconRight="arrow-right"
                 >
                   Pick up where you left off
@@ -97,7 +119,7 @@ export function ItemView({ itemId }: { itemId: string }) {
               )}
               {first && first.id !== resume?.item.id && (
                 <Button
-                  variant={resume ? "secondary" : "primary"}
+                  variant={resume ? "outline" : "red"}
                   href={learnHref(L.course.slug, first.id)}
                   iconRight={resume ? undefined : "arrow-right"}
                 >
@@ -105,7 +127,7 @@ export function ItemView({ itemId }: { itemId: string }) {
                 </Button>
               )}
               <Button
-                variant="secondary"
+                variant="outline"
                 icon="layers"
                 onClick={L.openPath}
                 // the aside is already on screen from lg up
@@ -116,7 +138,7 @@ export function ItemView({ itemId }: { itemId: string }) {
             </>
           }
         />
-      </Card>
+      </div>
     );
   }
 
@@ -138,15 +160,31 @@ export function ItemView({ itemId }: { itemId: string }) {
       {/* Phones: the stage box dissolves (display: contents), so the player's
           sticky frame is held by the whole item, not just this wrapper, and can
           stay pinned under the top bar while the learner reads the tabs.
-          Short landscape: the frame fills the screen (no height-based cap). */}
+          Short landscape: the frame fills the screen (no height-based cap).
+          From sm the video sits in a letterbox: a black slate row over the frame. */}
       <div
         className={clsx(
           fs
             ? "size-full"
             : playable &&
-                "mx-auto max-w-[calc((100dvh-150px)*16/9)] min-w-0 max-sm:contents land:max-w-none",
+                "mx-auto max-w-[calc((100dvh-196px)*16/9)] min-w-0 max-sm:contents land:max-w-none",
         )}
       >
+        {playable && !fs && (
+          <StageSlate
+            left={slate(ctx.label)}
+            right={
+              ctx.item.type === "video"
+                ? `RT ${smpte(ctx.item.lesson.durationSec)}`
+                : undefined
+            }
+            note={
+              ctx.item.type === "video" && ctx.item.lesson.isFreePreview
+                ? "Free preview"
+                : "Sample footage"
+            }
+          />
+        )}
         {!access.allowed ? (
           <LockedStage ctx={ctx} access={access} />
         ) : ctx.item.type === "video" ? (
@@ -177,10 +215,41 @@ export function ItemView({ itemId }: { itemId: string }) {
 
         <LessonHeader ctx={ctx} access={access} />
 
-        <div className="mt-8 md:mt-10">
+        <div className="mt-12 md:mt-14">
           <LessonTabs ctx={ctx} access={access} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The letterbox slate over the frame (from sm): rec dot + label, a note, the runtime. */
+function StageSlate({
+  left,
+  note,
+  right,
+  className,
+}: {
+  left: string;
+  note?: string;
+  right?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={clsx(
+        "flex h-9 items-center gap-4 border border-b-0 border-line bg-black px-3.5 font-mono text-[10.5px] tracking-[0.1em] text-ash uppercase tabular-nums max-sm:hidden land:hidden",
+        className,
+      )}
+    >
+      <span className="flex min-w-0 items-center gap-2.5 text-cream">
+        <span className="size-[6px] shrink-0 rounded-full bg-red" />
+        <span className="truncate">{left}</span>
+      </span>
+      <span className="flex-1" />
+      {note && <span className="truncate max-md:hidden">{note}</span>}
+      {right && <span className="shrink-0">{right}</span>}
     </div>
   );
 }
@@ -247,7 +316,7 @@ function VideoStage({ ctx }: { ctx: ItemContext & { item: VideoItem } }) {
             : undefined,
         lockCta: gated
           ? "Take the test"
-          : `Unlock the course · ${formatINR(course.price)}`,
+          : `Unlock the full course · ${formatINR(course.price)}`,
         // the moment of highest intent: price first, logging in second
         lockExtra:
           na?.reason === "login"
@@ -337,99 +406,90 @@ function ResourceStage({ ctx }: { ctx: ItemContext & { item: ResourceItem } }) {
       });
   };
   return (
-    <Card padding="none" className="overflow-hidden">
-      <div className="grid md:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="p-5 md:p-8">
-          <div className="flex items-center gap-3">
-            <span
-              className={clsx(
-                "grid size-14 shrink-0 place-items-center rounded-[18px]",
-                meta.tone,
-              )}
+    <section
+      aria-label="Download"
+      className="grid border border-line bg-night md:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]"
+    >
+      <div className="min-w-0 p-5 sm:p-7 md:p-9">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
+          <span className="flex items-center gap-2 text-fg">
+            <span aria-hidden className="size-[6px] rounded-full bg-red" />
+            {slate(ctx.label)}
+          </span>
+          <span>
+            {[meta.label, formatSize(r.sizeKb)].filter(Boolean).join(" · ")}
+            {done && " · Downloaded"}
+          </span>
+        </p>
+        <h1 className="mt-5 max-w-[22ch] font-heading text-[clamp(1.75rem,1.25rem+1.6vw,2.75rem)] leading-[1.02] font-semibold tracking-[-0.04em]">
+          {r.title}
+        </h1>
+        <p className="mt-4 max-w-[54ch] t-body text-muted">{r.description}</p>
+        <ol className="mt-7 max-w-[56ch] border-t border-line">
+          {outline.map((l, i) => (
+            <li
+              key={l}
+              className="flex items-baseline gap-4 border-b border-line py-3 text-[14.5px] leading-snug"
             >
-              <Icon name={meta.icon} className="size-7" />
-            </span>
-            <div className="min-w-0">
-              <p className="t-eyebrow text-blue">Download</p>
-              <p className="mt-1 text-[13px] font-bold text-ink/65">
-                {[meta.label, formatSize(r.sizeKb)].filter(Boolean).join(" · ")}
-                {done && " · Downloaded"}
-              </p>
-            </div>
-          </div>
-          <h1 className="mt-5 t-app-h2">{r.title}</h1>
-          <p className="mt-2 max-w-[54ch] t-body text-ink/70">
-            {r.description}
-          </p>
-          <ul className="mt-5 space-y-2">
-            {outline.map((l) => (
-              <li
-                key={l}
-                className="flex items-start gap-2 text-[14.5px] font-semibold"
-              >
-                <Icon
-                  name="check-circle"
-                  className="mt-0.5 size-4 shrink-0 text-green"
-                />
-                {l}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Button
-              size="lg"
-              variant={done ? "secondary" : "primary"}
-              icon={r.fileType === "link" ? "external" : "download"}
-              onClick={download}
-              className="max-sm:h-12 max-sm:w-full"
-              aria-label={
-                r.fileType === "link"
-                  ? `Open “${r.title}”`
-                  : done
-                    ? `Download “${r.title}” again`
-                    : `Download “${r.title}”`
-              }
-            >
-              {r.fileType === "link"
-                ? "Open link"
+              <span className="w-6 shrink-0 font-mono text-[11px] text-muted tabular-nums">
+                {pad2(i + 1)}
+              </span>
+              {l}
+            </li>
+          ))}
+        </ol>
+        <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <Button
+            size="lg"
+            variant={done ? "outline" : "red"}
+            icon={r.fileType === "link" ? "external" : "download"}
+            onClick={download}
+            className="max-sm:h-12 max-sm:w-full"
+            aria-label={
+              r.fileType === "link"
+                ? `Open “${r.title}”`
                 : done
-                  ? "Download again"
-                  : `Download ${meta.label}`}
-            </Button>
-            <p className="t-small text-ink/65">
-              Demo file: a sample generated in your browser.
-            </p>
-          </div>
-        </div>
-        <div
-          className="relative hidden items-center justify-center overflow-hidden bg-cyan p-8 md:flex"
-          aria-hidden
-        >
-          <span className="absolute -right-12 -bottom-12 size-44 rounded-full bg-aqua/60" />
-          <div className="relative w-44 rotate-[-4deg] rounded-[14px] bg-white p-4 shadow-photo">
-            <div className="h-2.5 w-20 rounded-full bg-ink/80" />
-            <div className="mt-2 h-2 w-28 rounded-full bg-ink/25" />
-            <div className="mt-4 space-y-1.5">
-              {[92, 80, 86, 60, 74, 88, 52].map((w, i) => (
-                <div
-                  key={i}
-                  className="h-1.5 rounded-full bg-ink/10"
-                  style={{ width: `${w}%` }}
-                />
-              ))}
-            </div>
-            <div
-              className={clsx(
-                "mt-4 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold",
-                meta.tone,
-              )}
-            >
-              {meta.label}
-            </div>
-          </div>
+                  ? `Download “${r.title}” again`
+                  : `Download “${r.title}”`
+            }
+          >
+            {r.fileType === "link"
+              ? "Open link"
+              : done
+                ? "Download again"
+                : `Download ${meta.label}`}
+          </Button>
+          <p className="t-small text-muted">
+            Demo file: a sample generated in your browser.
+          </p>
         </div>
       </div>
-    </Card>
+      {/* the file itself: a cream sheet under a work light */}
+      <div
+        className="relative hidden items-center justify-center overflow-hidden border-l border-line bg-black p-8 md:flex"
+        aria-hidden
+      >
+        <span className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(ellipse_at_top,rgb(253_248_238/0.09),transparent_70%)]" />
+        <div className="relative w-44 bg-cream p-4 text-ink ring-1 ring-black/40 lg:w-48">
+          <div className="flex items-center justify-between font-mono text-[8px] tracking-[0.1em] uppercase">
+            <span>Tamada Media</span>
+            <span>{meta.label}</span>
+          </div>
+          <div className="mt-4 h-2 w-24 bg-ink/85" />
+          <div className="mt-1.5 h-1.5 w-32 bg-ink/25" />
+          <div className="mt-4 space-y-1.5 border-t border-ink/15 pt-3">
+            {[92, 80, 86, 60, 74, 88, 52, 70].map((w, i) => (
+              <div
+                key={i}
+                className="h-1 bg-ink/12"
+                style={{ width: `${w}%` }}
+              />
+            ))}
+          </div>
+          <div className="mt-4 h-[3px] w-10 bg-red" />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -449,6 +509,41 @@ const LOCK_TITLE: Record<
     resource: "This download comes with the full course.",
   },
 };
+
+/** ₹2,999 in Anton with the old price struck through in mono. */
+function Price({
+  price,
+  compareAt,
+  lessons,
+  size = "lg",
+}: {
+  price: number;
+  compareAt?: number | null;
+  lessons: number;
+  size?: "md" | "lg";
+}) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span
+        className={clsx(
+          "font-display leading-none tracking-[0.005em] text-fg",
+          size === "lg" ? "text-[44px] md:text-[52px]" : "text-[36px]",
+        )}
+      >
+        {formatINR(price)}
+      </span>
+      {compareAt ? (
+        <span className="font-mono text-[13px] text-muted line-through decoration-red decoration-[1.5px]">
+          <span className="sr-only">was </span>
+          {formatINR(compareAt)}
+        </span>
+      ) : null}
+      <span className="font-mono text-[10.5px] tracking-[0.1em] text-muted uppercase">
+        One-time · {plural(lessons, "lesson")} · lifetime
+      </span>
+    </p>
+  );
+}
 
 function LockedStage({
   ctx,
@@ -484,272 +579,212 @@ function LockedStage({
       ? "The first video is free for everyone. Log in (or try the student demo), then unlock the course to keep going."
       : copy.body;
   const sells = reason === "paywall" || reason === "login";
+  const runtime =
+    ctx.item.type === "video" ? smpte(ctx.item.lesson.durationSec) : null;
+  const poster = cropSrc(posterFor(course, ctx.item), 9 / 16);
+
+  const bodyText =
+    reason === "gated" && access.blockedBy ? (
+      <>
+        This course uses short tests as checkpoints. Pass{" "}
+        <strong className="font-semibold text-fg">
+          {itemTitle(access.blockedBy)}
+        </strong>{" "}
+        to keep going.
+      </>
+    ) : (
+      body
+    );
+
+  const actions = (phone: boolean) => (
+    <>
+      {sells &&
+        (asTutor ? (
+          <BuyButton
+            variant="red"
+            fullWidth={phone}
+            className={phone ? "h-12" : undefined}
+          />
+        ) : (
+          <Button
+            variant="red"
+            href={`/checkout/${course.slug}`}
+            iconRight="arrow-right"
+            fullWidth={phone}
+            className={phone ? "h-12" : undefined}
+          >
+            Unlock the full course
+          </Button>
+        ))}
+      {reason === "login" && (
+        <>
+          <Button
+            variant="outline"
+            href={`/login?next=${encodeURIComponent(here)}`}
+            fullWidth={phone}
+          >
+            Log in
+          </Button>
+          <Button
+            variant="outline"
+            icon="user"
+            onClick={() => loginAs("student")}
+            fullWidth={phone}
+          >
+            {phone ? "Student demo" : "Try the student demo"}
+          </Button>
+        </>
+      )}
+      {reason === "gated" && access.blockedBy && (
+        <Button
+          variant="red"
+          href={learnHref(course.slug, access.blockedBy.id)}
+          icon="quiz"
+          fullWidth={phone}
+          className={phone ? "h-12" : undefined}
+        >
+          Take the test
+        </Button>
+      )}
+      {reason === "unavailable" && (
+        <Button
+          href="/courses"
+          variant="red"
+          iconRight="arrow-right"
+          fullWidth={phone}
+          className={phone ? "h-12" : undefined}
+        >
+          Browse courses
+        </Button>
+      )}
+    </>
+  );
+
+  const freeLink = sells && free && free.id !== ctx.item.id && (
+    <Button
+      variant="arrow"
+      href={learnHref(course.slug, free.id)}
+      className="text-fg"
+    >
+      Watch free lesson
+    </Button>
+  );
+
+  const lockLine = (
+    <p className="flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-red-lite uppercase">
+      <Icon name="lock" className="size-3.5" strokeWidth={1.8} />
+      {reason === "gated"
+        ? "Checkpoint ahead"
+        : reason === "unavailable"
+          ? "Unavailable"
+          : "Locked"}
+    </p>
+  );
+
   return (
     <>
-      {/* Phones: the lesson's poster with a lock on it (edge to edge, like the
-        player), then one compact card with the price and a single CTA column. */}
+      {/* Phones: the lesson's poster, edge to edge like the player, with the
+          slate on it; the pitch follows straight on the theatre. */}
       <div className="sm:hidden">
-        <div className="relative isolate -mx-3 -mt-2 grid aspect-video place-items-center overflow-hidden bg-ink">
+        <div className="relative isolate -mx-3 -mt-2 aspect-video overflow-hidden bg-black">
           <Image
-            src={cropSrc(posterFor(course, ctx.item), 9 / 16)}
+            src={poster}
             alt=""
             fill
             loading="eager"
-            sizes="100vw"
-            className="-z-10 object-cover opacity-55 blur-[3px]"
+            sizes="(min-width: 640px) 1px, 100vw"
+            className="-z-10 object-cover opacity-45 grayscale-[35%]"
           />
           <span
             aria-hidden
-            className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/20 to-ink/70"
+            className="absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/40 to-black/10"
           />
-          <span className="absolute top-3 left-3 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold tracking-[0.04em] text-white uppercase">
-            {ctx.label}
+          <span className="absolute top-3 left-3 flex items-center gap-2 font-mono text-[10.5px] tracking-[0.1em] text-cream uppercase">
+            <span aria-hidden className="size-[6px] rounded-full bg-red" />
+            {slate(ctx.label)}
           </span>
           <span
             aria-hidden
-            className="relative grid size-[72px] place-items-center rounded-full bg-butter shadow-lift"
+            className="absolute right-3 bottom-3 grid size-11 place-items-center bg-black/70 text-cream ring-1 ring-white/20"
           >
-            <Mascot
-              title=""
-              className="w-10"
-              style={{ transform: "rotate(-8deg)" }}
-            />
-            <span className="absolute -right-1 -bottom-1 grid size-7 place-items-center rounded-full bg-ink text-cream ring-4 ring-butter">
-              <Icon name="lock" className="size-3.5" strokeWidth={2.4} />
-            </span>
+            <Icon name="lock" className="size-4" strokeWidth={1.8} />
           </span>
         </div>
-        <div className="app-enter relative z-[1] -mt-5 rounded-card bg-white p-5 shadow-soft">
-          <h2 className="t-app-h2">{title}</h2>
-          <p className="mt-1.5 t-small text-ink/70">
-            {reason === "gated" && access.blockedBy ? (
-              <>
-                This course uses tiny tests as checkpoints. Pass{" "}
-                <strong className="text-ink">
-                  {itemTitle(access.blockedBy)}
-                </strong>{" "}
-                to keep going.
-              </>
-            ) : (
-              body
-            )}
-          </p>
+        <div className="app-enter pt-6">
+          {lockLine}
+          <h2 className="mt-3 font-display text-[34px] leading-[0.95] uppercase">
+            {title}
+          </h2>
+          <p className="mt-3 t-small text-muted">{bodyText}</p>
           {sells && !asTutor && (
-            <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="font-display text-[30px] leading-none">
-                {formatINR(course.price)}
-              </span>
-              {course.compareAtPrice && (
-                <span className="text-[14px] font-semibold text-ink/65 line-through">
-                  {formatINR(course.compareAtPrice)}
-                </span>
-              )}
-              <span className="text-[13px] font-semibold text-ink/65">
-                one-time · {plural(stats.videos, "lesson")}
-              </span>
-            </p>
+            <div className="mt-5 border-t border-line pt-4">
+              <Price
+                price={course.price}
+                compareAt={course.compareAtPrice}
+                lessons={stats.videos}
+                size="md"
+              />
+            </div>
           )}
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {sells &&
-              (asTutor ? (
-                <BuyButton
-                  variant="accent"
-                  fullWidth
-                  className="col-span-2 h-12"
-                />
-              ) : (
-                <Button
-                  variant="accent"
-                  href={`/checkout/${course.slug}`}
-                  iconRight="arrow-right"
-                  fullWidth
-                  className="col-span-2 h-12"
-                >
-                  Unlock the course
-                </Button>
-              ))}
-            {reason === "login" && (
-              <>
-                <Button
-                  variant="secondary"
-                  href={`/login?next=${encodeURIComponent(here)}`}
-                  fullWidth
-                >
-                  Log in
-                </Button>
-                <Button
-                  variant="secondary"
-                  icon="user"
-                  onClick={() => loginAs("student")}
-                  fullWidth
-                >
-                  Student demo
-                </Button>
-              </>
-            )}
-            {reason === "gated" && access.blockedBy && (
-              <Button
-                variant="accent"
-                href={learnHref(course.slug, access.blockedBy.id)}
-                icon="quiz"
-                fullWidth
-                className="col-span-2 h-12"
-              >
-                Take the test
-              </Button>
-            )}
-            {reason === "unavailable" && (
-              <Button
-                href="/courses"
-                iconRight="arrow-right"
-                fullWidth
-                className="col-span-2 h-12"
-              >
-                Browse courses
-              </Button>
-            )}
-            {sells && free && free.id !== ctx.item.id && (
-              <Button
-                variant="ghost"
-                icon="play"
-                href={learnHref(course.slug, free.id)}
-                fullWidth
-                className="col-span-2"
-              >
-                Watch the free preview
-              </Button>
-            )}
+          <div className="mt-5 grid grid-cols-2 gap-2 [&>*:first-child]:col-span-2">
+            {actions(true)}
           </div>
+          {freeLink && <div className="mt-3">{freeLink}</div>}
           {reason === "login" && (
-            <p className="mt-2 text-[12.5px] font-semibold text-ink/65">
-              The demo logs you in as Priya, a sample student enrolled in some
-              courses.
+            <p className="mt-3 text-[12.5px] text-muted">
+              The demo logs you in as Priya, a sample student enrolled in the
+              course.
             </p>
           )}
         </div>
       </div>
-      {/* No overflow clip on the 16:9 box: with visible overflow an aspect-ratio box
-        grows to fit its content, so the card is never cut off on tablets. */}
-      <div className="relative isolate grid min-h-[420px] place-items-center rounded-card-lg p-4 shadow-photo max-sm:hidden sm:aspect-video sm:min-h-auto sm:p-8">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 overflow-hidden rounded-card-lg bg-ink"
-        >
+
+      {/* sm+: a 16:9 theatre frame. No overflow clip on the box itself: with
+          visible overflow an aspect-ratio box grows to fit its content, so the
+          pitch is never cut off on tablets. */}
+      <div className="relative isolate flex flex-col ring-1 ring-line max-sm:hidden sm:aspect-video">
+        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden bg-black">
           <Image
-            src={cropSrc(posterFor(course, ctx.item), 9 / 16)}
+            src={poster}
             alt=""
             fill
             loading="eager"
             sizes="(min-width: 1024px) 1100px, 100vw"
-            className="scale-110 object-cover opacity-50 blur-md"
+            className="object-cover object-right opacity-40 grayscale-[35%]"
           />
-          <span className="absolute inset-0 bg-gradient-to-b from-ink/30 to-ink/70" />
+          <span className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/25" />
+          <span className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         </div>
-        <div className="app-enter w-full max-w-[460px] rounded-card bg-white p-6 text-center shadow-lift md:p-7">
-          <div
-            className="relative mx-auto grid size-20 place-items-center rounded-full bg-butter"
-            aria-hidden
-          >
-            <Mascot
-              title=""
-              className="w-11"
-              style={{ transform: "rotate(-8deg)" }}
-            />
-            <span className="absolute -right-1 -bottom-1 grid size-8 place-items-center rounded-full bg-ink text-cream ring-4 ring-white">
-              <Icon name="lock" className="size-4" strokeWidth={2.4} />
-            </span>
-          </div>
-          <h2 className="mt-4 t-app-h2">{title}</h2>
-          <p className="mx-auto mt-2 max-w-[40ch] t-small text-ink/70">
-            {reason === "gated" && access.blockedBy ? (
-              <>
-                This course uses tiny tests as checkpoints. Pass{" "}
-                <strong className="text-ink">
-                  {itemTitle(access.blockedBy)}
-                </strong>{" "}
-                to keep going.
-              </>
-            ) : (
-              body
-            )}
+        <StageSlate
+          left={slate(ctx.label)}
+          note={kindLabel(ctx.item)}
+          right={runtime ? `RT ${runtime}` : undefined}
+          className="border-0 border-b bg-black/60"
+        />
+        <div className="app-enter flex flex-1 flex-col justify-end p-6 md:p-9 lg:p-10">
+          {lockLine}
+          <h2 className="mt-4 max-w-[16ch] font-display text-[clamp(2.25rem,1.4rem+2.6vw,4rem)] leading-[0.92] uppercase">
+            {title}
+          </h2>
+          <p className="mt-4 max-w-[48ch] t-small text-muted md:text-[15px]">
+            {bodyText}
           </p>
-
-          {(reason === "paywall" || reason === "login") && !asTutor && (
-            <p className="mt-4 flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1">
-              <span className="font-display text-[34px] leading-none">
-                {formatINR(course.price)}
-              </span>
-              {course.compareAtPrice && (
-                <span className="text-[15px] font-semibold text-ink/65 line-through">
-                  {formatINR(course.compareAtPrice)}
-                </span>
-              )}
-              <span className="text-[13px] font-semibold text-ink/65">
-                one-time · {plural(stats.videos, "lesson")}
-              </span>
-            </p>
+          {sells && !asTutor && (
+            <div className="mt-6">
+              <Price
+                price={course.price}
+                compareAt={course.compareAtPrice}
+                lessons={stats.videos}
+              />
+            </div>
           )}
-
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {(reason === "paywall" || reason === "login") &&
-              (asTutor ? (
-                <BuyButton variant="accent" />
-              ) : (
-                <Button
-                  variant="accent"
-                  href={`/checkout/${course.slug}`}
-                  iconRight="arrow-right"
-                >
-                  Unlock the course
-                </Button>
-              ))}
-            {reason === "login" && (
-              <>
-                <Button
-                  variant="secondary"
-                  href={`/login?next=${encodeURIComponent(here)}`}
-                >
-                  Log in
-                </Button>
-                <Button
-                  variant="secondary"
-                  icon="user"
-                  onClick={() => loginAs("student")}
-                >
-                  Try the student demo
-                </Button>
-              </>
-            )}
-            {reason === "gated" && access.blockedBy && (
-              <Button
-                variant="accent"
-                href={learnHref(course.slug, access.blockedBy.id)}
-                icon="quiz"
-              >
-                Take the test
-              </Button>
-            )}
-            {reason === "unavailable" && (
-              <Button href="/courses" iconRight="arrow-right">
-                Browse courses
-              </Button>
-            )}
-            {(reason === "paywall" || reason === "login") &&
-              free &&
-              free.id !== ctx.item.id && (
-                <Button
-                  variant="ghost"
-                  icon="play"
-                  href={learnHref(course.slug, free.id)}
-                >
-                  Watch the free preview
-                </Button>
-              )}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {actions(false)}
+            {freeLink && <span className="ml-3">{freeLink}</span>}
           </div>
           {reason === "login" && (
-            <p className="mt-3 text-[12.5px] font-semibold text-ink/65">
-              The demo logs you in as Priya, a sample student enrolled in some
-              courses.
+            <p className="mt-4 font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
+              The demo logs you in as Priya, a sample student in the course.
             </p>
           )}
         </div>
@@ -764,63 +799,45 @@ function PreviewBanner() {
   const { loginAs } = useDemoAuth();
   const stats = getCourseStats(course.id, db);
   return (
-    <>
-      {/* phones: one compact line under the video + the unlock button */}
-      <div
-        className="mt-3 flex items-center gap-3 rounded-card bg-blue py-2.5 pr-2.5 pl-4 text-white sm:hidden"
-        data-field="dark"
-      >
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] leading-tight font-bold">Free preview</p>
-          <p className="mt-0.5 text-[13px] leading-snug font-semibold text-white/85">
-            {tutorBrowsing
-              ? "Tutors can't buy courses."
-              : `${plural(stats.videos, "lesson")} in the full course`}
-          </p>
-        </div>
-        <BuyButton
-          variant="sun"
-          arrow={false}
-          label={`Unlock ${formatINR(course.price)}`}
-          switchLabel="Student demo"
-          className="shrink-0"
-        />
+    <section
+      aria-label="Free preview"
+      className="mt-6 grid gap-x-10 gap-y-5 border-y border-line py-6 sm:mt-8 @[720px]:grid-cols-[minmax(0,1fr)_auto] @[720px]:items-end"
+    >
+      <div className="min-w-0">
+        <Eyebrow>Free preview</Eyebrow>
+        <p className="mt-3 max-w-[30ch] font-heading text-[clamp(1.25rem,1rem+0.8vw,1.75rem)] leading-[1.15] font-semibold tracking-[-0.025em]">
+          The first lesson is free. Watch it, then decide.
+        </p>
+        <p className="mt-2 max-w-[54ch] t-small text-muted">
+          {tutorBrowsing
+            ? TUTOR_BROWSING_LINE
+            : `Unlock all ${plural(stats.videos, "lesson")}, ${plural(stats.quizzes, "test")} and the certificate. Lifetime access.`}
+        </p>
       </div>
-      <div
-        className="mt-4 hidden flex-col gap-4 rounded-card bg-blue p-5 text-white sm:flex sm:flex-row sm:items-center md:p-6"
-        data-field="dark"
-      >
-        <div className="min-w-0 flex-1">
-          <p className="t-eyebrow text-white">Free preview</p>
-          <p className="mt-1.5 t-app-h2">
-            The first video is free. See if the vibe fits before you pay.
+      <div className="flex flex-col items-start gap-4 @[720px]:items-end">
+        {!tutorBrowsing && (
+          <p className="flex items-baseline gap-3">
+            <span className="font-display text-[40px] leading-none">
+              {formatINR(course.price)}
+            </span>
+            {course.compareAtPrice ? (
+              <span className="font-mono text-[13px] text-muted line-through decoration-red decoration-[1.5px]">
+                <span className="sr-only">was </span>
+                {formatINR(course.compareAtPrice)}
+              </span>
+            ) : null}
           </p>
-          <p className="mt-1.5 t-small text-white">
-            {tutorBrowsing ? (
-              TUTOR_BROWSING_LINE
-            ) : (
-              <>
-                Unlock all {plural(stats.videos, "lesson")},{" "}
-                {plural(stats.quizzes, "test")} and the certificate for{" "}
-                {formatINR(course.price)}
-                {course.compareAtPrice
-                  ? ` (was ${formatINR(course.compareAtPrice)})`
-                  : ""}
-                . Lifetime access.
-              </>
-            )}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <BuyButton variant="sun" />
+        )}
+        <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*]:flex-1">
+          <BuyButton variant="red" label="Unlock the full course" />
           {!session && (
-            <Button variant="secondary" onClick={() => loginAs("student")}>
+            <Button variant="outline" onClick={() => loginAs("student")}>
               Student demo
             </Button>
           )}
         </div>
       </div>
-    </>
+    </section>
   );
 }
 
@@ -876,44 +893,44 @@ function LessonHeader({
     <section
       aria-label="About this item"
       className={clsx(
-        "mt-5 grid gap-5 md:mt-6",
+        "grid gap-8",
+        showTitle ? "mt-7 md:mt-9" : "mt-6",
+        // phones: a locked item's pitch sits right above, so rule the lesson off from it
+        !access.allowed && "max-sm:mt-9 max-sm:border-t max-sm:border-line max-sm:pt-6",
         // tests and downloads carry their title on the stage: a slim row (and
         // a wider, one-line Up next strip), so no dead band opens above the tabs
         showTitle
-          ? "@[860px]:grid-cols-[minmax(0,1fr)_300px] @[860px]:items-start"
-          : "gap-4 @[860px]:grid-cols-[minmax(0,1fr)_440px] @[860px]:items-center",
+          ? "@[860px]:grid-cols-[minmax(0,1fr)_280px] @[860px]:gap-12"
+          : "gap-5 @[860px]:grid-cols-[minmax(0,1fr)_460px] @[860px]:items-center",
       )}
     >
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="t-eyebrow text-blue">{ctx.label}</span>
-          <span aria-hidden className="text-ink/30">
-            ·
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] tracking-[0.08em] uppercase">
+          <span className="text-red-lite">{slate(ctx.label)}</span>
+          <span aria-hidden className="text-muted">
+            /
           </span>
-          <span className="text-[13.5px] font-semibold text-ink/65">
+          <span className="text-muted normal-case tracking-[0.02em]">
             {ctx.module.title}
           </span>
           {done && (
-            <Badge tone="mint" dot size="sm">
+            <Badge dot size="sm" tone="mint">
               Completed
             </Badge>
           )}
           {!access.allowed && (
-            <Badge tone="neutral" size="sm">
+            <Badge size="sm" tone="neutral">
               <Icon name="lock" className="size-3" /> {lockReason(access)}
             </Badge>
           )}
         </div>
         {showTitle && (
           <>
-            <h1
-              className="mt-eyebrow t-display-m"
-              style={{ fontSize: "clamp(1.875rem, 1.2rem + 1.6vw, 2.75rem)" }}
-            >
+            <h1 className="mt-4 max-w-[22ch] font-display text-[clamp(2.125rem,1.3rem+2.5vw,3.75rem)] leading-[0.92] tracking-[0.004em] uppercase">
               {title}
             </h1>
             {description && (
-              <p className="mt-sub max-w-[62ch] t-body text-ink/70">
+              <p className="mt-5 max-w-[60ch] t-body-l text-muted">
                 {description}
               </p>
             )}
@@ -923,12 +940,12 @@ function LessonHeader({
         <div
           className={clsx(
             "flex flex-wrap items-center gap-2 max-sm:grid max-sm:grid-cols-2 max-sm:[&>*:first-child:nth-last-child(odd)]:col-span-2",
-            showTitle ? "mt-5" : "mt-3",
+            showTitle ? "mt-7" : "mt-4",
           )}
         >
           {canMark && (
             <Button
-              variant={done ? "success" : "primary"}
+              variant={done ? "outline" : "primary"}
               icon={done ? "check-circle" : "check"}
               onClick={toggleDone}
               aria-pressed={done}
@@ -938,7 +955,7 @@ function LessonHeader({
           )}
           {canTalk && tracking && item.type === "video" && (
             <Button
-              variant="secondary"
+              variant="outline"
               icon="note"
               onClick={() => requestFocus("notes")}
             >
@@ -947,7 +964,7 @@ function LessonHeader({
           )}
           {canTalk && !courseAccess.admin && (
             <Button
-              variant="secondary"
+              variant="outline"
               icon="chat"
               onClick={() => requestFocus("qa")}
             >
@@ -955,22 +972,23 @@ function LessonHeader({
             </Button>
           )}
           <span className="hidden flex-1 @[860px]:block" />
-          <span className="hidden gap-2 @[860px]:flex">
+          <span className="hidden @[860px]:flex">
             <Button
-              variant="secondary"
+              variant="outline"
               iconOnly
-              icon="chevron-left"
+              icon="arrow-left"
               aria-label="Previous item"
               href={ctx.prev ? learnHref(course.slug, ctx.prev.id) : undefined}
               disabled={!ctx.prev}
             />
             <Button
-              variant="secondary"
+              variant="outline"
               iconOnly
-              icon="chevron-right"
+              icon="arrow-right"
               aria-label="Next item"
               href={ctx.next ? learnHref(course.slug, ctx.next.id) : undefined}
               disabled={!ctx.next}
+              className="-ml-px"
             />
           </span>
         </div>
@@ -983,6 +1001,7 @@ function LessonHeader({
 function UpNextCard({ ctx, slim }: { ctx: ItemContext; slim?: boolean }) {
   const {
     course,
+    flat,
     accessMap,
     tracking,
     progress,
@@ -1000,42 +1019,41 @@ function UpNextCard({ ctx, slim }: { ctx: ItemContext; slim?: boolean }) {
     const cta = tracking && progress.percent === 100 && (
       <Button
         size="sm"
-        variant="primary"
+        variant="red"
         icon="award"
-        className={slim ? "shrink-0" : "mt-3"}
+        className={slim ? "shrink-0" : "mt-5"}
         onClick={showCompletion}
       >
         {certificate ? "View certificate" : "Celebrate"}
       </Button>
     );
-    if (slim)
-      return (
-        <Card
-          tone="butter"
-          padding="sm"
-          className="flex flex-wrap items-center gap-3 p-4"
-        >
-          <div className="min-w-0 flex-1 basis-40">
-            <p className="t-micro text-[#6b5400] uppercase">The end</p>
-            <p className="mt-0.5 text-[14.5px] leading-snug font-bold">
-              That&apos;s the last item.
-            </p>
-            <p className="mt-0.5 text-[12.5px] font-semibold text-ink/65">
-              {sub}
-            </p>
-          </div>
-          {cta}
-        </Card>
-      );
     return (
-      <Card tone="butter" padding="sm" className="p-5">
-        <p className="t-micro text-[#6b5400] uppercase">The end</p>
-        <p className="mt-1.5 t-app-h3">
-          That&apos;s the last item in this course.
-        </p>
-        <p className="mt-1 t-small text-ink/65">{sub}</p>
+      <aside
+        aria-label="The end"
+        className={clsx(
+          "border-t border-fg pt-4",
+          slim && "flex flex-wrap items-center gap-4",
+        )}
+      >
+        <div className="min-w-0 flex-1 basis-40">
+          <p className="flex items-center justify-between gap-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+            The end
+            <span className="font-mono text-[10.5px] font-normal tracking-[0.06em] text-muted">
+              FIN
+            </span>
+          </p>
+          <p
+            className={clsx(
+              "font-heading font-semibold tracking-[-0.02em]",
+              slim ? "mt-1.5 text-[16px]" : "mt-3 text-[19px] leading-tight",
+            )}
+          >
+            That&apos;s the last item in this course.
+          </p>
+          <p className="mt-1 t-small text-muted">{sub}</p>
+        </div>
         {cta}
-      </Card>
+      </aside>
     );
   }
   const a = accessMap[next.id];
@@ -1043,6 +1061,7 @@ function UpNextCard({ ctx, slim }: { ctx: ItemContext; slim?: boolean }) {
   const unsure = !a?.allowed && !settled;
   const locked = !a?.allowed && settled;
   const href = learnHref(course.slug, next.id);
+  const index = itemIndex(flat, next.id);
   // the blocking test is the page the learner is already on
   const blockedHere = a?.reason === "gated" && a.blockedBy?.id === ctx.item.id;
   const toTest = () => {
@@ -1056,26 +1075,21 @@ function UpNextCard({ ctx, slim }: { ctx: ItemContext; slim?: boolean }) {
   const lockLine = blockedHere ? "Pass this test to unlock it" : lockReason(a);
   const btn = slim
     ? { size: "sm" as const, className: "shrink-0" }
-    : { size: "sm" as const, fullWidth: true, className: "mt-3" };
+    : { size: "sm" as const, fullWidth: true, className: "mt-5" };
   const action = unsure ? (
     // the lock may lift once the store overlay is in (a purchase, a pass)
-    <Skeleton
-      className={clsx(
-        "h-9 rounded-full",
-        slim ? "w-28 shrink-0" : "mt-3 w-full",
-      )}
-    />
+    <Skeleton className={clsx("h-9", slim ? "w-28 shrink-0" : "mt-5 w-full")} />
   ) : locked ? (
     blockedHere ? (
-      <Button {...btn} variant="secondary" icon="arrow-up" onClick={toTest}>
+      <Button {...btn} variant="outline" icon="arrow-up" onClick={toTest}>
         Back to the test
       </Button>
     ) : a?.reason === "paywall" ? (
-      <BuyButton {...btn} />
+      <BuyButton {...btn} variant="red" label="Unlock the full course" />
     ) : (
       <Button
         {...btn}
-        variant="accent"
+        variant="red"
         href={
           a?.reason === "gated" && a.blockedBy
             ? learnHref(course.slug, a.blockedBy.id)
@@ -1089,99 +1103,61 @@ function UpNextCard({ ctx, slim }: { ctx: ItemContext; slim?: boolean }) {
           ? "Go to the test"
           : a?.reason === "unavailable"
             ? "Browse courses"
-            : "Unlock the course"}
+            : "Unlock the full course"}
       </Button>
     )
   ) : (
-    <Button
-      {...btn}
-      className={slim ? "shrink-0" : "mt-4"}
-      href={href}
-      iconRight="arrow-right"
-    >
+    <Button {...btn} href={href} iconRight="arrow-right">
       Continue
     </Button>
   );
-  const icon = (
-    <span
-      className={clsx(
-        "grid size-10 shrink-0 place-items-center rounded-[14px]",
-        locked
-          ? "bg-ink/[0.06] text-ink/65"
-          : next.type === "quiz"
-            ? "bg-butter"
-            : next.type === "resource"
-              ? "bg-cyan"
-              : "bg-[#dfe8ff] text-blue",
-      )}
-    >
-      <Icon
-        name={
-          locked
-            ? "lock"
-            : next.type === "video"
-              ? "play"
-              : next.type === "quiz"
-                ? "quiz"
-                : "file"
-        }
-        className="size-5"
-      />
+  const kindLine = (
+    <span className="flex min-w-0 items-center gap-1.5 font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase">
+      {locked && <Icon name="lock" className="size-3 shrink-0" strokeWidth={1.8} />}
+      <span className="truncate">
+        {locked && lockLine
+          ? lockLine
+          : `${kindLabel(next)} · ${itemMeta(next, true)}`}
+      </span>
     </span>
   );
-  if (slim)
-    return (
-      <Card padding="sm" className="flex flex-wrap items-center gap-3 p-4">
-        <div className="flex min-w-0 flex-1 basis-40 items-center gap-3">
-          {icon}
-          <div className="min-w-0">
-            <p className="t-micro text-ink/65 uppercase">Up next</p>
-            <p className="mt-0.5 line-clamp-1 text-[14.5px] leading-snug font-bold">
-              {itemTitle(next)}
-            </p>
-            <p className="mt-0.5 flex items-center gap-1 text-[12.5px] font-semibold text-ink/65">
-              {locked && <Icon name="lock" className="size-3 shrink-0" />}
-              <span className="truncate">
-                {locked
-                  ? lockLine
-                  : `${kindLabel(next)} · ${itemMeta(next, true)}`}
-              </span>
-            </p>
-          </div>
-        </div>
-        {action}
-      </Card>
-    );
   return (
-    <Card padding="sm" className="p-5">
-      <p className="t-micro text-ink/65 uppercase">Up next</p>
-      <div className="mt-2.5 flex gap-3">
-        {icon}
-        <div className="min-w-0">
-          <p className="line-clamp-2 text-[15px] leading-snug font-bold">
-            {itemTitle(next)}
-          </p>
-          <p className="mt-0.5 text-[12.5px] font-semibold text-ink/65">
-            {kindLabel(next)} · {itemMeta(next, true)}
-          </p>
+    <aside
+      aria-label="Up next"
+      className={clsx(
+        "border-t border-fg pt-4",
+        slim && "flex flex-wrap items-center gap-x-5 gap-y-3",
+      )}
+    >
+      <div className="min-w-0 flex-1 basis-48">
+        <p
+          className={clsx(
+            "flex items-center gap-3 text-[11px] font-semibold tracking-[0.16em] uppercase",
+            !slim && "justify-between",
+          )}
+        >
+          Up next
+          {index && (
+            <span className="font-mono text-[10.5px] font-normal tracking-[0.04em] text-muted tabular-nums">
+              {index}
+            </span>
+          )}
+        </p>
+        <p
+          className={clsx(
+            "font-heading font-semibold tracking-[-0.02em]",
+            slim
+              ? "mt-1.5 line-clamp-1 text-[16px]"
+              : "mt-3 line-clamp-3 text-[19px] leading-[1.15]",
+          )}
+        >
+          {itemTitle(next)}
+        </p>
+        <div className="mt-2">
+          {unsure ? <Skeleton className="h-3 w-40" /> : kindLine}
         </div>
       </div>
-      {unsure ? (
-        <div aria-hidden>
-          <Skeleton className="mt-3 h-4 w-40 rounded-full" />
-          {action}
-        </div>
-      ) : locked ? (
-        <>
-          <p className="mt-3 flex items-center gap-1.5 text-[12.5px] font-bold text-ink/65">
-            <Icon name="lock" className="size-3.5" />
-            {lockLine}
-          </p>
-          {action}
-        </>
-      ) : (
-        action
-      )}
-    </Card>
+      {action}
+    </aside>
   );
 }

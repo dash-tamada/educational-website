@@ -238,6 +238,8 @@ type ParallaxImageProps = {
   children?: React.ReactNode;
   start?: string;
   end?: string;
+  /** CSS object-position of the image (e.g. media(key).pos) */
+  pos?: string;
 };
 
 /**
@@ -257,6 +259,7 @@ export function ParallaxImage({
   children,
   start,
   end,
+  pos,
 }: ParallaxImageProps) {
   const frame = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -285,6 +288,7 @@ export function ParallaxImage({
             preload={preload}
             quality={quality}
             className={clsx("object-cover", imgClassName)}
+            style={pos ? { objectPosition: pos } : undefined}
           />
         ) : (
           children
@@ -292,100 +296,5 @@ export function ParallaxImage({
       </div>
       {src ? children : null}
     </div>
-  );
-}
-
-/** Resolve any CSS length (incl. var()/clamp()) to px through a hidden probe. */
-function resolveLength(value: string, fallback: number) {
-  const probe = document.createElement("div");
-  probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;height:0";
-  probe.style.width = value;
-  document.body.appendChild(probe);
-  const px = probe.getBoundingClientRect().width;
-  probe.remove();
-  return px || fallback;
-}
-
-type FieldShrinkProps = Omit<React.HTMLAttributes<HTMLElement>, "children" | "className"> & {
-  children: React.ReactNode;
-  className?: string;
-  as?: "div" | "section";
-  /** scroll distance as a fraction of the viewport height */
-  distance?: number;
-  /** resting BOTTOM radius before the shrink starts (any CSS length, e.g.
-   *  "var(--panel-radius)"). Default 0 = square full-bleed edge. */
-  bottomRadius?: string;
-  ref?: React.Ref<HTMLElement>;
-};
-
-/**
- * Aardvark hero shrink: a full-bleed field that insets into a rounded panel
- * (inset 0 -> --panel-inset, radius -> --panel-radius) over the first 60vh of
- * scroll. Use on a full-bleed field at the very top of the page only.
- * Extra HTML attributes (data-*, aria-*, id) land on the element; `ref` is
- * forwarded. Without motion (reduced) the element keeps `bottomRadius` via CSS
- * only if you also give it a matching rounded-b-* class.
- */
-export function FieldShrink({
-  children,
-  className,
-  as = "div",
-  distance = 0.6,
-  bottomRadius,
-  ref: userRef,
-  ...attrs
-}: FieldShrinkProps) {
-  const ref = useRef<HTMLElement>(null);
-  const setRef = (el: HTMLElement | null) => {
-    ref.current = el;
-    if (typeof userRef === "function") userRef(el);
-    else if (userRef) (userRef as React.RefObject<HTMLElement | null>).current = el;
-  };
-  useGSAP(
-    () => {
-      const el = ref.current!;
-      const mm = gsap.matchMedia();
-      mm.add(MQ.desktop + ", " + MQ.mobile, () => {
-        const read = () => {
-          const cs = getComputedStyle(document.documentElement);
-          const inset = parseFloat(cs.getPropertyValue("--panel-inset")) || 18;
-          const radius = resolveLength("var(--panel-radius)", 120);
-          const rest = bottomRadius ? resolveLength(bottomRadius, 0) : 0;
-          return { inset, radius, rest };
-        };
-        gsap.fromTo(
-          el,
-          {
-            clipPath: () => {
-              const { rest } = read();
-              return `inset(0px 0px 0px 0px round 0px 0px ${rest}px ${rest}px)`;
-            },
-          },
-          {
-            clipPath: () => {
-              const v = read();
-              return `inset(${v.inset}px ${v.inset}px ${v.inset}px ${v.inset}px round ${v.radius}px ${v.radius}px ${v.radius}px ${v.radius}px)`;
-            },
-            ease: "none",
-            scrollTrigger: {
-              trigger: el,
-              start: "top top",
-              end: () => `+=${window.innerHeight * distance}`,
-              scrub: true,
-              invalidateOnRefresh: true,
-            },
-          },
-        );
-        return () => gsap.set(el, { clearProps: "clipPath" });
-      });
-      return () => mm.revert();
-    },
-    { dependencies: [distance, bottomRadius] },
-  );
-  const El = as as React.ElementType;
-  return (
-    <El {...attrs} ref={setRef} className={className}>
-      {children}
-    </El>
   );
 }

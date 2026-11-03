@@ -19,7 +19,7 @@ import {
   signupLanding,
 } from "@/lib/mock/extra/auth";
 import { PasswordInput, StrengthMeter } from "./PasswordInput";
-import { GoogleGlyph, OrDivider } from "./AuthSplit";
+import { AuthNote, GoogleGlyph, OrDivider } from "./AuthSplit";
 import { CHECKBOX_INVALID, FormError } from "./FormError";
 import { enterToNext, focusField } from "./fields";
 
@@ -93,7 +93,7 @@ export function SignupForm({
           That email already has an account.{" "}
           <Link
             href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
-            className="font-bold whitespace-nowrap underline underline-offset-2"
+            className="font-semibold whitespace-nowrap underline underline-offset-[3px]"
           >
             Log in instead
           </Link>
@@ -133,17 +133,14 @@ export function SignupForm({
       {/* the ?next banner follows the live "I'm here to" choice: Teach lands on the
           tutor application, so it must not promise the course */}
       {next && (
-        <p
-          aria-live="polite"
-          className="app-fade mb-5 rounded-card bg-cyan/60 px-4 py-3 text-[14px] font-semibold"
-        >
+        <AuthNote live className="mb-8">
           {intent === "teach" ? (
             nextName ? (
               <>
                 Next up: your tutor application.{" "}
-                <span className="font-bold [overflow-wrap:anywhere]">
+                <strong className="font-semibold [overflow-wrap:anywhere]">
                   {nextName}
-                </span>{" "}
+                </strong>{" "}
                 will still be there.
               </>
             ) : (
@@ -152,21 +149,17 @@ export function SignupForm({
           ) : nextName ? (
             <>
               Make a free account and we&apos;ll take you straight to{" "}
-              <span className="font-bold [overflow-wrap:anywhere]">
+              <strong className="font-semibold [overflow-wrap:anywhere]">
                 {nextName}
-              </span>
+              </strong>
               .
             </>
           ) : (
             <>Make a free account and we&apos;ll bring you right back.</>
           )}
-        </p>
+        </AuthNote>
       )}
-      <div className="app-enter rounded-card-lg bg-white p-5 shadow-soft sm:p-8">
-        <h2 className="t-chunky-card">Create your account</h2>
-        <p className="mt-2 mb-6 t-small text-ink/65">
-          Free forever for previews. You only pay for the courses you unlock.
-        </p>
+      <div className="app-enter">
         <Button
           variant="secondary"
           size="lg"
@@ -238,6 +231,8 @@ export function SignupForm({
             hideTip={!!errors.password}
           />
 
+          {/* teaching is understated (not linked publicly): the choice only shows for ?intent=teach */}
+          {initialIntent === "teach" && (
           <RadioGroup<Intent>
             label="I'm here to"
             name="intent"
@@ -250,15 +245,16 @@ export function SignupForm({
               {
                 value: "learn",
                 label: <span className="max-sm:text-base">Learn</span>,
-                description: "Watch, test, collect certificates.",
+                description: "Take the course, earn the certificate.",
               },
               {
                 value: "teach",
                 label: <span className="max-sm:text-base">Teach</span>,
-                description: "Apply to publish your own course.",
+                description: "Apply to teach a module.",
               },
             ]}
           />
+          )}
 
           <div className="grid gap-3 pt-1">
             <div>
@@ -278,7 +274,7 @@ export function SignupForm({
                     <Link
                       href="/terms"
                       target="_blank"
-                      className="underline underline-offset-2"
+                      className="underline decoration-ink/30 underline-offset-[3px] hf:decoration-red"
                     >
                       terms
                     </Link>{" "}
@@ -286,7 +282,7 @@ export function SignupForm({
                     <Link
                       href="/privacy"
                       target="_blank"
-                      className="underline underline-offset-2"
+                      className="underline decoration-ink/30 underline-offset-[3px] hf:decoration-red"
                     >
                       privacy policy
                     </Link>
@@ -301,9 +297,9 @@ export function SignupForm({
               )}
             </div>
             <Checkbox
-              label="Send me the occasional good stuff"
+              label="Send me Studio Notes"
               className="coarse:min-h-11 coarse:py-2.5"
-              description="New courses on the 1st of the month. Zero inbox drama."
+              description="One email a month: techniques, tool shifts, new films."
               checked={news}
               onChange={(e) => setNews(e.target.checked)}
             />
@@ -323,10 +319,10 @@ export function SignupForm({
               ? "Setting things up…"
               : intent === "teach"
                 ? "Create account and apply"
-                : "Start learning"}
+                : "Create account"}
           </Button>
-          <p className="text-center text-[13px] leading-snug text-ink/70">
-            You can browse and watch free previews before buying anything.
+          <p className="text-[13px] leading-snug text-muted">
+            The first lesson is free. You only pay when you enroll.
           </p>
         </form>
       </div>

@@ -24,9 +24,9 @@ function series(base: number, growth: number, noise: number, partialLast = true)
 // active learners keep their exact values; the ledger replaces them below
 const modelled = {
   revenue: series(318_000, 0.105, 0.12),
-  signups: series(1_150, 0.09, 0.18),
+  signups: series(520, 0.09, 0.18),
   enrollments: series(410, 0.1, 0.14),
-  activeLearners: series(5_200, 0.08, 0.08, false),
+  activeLearners: series(1_900, 0.08, 0.08, false),
 };
 const ledger = platformMonthly(months);
 

@@ -4,12 +4,12 @@ import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import clsx from "clsx";
-import { toneBg } from "@/lib/landing-data";
 import { cropSrc } from "@/lib/img";
 import { formatINR, getCategories, type CourseCardData, type CourseLevel, type Tone } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
-import { CARD_TONES, COURSE_LANGUAGES, COURSE_LEVELS, GST_RATE, PRICE_MAX, PRICE_MIN, PRICE_PRESETS, THUMBNAIL_PRESETS } from "@/lib/mock/extra/tutor";
-import { BottomSheet, Button, Card, CourseCard, Field, Icon, Input, PageHeader, RadioGroup, Select, StickyActionBar, Textarea, UnsavedChangesGuard, toast } from "@/components/app";
+import { COURSE_LANGUAGES, COURSE_LEVELS, GST_RATE, PRICE_MAX, PRICE_MIN, PRICE_PRESETS, THUMBNAIL_PRESETS } from "@/lib/mock/extra/tutor";
+import { BottomSheet, Button, CourseCard, Field, Icon, Input, PageHeader, RadioGroup, Select, StickyActionBar, Textarea, UnsavedChangesGuard, toast } from "@/components/app";
+import { Figure, SquareTick, TonePalette, editorialTone, pad2 } from "./editorial";
 import { useTutorContext } from "./shared";
 
 const STEPS = [
@@ -48,7 +48,7 @@ export function NewCourseWizard() {
     language: "English",
     price: "999",
     thumbnail: "",
-    tone: "sun",
+    tone: "ink",
   });
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
 
@@ -149,43 +149,44 @@ export function NewCourseWizard() {
       />
       <PageHeader
         eyebrow="New course"
-        eyebrowTone="green"
-        title="Start with a title."
+        title={
+          <>
+            Start with a <em>title</em>.
+          </>
+        }
         description="Four quick steps and you're in the course studio. Nothing goes live until you send it for review."
         breadcrumbs={[{ label: "Studio", href: "/tutor" }, { label: "Courses", href: "/tutor/courses" }, { label: "New course" }]}
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">
+      <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-14">
         <div className="min-w-0">
-          {/* Stepper */}
-          <ol className="mb-4 grid grid-cols-4 gap-2 max-sm:hidden" aria-label="Steps">
+          {/* Stepper: a ruled row of four steps, mono counters */}
+          <ol className="mb-10 grid grid-cols-4 border-t border-line max-sm:hidden md:mb-12" aria-label="Steps">
             {STEPS.map((s, i) => {
               const reachable = i <= step || STEPS.slice(0, i).every((_, j) => stepValid(j));
               const done = i < step && stepValid(i);
+              const current = i === step;
               return (
-                <li key={s.id}>
+                <li key={s.id} className="min-w-0">
                   <button
                     type="button"
                     onClick={() => reachable && go(i)}
                     disabled={!reachable}
-                    aria-current={i === step ? "step" : undefined}
+                    aria-current={current ? "step" : undefined}
                     className={clsx(
-                      "tap flex w-full flex-col gap-2 rounded-[18px] p-2.5 text-left max-sm:px-2 transition-colors sm:flex-row sm:items-center sm:p-3",
-                      i === step ? "bg-ink text-cream" : "bg-white shadow-soft hf:bg-butter disabled:opacity-60 disabled:hf:bg-white",
+                      "tap group relative -mt-px flex w-full flex-col gap-3 border-t-2 pt-4 pr-3 pb-1 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red disabled:cursor-not-allowed",
+                      current ? "border-red" : done ? "border-fg" : "border-transparent",
                     )}
                   >
-                    <span
-                      className={clsx(
-                        "grid size-7 shrink-0 place-items-center rounded-full text-[13px] font-bold",
-                        i === step ? "bg-sun text-ink" : done ? "bg-green text-white" : "bg-cream text-ink",
-                      )}
-                      aria-hidden
-                    >
-                      {done ? <Icon name="check" className="size-3.5" strokeWidth={3} /> : i + 1}
+                    <span className="flex items-center gap-2.5">
+                      <span className={clsx("font-mono text-[11px] tracking-[0.04em] tabular-nums", current ? "text-red-deep" : "text-muted")}>
+                        {pad2(i + 1)}/{pad2(STEPS.length)}
+                      </span>
+                      {done && <SquareTick state="done" className="!size-3.5" />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[12.5px] font-bold sm:text-[14px]">{s.label}</span>
-                      <span className={clsx("hidden truncate text-[12px] font-semibold md:block", i === step ? "text-cream/60" : "text-ink/50")}>{s.hint}</span>
+                      <span className={clsx("block truncate text-[11.5px] font-semibold tracking-[0.14em] uppercase", current || done ? "text-fg" : "text-muted", reachable && !current && "group-hf:text-fg")}>{s.label}</span>
+                      <span className="mt-1 hidden truncate text-[13px] text-muted md:block">{s.hint}</span>
                     </span>
                   </button>
                 </li>
@@ -193,33 +194,36 @@ export function NewCourseWizard() {
             })}
           </ol>
 
-          <Card padding="lg">
-            <form id="new-course-form"
-              noValidate
-              onSubmit={(e) => {
-                e.preventDefault();
-                next();
-              }}
-            >
-              <p className="t-micro text-ink/50 uppercase max-sm:hidden">
-                Step {step + 1} of {STEPS.length}
+          <form
+            id="new-course-form"
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              next();
+            }}
+          >
+            {/* phones: one mono line + a 4-segment progress bar instead of the stepper */}
+            <div className="mb-6 sm:hidden">
+              <p className="font-mono text-[11px] tracking-[0.08em] text-muted uppercase tabular-nums">
+                Step {pad2(step + 1)} / {pad2(STEPS.length)} · <span className="text-fg">{STEPS[step].label}</span>
               </p>
-              {/* phones: one line + a 4-segment progress bar instead of the stepper chips */}
-              <div className="mb-4 sm:hidden">
-                <p className="text-[13px] font-bold text-ink/60">
-                  Step {step + 1} of {STEPS.length} · <span className="text-ink">{STEPS[step].label}</span>
-                </p>
-                <div className="mt-2 grid grid-cols-4 gap-1.5" role="progressbar" aria-label="Wizard progress" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1} aria-valuetext={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step].label}`}>
-                  {STEPS.map((s, i) => (
-                    <span key={s.id} className={clsx("h-1.5 rounded-full transition-colors duration-300", i < step ? "bg-green" : i === step ? "bg-ink" : "bg-ink/10")} />
-                  ))}
-                </div>
+              <div className="mt-2.5 grid grid-cols-4 gap-1" role="progressbar" aria-label="Wizard progress" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1} aria-valuetext={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step].label}`}>
+                {STEPS.map((s, i) => (
+                  <span key={s.id} className={clsx("h-[3px] transition-colors duration-300", i < step ? "bg-fg" : i === step ? "bg-red" : "bg-line")} />
+                ))}
               </div>
-              <h2 ref={headingRef} tabIndex={-1} className="t-app-h2 mt-1 focus:outline-none">
+            </div>
+            <div className="border-t border-fg pt-6 md:pt-8">
+              <p className="t-label text-muted max-sm:hidden">
+                <span className="font-mono tracking-[0.04em] text-red-deep">{pad2(step + 1)}</span>
+                <span className="mx-2 opacity-40">/</span>
+                {STEPS[step].label}
+              </p>
+              <h2 ref={headingRef} tabIndex={-1} className="mt-3 max-w-[22ch] font-heading text-[clamp(1.625rem,1.3rem+1.1vw,2.375rem)] leading-[1.04] font-semibold tracking-[-0.04em] focus:outline-none max-sm:mt-0">
                 {["What are you teaching?", "Who is it for?", "What should it cost?", "Make it look the part."][step]}
               </h2>
 
-              <div className="mt-5 flex flex-col gap-5">
+              <div className="mt-8 flex max-w-[640px] flex-col gap-7">
                 {step === 0 && (
                   <>
                     <Field label="Course title" required hint="Short and specific beats clever. Think: what would someone type into search?" error={show("title")}>
@@ -229,12 +233,12 @@ export function NewCourseWizard() {
                         onBlur={() => setTouched((t) => ({ ...t, title: true }))}
                         data-field="title"
                         maxLength={90}
-                        placeholder="e.g. Excel Formulas for Office Heroes"
+                        placeholder="e.g. AI Music Videos: From Track to Final Cut"
                         autoFocus
                       />
                     </Field>
                     <Field label="One-line promise" optional hint={`What can learners do after the last lesson? ${d.promise.length}/120`} error={show("promise")}>
-                      <Textarea value={d.promise} onChange={(e) => set("promise", e.target.value)} rows={2} placeholder="Build and publish your first website in a weekend." data-field="promise" />
+                      <Textarea value={d.promise} onChange={(e) => set("promise", e.target.value)} rows={2} placeholder="Cut a finished 60-second AI short in a weekend." data-field="promise" />
                     </Field>
                     <Field label="Category" required error={show("categoryId")}>
                       <Select
@@ -261,7 +265,7 @@ export function NewCourseWizard() {
                       value={d.level}
                       onChange={(v) => set("level", v)}
                       options={COURSE_LEVELS.map((l) => ({ value: l.value, label: l.label, description: l.description }))}
-                      className="[&>div>label]:min-w-[200px]"
+                      className="[&>div>label]:min-w-[180px]"
                     />
                     <Field label="Teaching language" hint="The language you speak in the videos. Subtitles can come later.">
                       <Select value={d.language} onChange={(e) => set("language", e.target.value)} options={COURSE_LANGUAGES.map((l) => ({ value: l, label: l }))} />
@@ -282,78 +286,91 @@ export function NewCourseWizard() {
                         className="max-w-[240px]"
                       />
                     </Field>
-                    <div role="group" aria-label="Price presets" className="-mt-2 flex flex-wrap gap-2">
+                    <div role="group" aria-label="Price presets" className="-mt-3 flex flex-wrap gap-2">
                       {PRICE_PRESETS.map((p) => (
                         <button
                           key={p}
                           type="button"
                           onClick={() => set("price", String(p))}
                           aria-pressed={price === p}
-                          className={clsx("tap h-9 rounded-full px-3.5 text-[14px] font-bold transition-colors coarse:h-11 coarse:px-4", price === p ? "bg-ink text-cream" : "bg-cream hf:bg-butter")}
+                          className={clsx(
+                            "tap h-9 px-3.5 font-mono text-[12.5px] tracking-[0.02em] tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red coarse:h-11 coarse:px-4",
+                            price === p ? "bg-ink text-cream" : "ring-1 ring-line-strong ring-inset hf:bg-fg hf:text-surface",
+                          )}
                         >
                           {formatINR(p)}
                         </button>
                       ))}
                     </div>
-                    <div className="grid gap-3 rounded-[20px] bg-mint/50 p-4 sm:grid-cols-3">
-                      <Money label="Learner pays" value={Number.isFinite(price) ? formatINR(price) : "–"} />
-                      <Money label="Price before 18% GST" value={formatINR(exGst)} />
-                      <Money label={`You keep (${Math.round(share * 100)}%)`} value={formatINR(youKeep)} strong />
+                    <div className="grid grid-cols-1 border-y border-line min-[480px]:grid-cols-3">
+                      <Figure className="py-5 min-[480px]:pr-5" label="Learner pays" value={Number.isFinite(price) ? formatINR(price) : "–"} />
+                      <Figure className="border-line py-5 max-[479px]:border-t min-[480px]:border-l min-[480px]:px-5" label="Before 18% GST" value={formatINR(exGst)} />
+                      <Figure
+                        className="border-line py-5 max-[479px]:border-t min-[480px]:border-l min-[480px]:pl-5 [&>p:nth-child(2)]:text-red-deep"
+                        label={`You keep · ${Math.round(share * 100)}%`}
+                        value={formatINR(youKeep)}
+                        strong
+                      />
                     </div>
-                    <p className="t-small -mt-2 text-ink/60">The first video is always free, so learners can try before they buy. Coupons and launch offers live in the course studio.</p>
+                    <p className="t-small -mt-2 text-muted">The first video is always free, so learners can try before they buy. Coupons and launch offers live in the course studio.</p>
                   </>
                 )}
 
                 {step === 3 && (
                   <>
                     <fieldset>
-                      <legend className="mb-2 text-[14px] font-bold">
-                        Cover image <span className="text-flame" aria-hidden>*</span>
+                      <legend className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] text-fg uppercase">
+                        Cover image <span className="text-red" aria-hidden>*</span>
                       </legend>
-                      <p className="t-small -mt-1 mb-3 text-ink/60">Pick one for now. A custom cover upload comes with the real platform.</p>
+                      <p className="-mt-1 mb-4 text-[12.5px] leading-snug text-muted">Pick one for now. A custom cover upload comes with the real platform.</p>
                       <div className="grid grid-cols-2 gap-2 min-[480px]:grid-cols-3 sm:grid-cols-4 md:gap-3">
-                        {THUMBNAIL_PRESETS.map((t) => {
+                        {THUMBNAIL_PRESETS.map((t, i) => {
                           const on = d.thumbnail === t.src;
                           return (
-                            <label key={t.id} className={clsx("group relative block cursor-pointer overflow-hidden rounded-[16px] ring-offset-2 transition-shadow", on ? "ring-3 ring-ink" : "ring-0 hf:ring-2 hf:ring-ink/30")}>
+                            <label key={t.id} className="group relative block cursor-pointer">
                               <input
                                 type="radio"
                                 name="thumbnail"
                                 value={t.src}
                                 checked={on}
                                 onChange={() => {
-                                  setD((x) => ({ ...x, thumbnail: t.src, tone: x.thumbnail ? x.tone : t.tone }));
+                                  setD((x) => ({ ...x, thumbnail: t.src, tone: x.thumbnail ? x.tone : editorialTone(t.tone) }));
                                   setTouched((x) => ({ ...x, thumbnail: true }));
                                 }}
                                 className="peer sr-only"
                               />
-                              <span className="relative block aspect-[4/3] bg-ink/10">
-                                <Image src={cropSrc(t.src, 3 / 4)} alt="" fill sizes="(min-width: 768px) 160px, 30vw" className="object-cover" />
+                              <span className={clsx("relative block aspect-[4/3] overflow-hidden bg-charcoal transition-[box-shadow] duration-200", on ? "ring-2 ring-fg ring-offset-2 ring-offset-surface" : "ring-1 ring-line ring-inset")}>
+                                <Image src={cropSrc(t.src, 3 / 4)} alt="" fill sizes="(min-width: 768px) 160px, 30vw" className={clsx("object-cover transition-opacity duration-300", on ? "opacity-100" : "opacity-85 group-hf:opacity-100")} />
+                                {on && (
+                                  <span className="absolute top-0 right-0 grid size-7 place-items-center bg-ink text-cream" aria-hidden>
+                                    <Icon name="check" className="size-3.5" strokeWidth={2.6} />
+                                  </span>
+                                )}
                               </span>
-                              <span className="absolute inset-x-1.5 bottom-1.5 truncate rounded-full bg-white/90 px-2 py-1 text-center text-[12px] font-bold">{t.label}</span>
-                              {on && (
-                                <span className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-ink text-cream" aria-hidden>
-                                  <Icon name="check" className="size-3.5" strokeWidth={3} />
+                              <span className="mt-2 flex items-baseline gap-2">
+                                <span className="font-mono text-[10.5px] text-red-deep tabular-nums" aria-hidden>
+                                  {pad2(i + 1)}
                                 </span>
-                              )}
-                              <span className="pointer-events-none absolute inset-0 rounded-[16px] peer-focus-visible:outline-3 peer-focus-visible:-outline-offset-3 peer-focus-visible:outline-blue" />
+                                <span className={clsx("min-w-0 truncate font-mono text-[10.5px] tracking-[0.08em] uppercase", on ? "text-fg" : "text-muted")}>{t.label}</span>
+                              </span>
+                              <span className="pointer-events-none absolute inset-x-0 top-0 aspect-[4/3] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-red" />
                             </label>
                           );
                         })}
                       </div>
                       {show("thumbnail") && (
-                        <p role="alert" className="mt-2 flex items-center gap-1 text-[13px] font-semibold text-[#c13500]">
-                          <Icon name="alert" className="size-3.5" strokeWidth={2.4} />
+                        <p role="alert" className="mt-3 flex items-start gap-2 text-[12.5px] leading-snug font-medium text-red-deep">
+                          <span aria-hidden className="mt-[5px] size-[6px] shrink-0 bg-current" />
                           {errors.thumbnail}
                         </p>
                       )}
                     </fieldset>
-                    <TonePicker value={d.tone} onChange={(t) => set("tone", t)} />
+                    <TonePalette legend="Card colour" hint="The ground your cover sits on in the catalog." value={d.tone} onChange={(t) => set("tone", t)} />
                   </>
                 )}
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-ink/[0.07] pt-5 max-sm:hidden">
+              <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-fg pt-5 max-sm:hidden">
                 {step > 0 ? (
                   <Button variant="ghost" icon="arrow-left" onClick={() => go(step - 1)}>
                     Back
@@ -363,36 +380,47 @@ export function NewCourseWizard() {
                     Cancel
                   </Button>
                 )}
-                <Button type="submit" variant={step === STEPS.length - 1 ? "accent" : "primary"} iconRight="arrow-right" loading={creating}>
-                  {step === STEPS.length - 1 ? "Create draft and open studio" : "Next"}
-                </Button>
+                <div className="flex items-center gap-4">
+                  <span className="font-mono text-[11px] tracking-[0.06em] text-muted uppercase tabular-nums max-md:hidden">
+                    {pad2(step + 1)} / {pad2(STEPS.length)}
+                  </span>
+                  <Button type="submit" variant={step === STEPS.length - 1 ? "red" : "primary"} iconRight="arrow-right" loading={creating}>
+                    {step === STEPS.length - 1 ? "Create draft and open studio" : "Next"}
+                  </Button>
+                </div>
               </div>
-            </form>
-          </Card>
+            </div>
+          </form>
           {/* phones: the live preview collapses into a button + bottom sheet */}
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="tap mt-3 flex min-h-14 w-full items-center gap-3 rounded-card bg-white py-2 pr-4 pl-2 text-left shadow-soft sm:hidden"
+            className="tap mt-8 flex min-h-16 w-full items-center gap-3.5 border-y border-line py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red sm:hidden"
           >
-            <span className={clsx("relative block h-10 w-16 shrink-0 overflow-hidden rounded-[10px]", toneBg[d.tone])}>
-              <Image src={cropSrc(d.thumbnail || THUMBNAIL_PRESETS[0].src, 10 / 16)} alt="" fill sizes="64px" className="object-cover" />
+            <span className="relative block size-12 shrink-0 overflow-hidden bg-charcoal">
+              <Image src={cropSrc(d.thumbnail || THUMBNAIL_PRESETS[0].src, 1)} alt="" fill sizes="48px" className="object-cover" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold">Preview card</span>
-              <span className="block truncate text-[13px] font-semibold text-ink/55">How it looks in the catalog</span>
+              <span className="block font-heading text-[15.5px] font-semibold tracking-[-0.015em]">Preview card</span>
+              <span className="block truncate font-mono text-[11px] tracking-[0.06em] text-muted uppercase">How it looks in the catalog</span>
             </span>
-            <Icon name="eye" className="size-5 shrink-0 text-ink/55" />
+            <Icon name="eye" strokeWidth={1.6} className="size-5 shrink-0 text-muted" />
           </button>
         </div>
 
         <aside className="min-w-0 max-sm:hidden" aria-label="Live preview">
           <div className="xl:sticky xl:top-[88px]">
-            <p className="t-micro mb-2 text-ink/50 uppercase max-xl:text-center">Live preview</p>
-            <div inert className="mx-auto max-w-[340px]">
+            <div className="mb-5 flex items-baseline justify-between gap-3 border-t border-fg pt-4">
+              <p className="t-label">Live preview</p>
+              <span className="flex items-center gap-1.5 font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase">
+                <span aria-hidden className="size-[6px] rounded-full bg-red" />
+                Catalog card
+              </span>
+            </div>
+            <div inert className="max-w-[340px] max-xl:mx-auto">
               <CourseCard data={preview} headingLevel="h3" href="#" priority />
             </div>
-            <p className="t-small mt-3 text-center text-ink/55">How your card looks in the catalog. Lesson counts are placeholders until you build.</p>
+            <p className="mt-4 text-[12.5px] leading-snug text-muted max-xl:text-center">How your card looks in the catalog. Lesson counts are placeholders until you build.</p>
           </div>
         </aside>
       </div>
@@ -407,55 +435,20 @@ export function NewCourseWizard() {
       <StickyActionBar
         show
         label="Wizard steps"
-        title={`Step ${step + 1} of ${STEPS.length}`}
+        title={`Step ${pad2(step + 1)} / ${pad2(STEPS.length)}`}
         sub={STEPS[step].hint}
       >
         {step > 0 ? (
-          <Button variant="secondary" iconOnly icon="arrow-left" aria-label="Back" onClick={() => go(step - 1)} className="size-12" />
+          <Button variant="outline" iconOnly icon="arrow-left" aria-label="Back" onClick={() => go(step - 1)} className="size-12" />
         ) : (
           <Button variant="ghost" href="/tutor/courses" className="h-12 px-3">
             Cancel
           </Button>
         )}
-        <Button type="submit" form="new-course-form" variant={step === STEPS.length - 1 ? "accent" : "primary"} iconRight="arrow-right" loading={creating} className="h-12">
+        <Button type="submit" form="new-course-form" variant={step === STEPS.length - 1 ? "red" : "primary"} iconRight="arrow-right" loading={creating} className="h-12">
           {step === STEPS.length - 1 ? "Create draft" : "Next"}
         </Button>
       </StickyActionBar>
     </div>
-  );
-}
-
-function Money({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div>
-      <p className="text-[12.5px] font-bold text-forest/70">{label}</p>
-      <p className={clsx("mt-1 font-heading leading-none font-extrabold tracking-[-0.02em] text-forest", strong ? "text-[26px]" : "text-[20px]")}>{value}</p>
-    </div>
-  );
-}
-
-/** Card colour swatches (radio group). */
-export function TonePicker({ value, onChange }: { value: Tone; onChange: (t: Tone) => void }) {
-  return (
-    <fieldset>
-      <legend className="mb-2 text-[14px] font-bold">Card colour</legend>
-      <div className="flex flex-wrap gap-2">
-        {CARD_TONES.map((t) => (
-          <label key={t.value} className="relative cursor-pointer" title={t.label}>
-            <input type="radio" name="tone" value={t.value} checked={value === t.value} onChange={() => onChange(t.value)} className="peer sr-only" />
-            <span
-              className={clsx(
-                "grid size-10 place-items-center rounded-full ring-offset-2 ring-offset-white transition-shadow peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue",
-                toneBg[t.value],
-                value === t.value ? "ring-3 ring-ink" : "ring-1 ring-ink/10",
-              )}
-            >
-              {value === t.value && <Icon name="check" className={clsx("size-4", ["blue", "green", "indigo", "purple", "hotpink"].includes(t.value) ? "text-white" : "text-ink")} strokeWidth={3} />}
-            </span>
-            <span className="sr-only">{t.label}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
   );
 }

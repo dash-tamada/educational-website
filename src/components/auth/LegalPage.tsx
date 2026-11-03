@@ -1,8 +1,6 @@
-import Link from "next/link";
-import { SiteShell, Icon } from "@/components/app";
-import { Eyebrow } from "@/components/decor/Bits";
-import { Mascot } from "@/components/decor/Mascot";
-import type { Tone } from "@/lib/landing-data";
+import clsx from "clsx";
+import { SiteShell } from "@/components/app";
+import { ArrowLink, Eyebrow } from "@/components/editorial";
 import { LegalToc } from "./LegalToc";
 
 export interface LegalSection {
@@ -11,123 +9,117 @@ export interface LegalSection {
   body: React.ReactNode;
 }
 
-/**
- * Well-typeset legal page: header, a clear "placeholder copy" notice, a sticky
- * table of contents (scroll-spy) and the sections in a white reading card.
- */
+/* =============================================================================
+   LEGAL ARTICLE (Mobius long-form). Cream.
+   Header on the editorial grid: the eyebrow in the label column, then a mono
+   "Last updated" line, a giant Inter Tight title and the intro at a reading
+   measure. Below a hairline: a sticky ruled, numbered table of contents on the
+   left (LegalToc: scroll-spy; a Contents bar + sheet below lg) and the body on
+   the right: a placeholder-copy notice, then numbered sections (§ 01) with
+   Inter Tight titles and 17px / 1.7 body text, lists on red square markers.
+   Closes with a big text-arrow to the other policy.
+   ============================================================================= */
+
+/** Long-form body type for the section bodies (lists, links, h3, code). */
+const BODY = clsx(
+  "grid max-w-[58ch] gap-5 text-[16px] leading-[1.7] text-fg/80 md:text-[17px]",
+  "[&_strong]:font-semibold [&_strong]:text-fg",
+  "[&_a]:text-fg [&_a]:underline [&_a]:decoration-ink/30 [&_a]:decoration-1 [&_a]:underline-offset-[3px] [&_a]:transition-colors [&_a:hover]:decoration-red",
+  "[&_h3]:t-label [&_h3]:mt-3 [&_h3]:text-fg",
+  "[&_ul]:grid [&_ul]:gap-2.5 [&_ul>li]:relative [&_ul>li]:pl-6 [&_ul>li]:before:absolute [&_ul>li]:before:top-[0.72em] [&_ul>li]:before:left-0.5 [&_ul>li]:before:size-[6px] [&_ul>li]:before:bg-red [&_ul>li]:before:content-['']",
+  "[&_ol]:grid [&_ol]:list-[decimal-leading-zero] [&_ol]:gap-2.5 [&_ol]:pl-9 [&_ol>li]:pl-1 [&_ol>li]:marker:font-mono [&_ol>li]:marker:text-[13px] [&_ol>li]:marker:text-muted",
+  "[&_code]:bg-cream-2 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[14px]",
+);
+
 export function LegalPage({
+  index,
   eyebrow,
-  eyebrowTone = "blue",
   title,
   intro,
   updated,
   sections,
   other,
 }: {
+  /** running number in the eyebrow, e.g. "01" */
+  index?: string;
   eyebrow: string;
-  eyebrowTone?: Tone;
+  /** legacy (v1 tone names): ignored */
+  eyebrowTone?: string;
   title: string;
   intro: React.ReactNode;
   updated: string;
   sections: LegalSection[];
   other: { label: string; href: string };
 }) {
+  const minutes = Math.max(4, Math.round(sections.length * 0.9));
   return (
     <SiteShell>
-      <div className="container-x pb-section">
-        <header className="pt-6 md:pt-10">
-          <Eyebrow tone={eyebrowTone}>{eyebrow}</Eyebrow>
-          <h1 className="mt-eyebrow max-w-[16ch] t-display-l">{title}</h1>
-          <p className="mt-sub max-w-[40rem] t-body-l text-ink/75">{intro}</p>
-          <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 t-small font-semibold text-ink/70">
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="calendar" className="size-4" /> Last updated {updated}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="clock" className="size-4" /> About{" "}
-              {Math.max(4, Math.round(sections.length * 0.9))} min read
-            </span>
-          </p>
+      <div className="ground-cream">
+        <header className="container-wide edit-grid gap-y-6 pt-6 pb-14 md:pt-14 md:pb-20 lg:pb-24">
+          <div className="col-span-12 lg:col-span-3">
+            <Eyebrow index={index}>{eyebrow}</Eyebrow>
+          </div>
+          <div className="col-span-12 lg:col-span-9 lg:col-start-4">
+            <p className="t-timecode flex flex-wrap gap-x-4 gap-y-1 text-muted">
+              <span>Last updated {updated}</span>
+              <span aria-hidden>·</span>
+              <span>{minutes} min read</span>
+            </p>
+            <h1 className="t-headline-xl mt-6 max-w-[13ch] text-balance md:mt-8">{title}</h1>
+            <p className="t-body-l mt-8 max-w-[38rem] text-muted md:mt-10">{intro}</p>
+          </div>
         </header>
 
-        <div
-          role="note"
-          className="mt-8 flex gap-4 rounded-card-lg bg-butter p-5 md:p-6"
-        >
-          <span
-            className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-white"
-            aria-hidden
-          >
-            <Icon name="alert" className="size-5 text-[#8a5300]" />
-          </span>
-          <div>
-            <p className="t-app-h3">Placeholder legal copy</p>
-            <p className="mt-1 t-small text-ink/75">
-              This is sample text written for the Tamada Media demo. It is not
-              legal advice and isn&apos;t a binding agreement. Have a qualified
-              lawyer review and replace it before launch.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:mt-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10">
-          <aside className="min-w-0 lg:sticky lg:top-[calc(var(--header-offset)+16px)] lg:self-start">
-            <LegalToc
-              sections={sections.map(({ id, title }) => ({ id, title }))}
-            />
-            <div className="mt-4 hidden rounded-card-lg bg-white p-5 shadow-soft lg:block">
-              <div className="flex items-center gap-3">
-                <Mascot
-                  title=""
-                  className="w-10 shrink-0"
-                  style={{ transform: "rotate(-6deg)" }}
-                />
-                <p className="t-small font-semibold">
-                  Questions about this page?
-                </p>
+        <div className="container-wide edit-grid gap-y-10 pb-section">
+          <aside className="col-span-12 border-t border-fg pt-3 lg:col-span-3 lg:border-t-0 lg:pt-0">
+            <div className="lg:sticky lg:top-[calc(var(--header-offset)+24px)]">
+              <LegalToc sections={sections.map(({ id, title }) => ({ id, title }))} />
+              <div className="mt-10 max-lg:hidden">
+                <p className="t-small text-muted">Questions about this page?</p>
+                <div className="mt-3">
+                  <ArrowLink href="/contact?topic=other">Ask a human</ArrowLink>
+                </div>
               </div>
-              <Link
-                href="/contact?topic=other"
-                className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-bold text-blue-deep underline-offset-2 hf:underline"
-              >
-                Ask a human <Icon name="arrow-right" className="size-4" />
-              </Link>
             </div>
           </aside>
 
-          <article className="legal-prose min-w-0 rounded-card-lg bg-white p-6 shadow-soft sm:p-8 md:p-12">
+          <article className="col-span-12 min-w-0 lg:col-span-8 lg:col-start-5 xl:col-span-7 xl:col-start-5">
+            <div role="note" className="flex gap-4 border-y border-line py-5">
+              <span aria-hidden className="mt-[5px] size-[7px] shrink-0 bg-red" />
+              <div>
+                <p className="t-label">Placeholder legal copy</p>
+                <p className="t-small mt-2 max-w-[56ch] text-muted">
+                  Sample text written for the Tamada Media demo. It is not legal advice and isn&apos;t a binding agreement. Have a qualified lawyer
+                  review and replace it before launch.
+                </p>
+              </div>
+            </div>
+
             {sections.map((s, i) => (
               <section
                 key={s.id}
                 id={s.id}
                 aria-labelledby={`${s.id}-h`}
-                className="border-b border-ink/[0.07] pb-8 not-first:pt-8 last:border-b-0 last:pb-0"
+                className="scroll-mt-[calc(var(--header-offset)+24px)] border-b border-line py-12 last-of-type:border-b-0 md:grid md:grid-cols-[5.5rem_minmax(0,1fr)] md:py-16"
               >
-                <h2
-                  id={`${s.id}-h`}
-                  tabIndex={-1}
-                  className="flex items-baseline gap-3 t-app-h2 outline-none"
-                >
-                  <span className="shrink-0 rounded-full bg-cream px-2 py-1 t-micro text-ink/70 tabular-nums">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  {s.title}
-                </h2>
-                <div className="mt-4 grid max-w-[68ch] gap-4 text-[16px] leading-[1.65] text-ink/80 [&_a]:font-semibold [&_a]:text-blue-deep [&_a]:underline [&_a]:underline-offset-2 [&_h3]:mt-2 [&_h3]:text-[16px] [&_h3]:font-bold [&_h3]:text-ink [&_li]:pl-1 [&_ol]:grid [&_ol]:list-decimal [&_ol]:gap-2 [&_ol]:pl-5 [&_strong]:font-bold [&_strong]:text-ink [&_ul]:grid [&_ul]:list-disc [&_ul]:gap-2 [&_ul]:pl-5 [&_ul]:marker:text-hotpink">
-                  {s.body}
+                <p className="t-timecode pt-2 text-muted" aria-hidden>
+                  § {String(i + 1).padStart(2, "0")}
+                </p>
+                <div className="min-w-0">
+                  <h2 id={`${s.id}-h`} tabIndex={-1} className="t-headline-m mt-3 outline-none md:mt-0">
+                    {s.title}
+                  </h2>
+                  <div className={clsx(BODY, "mt-5 md:mt-6")}>{s.body}</div>
                 </div>
               </section>
             ))}
-            <p className="mt-10 rounded-tag bg-cream px-4 py-3 t-small text-ink/65">
-              Looking for the other one? Read our{" "}
-              <Link
-                href={other.href}
-                className="font-bold text-blue-deep underline underline-offset-2"
-              >
+
+            <div className="mt-8 flex flex-col gap-4 border-t border-fg pt-6 sm:flex-row sm:items-end sm:justify-between md:mt-12">
+              <p className="t-small text-muted">Looking for the other one?</p>
+              <ArrowLink href={other.href} size="xl">
                 {other.label}
-              </Link>
-              .
-            </p>
+              </ArrowLink>
+            </div>
           </article>
         </div>
       </div>

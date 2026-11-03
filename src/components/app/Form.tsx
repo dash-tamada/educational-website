@@ -5,8 +5,11 @@ import clsx from "clsx";
 import { Icon, type IconName } from "./icons";
 
 /* =============================================================================
-   Form controls. Labels are always visible; hints and errors are wired with
-   aria-describedby; errors set aria-invalid. Rounded, flat, soft focus ring.
+   Form controls, design system v2 (Mobius contact fields): flat cream-2 fields,
+   square, a hairline underline that turns into a 2px RED line on focus. Tiny-caps
+   labels are always visible; hints and errors are wired with aria-describedby;
+   errors set aria-invalid (red underline + red line under the field). 16px text on
+   phones (no iOS zoom). Inside a dark ground (.theatre) the fields turn translucent.
 
      <Field label="Course title" hint="Keep it under 60 characters." error={errors.title} required>
        <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} />
@@ -24,8 +27,14 @@ import { Icon, type IconName } from "./icons";
    so any control (or your own) works inside it.
    ============================================================================= */
 
-const control =
-  "rounded-tag bg-white text-base sm:text-[15px] font-medium text-ink placeholder:text-ink/40 ring-1 ring-ink/[0.12] transition-[box-shadow,background-color] duration-150 ease-ui hf:ring-ink/25 focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-blue disabled:cursor-not-allowed disabled:bg-ink/[0.04] disabled:text-ink/50 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-flame aria-[invalid=true]:focus:outline-solid aria-[invalid=true]:focus:outline-2 aria-[invalid=true]:focus:outline-offset-2 aria-[invalid=true]:focus:outline-blue";
+const control = clsx(
+  "rounded-none border-0 border-b border-ink/30 bg-cream-2 text-base font-normal text-ink placeholder:text-ink/45 sm:text-[15px]",
+  "transition-[box-shadow,background-color,border-color] duration-200 ease-ui hf:border-ink/60",
+  "focus:border-red focus:bg-paper focus:shadow-[inset_0_-1px_0_var(--color-red)] focus:outline-none focus-visible:outline-none",
+  "disabled:cursor-not-allowed disabled:border-dashed disabled:bg-transparent disabled:text-ink/50",
+  "aria-[invalid=true]:border-red aria-[invalid=true]:bg-[#fbeae6] aria-[invalid=true]:shadow-[inset_0_-1px_0_var(--color-red)]",
+  "on-dark:border-white/30 on-dark:bg-white/[0.06] on-dark:text-cream on-dark:placeholder:text-cream/45 on-dark:focus:border-red-lite on-dark:focus:bg-white/[0.1]",
+);
 
 /** Phone-friendly defaults per input type (MOBILE_SPEC §1.10): the right keyboard, no
     autocorrect on emails/URLs, a sensible Enter key. Anything you pass wins. */
@@ -89,28 +98,28 @@ export function Field({
     : children;
   return (
     <div className={clsx("flex flex-col", className)}>
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-[14px] font-bold text-ink">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] text-fg uppercase">
           {label}
           {required && (
-            <span className="text-flame" aria-hidden>
+            <span className="text-red" aria-hidden>
               {" "}
               *
             </span>
           )}
-          {optional && <span className="font-medium text-ink/65"> (optional)</span>}
+          {optional && <span className="font-normal tracking-normal text-muted normal-case"> (optional)</span>}
         </label>
-        {labelAction && <span className="text-[13px] font-semibold">{labelAction}</span>}
+        {labelAction && <span className="text-[13px] font-medium">{labelAction}</span>}
       </div>
       {child}
       {hint && !error && (
-        <p id={hintId} className="mt-1.5 text-[13px] leading-snug text-ink/60">
+        <p id={hintId} className="mt-2 text-[12.5px] leading-snug text-muted">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errId} role="alert" className="mt-1.5 flex items-start gap-1 text-[13px] font-semibold leading-snug text-[#c13500]">
-          <Icon name="alert" className="mt-px size-3.5" strokeWidth={2.4} />
+        <p id={errId} role="alert" className="mt-2 flex items-start gap-2 text-[12.5px] leading-snug font-medium text-red-deep on-dark:text-red-lite">
+          <span aria-hidden className="mt-[5px] size-[6px] shrink-0 bg-current" />
           {/* one inline run: text + links in an error flow as a sentence, not flex columns */}
           <span className="min-w-0">{error}</span>
         </p>
@@ -134,8 +143,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ i
   if (!icon && !suffix && !prefix) return <input ref={ref} className={clsx(control, widthOf(className), h, "px-3.5", className)} {...rest} />;
   return (
     <span className={clsx("relative flex items-center", widthOf(className), className)}>
-      {icon && <Icon name={icon} className="pointer-events-none absolute left-3.5 size-[18px] text-ink/45" />}
-      {prefix && <span className="pointer-events-none absolute left-3.5 text-base font-bold text-ink/65 sm:text-[15px]">{prefix}</span>}
+      {icon && <Icon name={icon} className="pointer-events-none absolute left-3.5 z-[1] size-[17px] text-fg/50" strokeWidth={1.7} />}
+      {prefix && <span className="pointer-events-none absolute left-3.5 z-[1] font-mono text-[15px] font-medium text-fg/60">{prefix}</span>}
       <input ref={ref} className={clsx(control, "w-full", h, icon || prefix ? "pl-10" : "pl-3.5", suffix ? "pr-12" : "pr-3.5")} {...rest} />
       {suffix && <span className="absolute right-2 flex items-center">{suffix}</span>}
     </span>
@@ -152,7 +161,7 @@ export const SearchInput = forwardRef<HTMLInputElement, InputProps & { onClear?:
       aria-label={rest["aria-label"] ?? (typeof rest.placeholder === "string" ? rest.placeholder : "Search")}
       suffix={
         onClear && value ? (
-          <button type="button" onClick={onClear} className="hit grid size-8 place-items-center rounded-full text-ink/55 hf:bg-ink/[0.06]" aria-label="Clear search">
+          <button type="button" onClick={onClear} className="hit grid size-8 place-items-center text-fg/55 hf:text-red" aria-label="Clear search">
             <Icon name="x" className="size-4" />
           </button>
         ) : undefined
@@ -199,8 +208,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttrib
       {counted && (
         <span
           className={clsx(
-            "mt-1.5 block text-right text-[12px] font-semibold tabular-nums",
-            count >= maxLength! ? "text-flame-deep" : count >= maxLength! * 0.9 ? "text-ink/80" : "text-ink/60",
+            "mt-1.5 block text-right font-mono text-[11px] font-medium tabular-nums",
+            count >= maxLength! ? "text-red-deep" : count >= maxLength! * 0.9 ? "text-fg/80" : "text-muted",
           )}
           aria-hidden
         >
@@ -231,7 +240,7 @@ export const Select = forwardRef<
           </option>
         ))}
       </select>
-      <Icon name="chevron-down" className="pointer-events-none absolute right-3 size-[18px] text-ink/55" />
+      <Icon name="chevron-down" className="pointer-events-none absolute right-3 size-4 text-fg/60" strokeWidth={1.7} />
     </span>
   );
 });
@@ -251,14 +260,14 @@ export const Checkbox = forwardRef<
           ref={ref}
           id={id}
           type="checkbox"
-          className="peer size-5 cursor-pointer appearance-none rounded-[6px] max-sm:size-[22px] bg-white ring-1 ring-ink/25 transition-colors checked:bg-ink checked:ring-ink indeterminate:bg-ink indeterminate:ring-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:cursor-not-allowed"
+          className="peer size-[18px] cursor-pointer appearance-none rounded-none border border-ink/45 bg-paper transition-colors max-sm:size-5 checked:border-ink checked:bg-ink indeterminate:border-ink indeterminate:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red disabled:cursor-not-allowed on-dark:border-white/45 on-dark:bg-transparent on-dark:checked:border-cream on-dark:checked:bg-cream"
           {...rest}
         />
-        <Icon name="check" className="pointer-events-none absolute size-3.5 text-cream opacity-0 peer-checked:opacity-100" strokeWidth={3.2} />
+        <Icon name="check" className="pointer-events-none absolute size-3 text-cream opacity-0 peer-checked:opacity-100 on-dark:text-ink" strokeWidth={3} />
       </span>
       <span className="min-w-0">
-        <span className="block text-[15px] leading-snug font-semibold">{label}</span>
-        {description && <span className="mt-0.5 block text-[13px] leading-snug text-ink/60">{description}</span>}
+        <span className="block text-[15px] leading-snug font-medium">{label}</span>
+        {description && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{description}</span>}
       </span>
     </label>
   );
@@ -289,7 +298,7 @@ export function RadioGroup<T extends string>({
 }) {
   return (
     <fieldset className={className}>
-      <legend className={clsx("mb-2 text-[14px] font-bold", hideLabel && "sr-only")}>{label}</legend>
+      <legend className={clsx("mb-3 text-[11.5px] font-semibold tracking-[0.12em] uppercase", hideLabel && "sr-only")}>{label}</legend>
       <div className={clsx("flex", variant === "default" ? "gap-3 max-sm:gap-x-3 max-sm:gap-y-0" : "gap-3", orientation === "vertical" ? "flex-col" : "flex-wrap")}>
         {options.map((o) => {
           const checked = o.value === value;
@@ -299,7 +308,11 @@ export function RadioGroup<T extends string>({
               className={clsx(
                 "flex cursor-pointer items-start gap-3",
                 variant === "default" && "max-sm:min-h-11 max-sm:py-2.5",
-                variant === "cards" && [orientation === "horizontal" ? "min-w-[10.5rem] flex-1" : "", "rounded-card p-4 ring-1 transition-[box-shadow,background-color]", checked ? "bg-butter ring-2 ring-ink" : "bg-white ring-ink/[0.12] hf:ring-ink/30"],
+                variant === "cards" && [
+                  orientation === "horizontal" ? "min-w-[10.5rem] flex-1" : "",
+                  "rounded-none p-4 ring-inset transition-[box-shadow,background-color]",
+                  checked ? "bg-paper ring-2 ring-fg" : "bg-transparent ring-1 ring-line-strong hf:ring-fg/60",
+                ],
                 o.disabled && "cursor-not-allowed opacity-55",
               )}
             >
@@ -310,11 +323,11 @@ export function RadioGroup<T extends string>({
                 checked={checked}
                 disabled={o.disabled}
                 onChange={() => onChange(o.value)}
-                className="mt-0.5 grid size-5 shrink-0 cursor-pointer appearance-none place-items-center rounded-full max-sm:size-[22px] bg-white ring-1 ring-ink/25 transition-all before:size-2.5 before:scale-0 before:rounded-full before:bg-cream before:transition-transform before:content-[''] checked:bg-ink checked:ring-ink checked:before:scale-100 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-blue"
+                className="mt-0.5 grid size-[18px] shrink-0 cursor-pointer appearance-none place-items-center rounded-full border border-ink/45 bg-paper transition-all before:size-2 before:scale-0 before:rounded-full before:bg-ink before:transition-transform before:content-[''] max-sm:size-5 checked:border-ink checked:before:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red on-dark:border-white/45 on-dark:bg-transparent on-dark:before:bg-cream on-dark:checked:border-cream"
               />
               <span className="min-w-0">
-                <span className="block text-[15px] leading-snug font-semibold">{o.label}</span>
-                {o.description && <span className="mt-0.5 block text-[13px] leading-snug text-ink/60">{o.description}</span>}
+                <span className="block text-[15px] leading-snug font-medium">{o.label}</span>
+                {o.description && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{o.description}</span>}
               </span>
             </label>
           );
@@ -349,10 +362,10 @@ export function Switch({
   return (
     <div className={clsx("flex items-start justify-between gap-4 max-sm:min-h-11", disabled && "opacity-55", className)}>
       <span className={clsx("min-w-0", hideLabel && "sr-only")}>
-        <label htmlFor={id} className="block cursor-pointer text-[15px] leading-snug font-semibold">
+        <label htmlFor={id} className="block cursor-pointer text-[15px] leading-snug font-medium">
           {label}
         </label>
-        {description && <span className="mt-0.5 block text-[13px] leading-snug text-ink/60">{description}</span>}
+        {description && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{description}</span>}
       </span>
       <button
         id={id}
@@ -362,13 +375,17 @@ export function Switch({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={clsx(
-          "hit relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 ease-ui disabled:cursor-not-allowed max-sm:mt-2",
-          checked ? "bg-green" : "bg-ink/20",
+          "hit relative h-6 w-11 shrink-0 rounded-none border transition-colors duration-200 ease-ui disabled:cursor-not-allowed max-sm:mt-2",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red",
+          checked ? "border-ink bg-ink on-dark:border-cream on-dark:bg-cream" : "border-ink/40 bg-transparent on-dark:border-white/40",
         )}
       >
         <span
           aria-hidden
-          className={clsx("absolute top-1 left-1 size-5 rounded-full bg-white shadow-soft transition-[translate] duration-200 ease-spring", checked && "translate-x-5")}
+          className={clsx(
+            "absolute top-[3px] left-[3px] size-4 transition-[translate,background-color] duration-300 ease-expo",
+            checked ? "translate-x-5 bg-red" : "bg-ink/50 on-dark:bg-cream/60",
+          )}
         />
       </button>
     </div>
@@ -423,7 +440,7 @@ export function Segmented<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={clsx(
-        "inline-flex rounded-full bg-white p-1 shadow-soft",
+        "inline-flex divide-x divide-line-strong border border-line-strong",
         // phone-s: 3+ options take the full width in equal parts instead of overflowing
         options.length >= 3 && "phone-s:flex phone-s:w-full phone-s:[&>*]:min-w-0 phone-s:[&>*]:flex-1 phone-s:[&>*]:px-2",
         className,
@@ -445,10 +462,11 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           onKeyDown={(e) => onKeyDown(e, i)}
           className={clsx(
-            "inline-flex items-center justify-center gap-1.5 rounded-full font-bold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40",
-            // phones: 44px tall (thumb-friendly); desktop keeps 28/36px
-            size === "sm" ? "h-11 px-3.5 text-[14px] sm:h-7 sm:px-3 sm:text-[13px]" : "h-11 px-4 text-[14px] sm:h-9",
-            o.value === value ? "bg-ink text-cream" : "text-ink/70 hf:text-ink",
+            "inline-flex items-center justify-center gap-1.5 rounded-none font-semibold tracking-[0.12em] whitespace-nowrap uppercase transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40",
+            "focus-visible:-outline-offset-2",
+            // phones: 44px tall (thumb-friendly); desktop keeps 30/38px
+            size === "sm" ? "h-11 px-3.5 text-[11px] sm:h-[30px] sm:px-3 sm:text-[10.5px]" : "h-11 px-4 text-[11px] sm:h-[38px]",
+            o.value === value ? "bg-fg text-surface" : "text-muted hf:text-fg",
           )}
         >
           {o.label}

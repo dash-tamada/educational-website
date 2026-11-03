@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -8,22 +7,25 @@ import clsx from "clsx";
 import {
   Badge,
   Button,
-  Card,
   DataTable,
   EmptyState,
-  Icon,
   PageHeader,
   Rating,
+  Section,
   Select,
-  StatusPill,
   Switch,
   Tabs,
   toast,
   type MenuItem,
 } from "@/components/app";
+import {
+  CheckRow,
+  Idx,
+  MonoMeta,
+  Poster,
+  RuledList,
+} from "@/components/tutor/editorial";
 import { demo, useDb } from "@/lib/demo/store";
-import { cropSrc } from "@/lib/img";
-import { toneBg } from "@/lib/landing-data";
 import {
   formatCompact,
   formatDuration,
@@ -52,7 +54,6 @@ import {
   CourseCell,
   PhoneRow,
   PhoneThumb,
-  SectionTitle,
   fitColumns,
   pickSort,
   smartDate,
@@ -228,7 +229,7 @@ function CoursesView({
         onChange={() => toggleFeatured(c)}
       />
     ) : (
-      <span className="text-[13px] text-ink/35">—</span>
+      <span className="text-[13px] text-muted">—</span>
     );
   const allColumns: FitColumn<Course>[] = compact
     ? [
@@ -247,7 +248,7 @@ function CoursesView({
                 <span>{formatINR(c.price)}</span>
                 <span>{formatCompact(c.learners)} learners</span>
                 {c.featured && c.status === "published" && (
-                  <Badge tone="sun" size="sm">
+                  <Badge tone="ink" size="sm">
                     Featured
                   </Badge>
                 )}
@@ -279,7 +280,7 @@ function CoursesView({
           header: "Category",
           minBox: 1160,
           cell: (c) => (
-            <span className="whitespace-nowrap text-ink/75">
+            <span className="whitespace-nowrap text-muted">
               {getCategory(c.categoryId, db)?.name}
             </span>
           ),
@@ -295,7 +296,7 @@ function CoursesView({
           key: "price",
           header: "Price",
           align: "right",
-          cell: (c) => <span className="whitespace-nowrap">{formatINR(c.price)}</span>,
+          cell: (c) => <span className="font-heading font-semibold whitespace-nowrap tabular-nums">{formatINR(c.price)}</span>,
           sortValue: (c) => c.price,
         },
         {
@@ -303,7 +304,7 @@ function CoursesView({
           header: "Learners",
           align: "right",
           minBox: 780,
-          cell: (c) => formatCompact(c.learners),
+          cell: (c) => <span className="font-mono text-[13px] tabular-nums">{formatCompact(c.learners)}</span>,
           sortValue: (c) => c.learners,
         },
         {
@@ -314,7 +315,7 @@ function CoursesView({
             c.reviewCount ? (
               <Rating value={c.rating} size="sm" />
             ) : (
-              <span className="whitespace-nowrap text-ink/40">No reviews</span>
+              <span className="whitespace-nowrap text-muted">No reviews</span>
             ),
           sortValue: (c) => c.rating,
         },
@@ -329,7 +330,7 @@ function CoursesView({
           header: "Updated",
           minBox: 900,
           cell: (c) => (
-            <span className="whitespace-nowrap text-ink/70">
+            <span className="whitespace-nowrap text-muted">
               {timeAgo(c.updatedAt)}
             </span>
           ),
@@ -343,15 +344,24 @@ function CoursesView({
     dir: "desc",
   });
 
+  const featuredCount = db.courses.filter(
+    (c) => c.featured && c.status === "published",
+  ).length;
+
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Courses"
-        eyebrowTone="purple"
+        eyebrow="Control room · Courses"
         title={
-          tab === "review"
-            ? "Courses waiting for a green light."
-            : "Every course on Tamada."
+          tab === "review" ? (
+            <>
+              Waiting for a green <em>light</em>.
+            </>
+          ) : (
+            <>
+              Every course on <em>Tamada</em>.
+            </>
+          )
         }
         description={
           tab === "review"
@@ -362,29 +372,19 @@ function CoursesView({
           { label: "Control room", href: "/admin" },
           { label: "Courses" },
         ]}
+        rule={false}
         meta={
-          <>
-            <Badge tone="butter" dot>
-              {counts.in_review ?? 0} in review
-            </Badge>
-            <Badge tone="mint" dot>
-              {counts.published ?? 0} published
-            </Badge>
-            <Badge tone="neutral" dot>
-              {
-                db.courses.filter((c) => c.featured && c.status === "published")
-                  .length
-              }{" "}
-              featured
-            </Badge>
-          </>
+          <MonoMeta as="span">
+            {counts.in_review ?? 0} in review · {counts.published ?? 0} published
+            · {featuredCount} featured
+          </MonoMeta>
         }
       />
 
       <Tabs
         label="Courses view"
         value={tab}
-        className="mb-6"
+        className="mb-10 md:mb-14"
         items={[
           {
             id: "review",
@@ -402,92 +402,102 @@ function CoursesView({
       />
 
       {tab === "review" ? (
-        <>
-          {queue.length ? (
-            <ul className="grid gap-4 md:grid-cols-2 md:gap-6">
-              {queue.map((c, i) => (
-                <li
-                  key={c.id}
-                  className="app-enter"
-                  style={{ animationDelay: `${i * 40}ms` }}
-                >
-                  <QueueCard
+        <div className="space-y-14 md:space-y-20">
+          <Section
+            index="01"
+            label="Review queue"
+            note="Oldest first. Every course runs five automatic checks before you open it."
+            title={
+              queue.length
+                ? `${plural(queue.length, "course")} in review.`
+                : "Nothing in review."
+            }
+          >
+            {queue.length ? (
+              <RuledList label="Courses in review">
+                {queue.map((c, i) => (
+                  <QueueRow
+                    key={c.id}
+                    index={i + 1}
                     course={c}
                     preload={i === 0}
                     onPublish={() =>
                       setAction({ kind: "publish", course: c, watched: false })
                     }
                   />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Card>
+                ))}
+              </RuledList>
+            ) : (
               <EmptyState
-                art="tami"
-                tone="cyan"
+                art="none"
+                align="start"
+                eyebrow="Queue clear"
                 title="All caught up."
                 body="When a tutor submits a course for review, it lands here. Oldest first."
                 action={
-                  <Button href="/admin/courses?tab=all" variant="secondary">
+                  <Button
+                    href="/admin/courses?tab=all"
+                    variant="outline"
+                    iconRight="arrow-right"
+                  >
                     Browse all courses
                   </Button>
                 }
+                className="border-t border-fg !px-0"
+                compact
               />
-            </Card>
-          )}
-
-          <section className="mt-10 md:mt-12" aria-labelledby="sentback-title">
-            <SectionTitle
-              id="sentback-title"
-              title="Sent back, waiting on the tutor"
-              description="Courses you returned or unpublished with a note. They come back here when resubmitted."
-            />
-            {sentBack.length ? (
-              <Card padding="none" className="overflow-hidden">
-                <ul className="divide-y divide-ink/[0.07]">
-                  {sentBack.map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center md:px-6"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <CourseCell
-                          course={c}
-                          href={`/admin/courses/${c.id}`}
-                          sub={
-                            wasLive(c)
-                              ? `${getUser(c.tutorId, db)?.name} · unpublished ${timeAgo(c.updatedAt)} · ${plural(c.learners, "learner")} keep access`
-                              : `${getUser(c.tutorId, db)?.name} · returned ${timeAgo(c.updatedAt)}`
-                          }
-                        />
-                        {c.reviewNote && (
-                          <p className="mt-2 line-clamp-2 t-small text-ink/65 sm:pl-[66px]">
-                            “{c.reviewNote}”
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        href={`/admin/courses/${c.id}`}
-                        className="self-start sm:self-center"
-                      >
-                        Open
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ) : (
-              <Card>
-                <p className="t-small text-ink/60">
-                  Nothing sent back right now.
-                </p>
-              </Card>
             )}
-          </section>
-        </>
+          </Section>
+
+          <Section
+            index="02"
+            label="Sent back"
+            id="sentback-title"
+            note="Courses you returned or unpublished with a note. They come back to the queue when resubmitted."
+            title="Waiting on the tutor."
+          >
+            {sentBack.length ? (
+              <RuledList label="Sent back">
+                {sentBack.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex flex-col gap-3 py-5 sm:flex-row sm:items-start sm:gap-6"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <CourseCell
+                        course={c}
+                        href={`/admin/courses/${c.id}`}
+                        sub={
+                          wasLive(c)
+                            ? `${getUser(c.tutorId, db)?.name} · unpublished ${timeAgo(c.updatedAt)} · ${plural(c.learners, "learner")} keep access`
+                            : `${getUser(c.tutorId, db)?.name} · returned ${timeAgo(c.updatedAt)}`
+                        }
+                      />
+                      {c.reviewNote && (
+                        <p className="mt-3 line-clamp-2 border-l-2 border-red pl-3 t-small text-fg/80 sm:ml-14">
+                          “{c.reviewNote}”
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      href={`/admin/courses/${c.id}`}
+                      iconRight="arrow-right"
+                      className="self-start"
+                    >
+                      Open
+                    </Button>
+                  </li>
+                ))}
+              </RuledList>
+            ) : (
+              <p className="border-t border-fg pt-4 t-small text-muted">
+                Nothing sent back right now.
+              </p>
+            )}
+          </Section>
+        </div>
       ) : (
         <div ref={boxRef}>
         <DataTable<Course>
@@ -505,7 +515,7 @@ function CoursesView({
             <>
               {/* phones: inside the Filters sheet, full width with visible labels */}
               <label className="flex flex-col gap-1.5 max-sm:w-full">
-              <span className="text-[14px] font-bold sm:sr-only">Status</span>
+              <span className="text-[11.5px] font-semibold tracking-[0.12em] uppercase sm:sr-only">Status</span>
               <Select
                 selectSize="sm"
                 value={status}
@@ -520,7 +530,7 @@ function CoursesView({
               />
               </label>
               <label className="flex flex-col gap-1.5 max-sm:w-full">
-              <span className="text-[14px] font-bold sm:sr-only">Category</span>
+              <span className="text-[11.5px] font-semibold tracking-[0.12em] uppercase sm:sr-only">Category</span>
               <Select
                 selectSize="sm"
                 value={category}
@@ -549,7 +559,7 @@ function CoursesView({
                   <CourseStatusPill key="s" course={c} />,
                   `${formatCompact(c.learners)} learners`,
                   c.featured && c.status === "published" && (
-                    <span key="f" className="font-bold text-[#8a6100]">★ Featured</span>
+                    <span key="f" className="font-semibold text-fg">★ Featured</span>
                   ),
                 ],
               ]}
@@ -573,14 +583,17 @@ function CoursesView({
   );
 }
 
-function QueueCard({
+/** One course in the review queue: a ruled row with the still, the facts and the checks. */
+function QueueRow({
   course,
   onPublish,
   preload,
+  index,
 }: {
   course: Course;
   onPublish: () => void;
   preload?: boolean;
+  index: number;
 }) {
   const db = useDb();
   const s = getCourseStats(course.id, db);
@@ -591,114 +604,87 @@ function QueueCard({
   const first = getFirstFreeItem(course.id, db);
   const freeItem = first?.id;
   const isFree = first?.type === "video" && first.lesson.isFreePreview;
+  const allPass = passed === checks.length;
   return (
-    <Card padding="none" className="flex h-full flex-col overflow-hidden">
-      <div
-        className={clsx(
-          "relative aspect-[16/7] overflow-hidden",
-          toneBg[course.tone],
-        )}
-      >
-        <Image
-          src={cropSrc(course.thumbnail, 7 / 16)}
-          alt=""
-          fill
-          sizes="(min-width: 768px) 45vw, 100vw"
-          preload={preload}
-          loading={preload ? "eager" : undefined}
-          className="object-cover"
-        />
-        <span className="absolute top-3 left-3 flex gap-2">
-          <StatusPill status="in_review" />
-          {cat && <Badge tone="white">{cat.name}</Badge>}
-        </span>
-      </div>
-      <div className="flex flex-1 flex-col p-5 md:p-6">
-        <h3 className="t-app-h2">
+    <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-4 py-6 md:grid-cols-[auto_auto_minmax(0,1fr)] md:gap-x-6 md:py-7">
+      <Idx n={index} className="mt-1 max-md:hidden" />
+      <Poster
+        src={course.thumbnail}
+        ratio={1}
+        sizes="(min-width: 768px) 132px, 88px"
+        eager={preload}
+        className="size-[88px] md:size-[132px]"
+      />
+      <div className="min-w-0">
+        <MonoMeta>
+          {[cat?.name, `sent ${course.submittedAt ? timeAgo(course.submittedAt) : "recently"}`]
+            .filter(Boolean)
+            .join(" · ")}
+          {course.submittedAt ? ` (${smartDate(course.submittedAt)})` : ""}
+        </MonoMeta>
+        <h3 className="mt-2 font-heading text-[clamp(1.25rem,1.1rem+0.5vw,1.625rem)] leading-[1.08] font-semibold tracking-[-0.03em]">
           <Link
             href={`/admin/courses/${course.id}`}
-            className="underline-offset-2 hf:underline"
+            className="underline-offset-[3px] hf:underline"
           >
             {course.title}
           </Link>
         </h3>
-        <p className="mt-1.5 t-small text-ink/65">
-          by {tutor?.name ?? "Unknown"} · sent{" "}
-          {course.submittedAt ? timeAgo(course.submittedAt) : "recently"}
-          {course.submittedAt
-            ? ` (${smartDate(course.submittedAt)})`
-            : ""}
-        </p>
-        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-semibold text-ink/70">
-          <li className="inline-flex items-center gap-1.5">
-            <Icon name="video" className="size-4 text-ink/45" />
-            {plural(s.videos, "video")}
-          </li>
-          <li className="inline-flex items-center gap-1.5">
-            <Icon name="quiz" className="size-4 text-ink/45" />
-            {plural(s.quizzes, "test")}
-          </li>
-          <li className="inline-flex items-center gap-1.5">
-            <Icon name="clock" className="size-4 text-ink/45" />
-            {formatDuration(s.totalSec)}
-          </li>
-          <li className="inline-flex items-center gap-1.5">
-            <Icon name="tag" className="size-4 text-ink/45" />
+        <p className="mt-1.5 t-small text-muted">
+          by {tutor?.name ?? "Unknown"} · {plural(s.videos, "video")} ·{" "}
+          {plural(s.quizzes, "test")} · {formatDuration(s.totalSec)} ·{" "}
+          <span className="font-heading font-semibold text-fg">
             {formatINR(course.price)}
-          </li>
-        </ul>
-        <div className="mt-4 rounded-tag bg-cream p-3">
-          <p className="flex items-center justify-between text-[13px] font-bold">
-            <span>Checklist</span>
-            <span
-              className={
-                passed === checks.length ? "text-[#006b30]" : "text-[#b02f00]"
-              }
-            >
-              {passed}/{checks.length} pass
-            </span>
+          </span>
+        </p>
+      </div>
+
+      <div className="col-span-full min-w-0 md:col-start-3">
+        <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
+          <p className="text-[11px] font-semibold tracking-[0.14em] uppercase">
+            Checklist
           </p>
-          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-            {checks.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center gap-1.5 text-[13px] font-medium"
-              >
-                <Icon
-                  name={c.ok ? "check-circle" : "alert"}
-                  className={clsx(
-                    "size-4 shrink-0",
-                    c.ok ? "text-green" : "text-flame",
-                  )}
-                />
-                <span className={c.ok ? "text-ink/75" : "font-semibold"}>
-                  {c.label}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p
+            className={clsx(
+              "font-mono text-[11.5px] tabular-nums",
+              allPass ? "text-fg" : "text-red-deep",
+            )}
+          >
+            {passed}/{checks.length} pass
+          </p>
         </div>
-        <div className="mt-auto flex flex-wrap gap-2 pt-5">
-          <Button href={`/admin/courses/${course.id}`} size="sm">
+        <ul className="mt-1 grid gap-x-6 sm:grid-cols-2 xl:grid-cols-3">
+          {checks.map((c) => (
+            <CheckRow
+              key={c.id}
+              state={c.ok ? "done" : "fail"}
+              className="py-1.5"
+            >
+              {c.label}
+            </CheckRow>
+          ))}
+        </ul>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button href={`/admin/courses/${course.id}`} size="sm" iconRight="arrow-right">
             Open review
           </Button>
           {freeItem && (
             <Button
               href={`/learn/${course.slug}/${freeItem}`}
               size="sm"
-              variant="secondary"
+              variant="outline"
               icon="play"
             >
               {isFree ? "Watch free preview" : "Watch first video"}
             </Button>
           )}
-          {passed === checks.length && (
+          {allPass && (
             <Button size="sm" variant="ghost" icon="check" onClick={onPublish}>
               Publish now
             </Button>
           )}
         </div>
       </div>
-    </Card>
+    </li>
   );
 }

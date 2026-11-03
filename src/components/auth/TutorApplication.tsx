@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import {
-  Badge,
   Button,
-  Card,
   Checkbox,
   DescriptionList,
   EmptyState,
@@ -41,6 +39,7 @@ import {
   TEACH_LANGUAGES,
 } from "@/lib/mock/extra/auth";
 import { scrollToTarget } from "@/lib/lenis";
+import { FLAGSHIP } from "@/lib/content/site";
 import { SIGNUP_DRAFT_KEY } from "./SignupForm";
 import { CHECKBOX_INVALID, FormError } from "./FormError";
 import { EmailText, LinkText } from "@/components/auth/EmailText";
@@ -564,123 +563,100 @@ function Wizard({
 
   return (
     <div ref={rootRef} id="application" className="scroll-mt-28">
-      <Card padding="none" className="overflow-hidden">
-        {/* progress */}
-        <div className="border-b border-ink/[0.07] px-5 pt-5 pb-4 md:px-8 md:pt-7">
-          <div className="flex items-center justify-between gap-3">
-            <p className="t-micro text-ink/70 uppercase" aria-live="polite">
-              Step {step + 1} of {STEPS.length} · {meta.label}
+      <div>
+        {/* progress: a ruled step index (01 About you · 02 Expertise …), the current step under a red rule */}
+        <div className="flex items-center justify-between gap-3 border-t border-fg pt-3">
+          <p className="t-label" aria-live="polite">
+            Step {step + 1} of {STEPS.length} · {meta.label}
+          </p>
+          {restored && step === 0 && (
+            <p className="t-label flex items-center gap-2 text-muted">
+              <span aria-hidden className="size-[6px] rounded-full bg-red" />
+              Draft restored
             </p>
-            {restored && step === 0 && (
-              <Badge tone="mint" size="sm">
-                Draft restored
-              </Badge>
-            )}
-          </div>
-          <ol
-            className="mt-4 flex items-center gap-1.5 sm:gap-2"
-            aria-label="Application steps"
-          >
-            {STEPS.map((s, i) => {
-              const current = i === step;
-              const reachable = i <= maxStep;
-              const done =
-                !current &&
-                reachable &&
-                i < STEPS.length - 1 &&
-                Object.keys(validate(i, f)).length === 0;
-              const open = reachable && !current && !done;
-              return (
-                <li
-                  key={s.id}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2"
-                >
-                  <button
-                    type="button"
-                    disabled={!reachable || current}
-                    onClick={() => advance(i)}
-                    aria-current={current ? "step" : undefined}
-                    aria-label={`Step ${i + 1}, ${s.label}${current ? " (current)" : done ? " (done)" : open ? (i === STEPS.length - 1 ? " (ready)" : " (needs a look)") : " (not started)"}`}
-                    className={clsx(
-                      "hit grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-bold transition-colors duration-200",
-                      done && "bg-green text-white hf:bg-forest",
-                      current && "bg-ink text-cream",
-                      open &&
-                        "bg-white text-ink ring-2 ring-ink/25 hf:ring-ink",
-                      !reachable && "bg-ink/[0.07] text-ink/70",
-                    )}
-                  >
-                    {done ? (
-                      <Icon name="check" className="size-4" strokeWidth={3} />
-                    ) : (
-                      i + 1
-                    )}
-                  </button>
-                  {/* the inline label only where the track has room (the "Step x of 5" line always names it) */}
-                  {current && (
-                    <span
-                      className="hidden shrink-0 text-[13px] font-bold whitespace-nowrap text-ink sm:block lg:hidden xl:block"
-                      aria-hidden
-                    >
-                      {s.label}
-                    </span>
-                  )}
-                  {i < STEPS.length - 1 && (
-                    <span
-                      className={clsx(
-                        "h-0.5 min-w-2 flex-1 rounded-full",
-                        done ? "bg-green" : "bg-ink/[0.08]",
-                      )}
-                      aria-hidden
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-          <ProgressBar
-            value={(step / (STEPS.length - 1)) * 100}
-            tone="green"
-            size="sm"
-            className="sr-only"
-            label="Application progress"
-          />
+          )}
         </div>
+        <ol className="mt-3 grid grid-cols-5 border-b border-line" aria-label="Application steps">
+          {STEPS.map((s, i) => {
+            const current = i === step;
+            const reachable = i <= maxStep;
+            const done =
+              !current &&
+              reachable &&
+              i < STEPS.length - 1 &&
+              Object.keys(validate(i, f)).length === 0;
+            const open = reachable && !current && !done;
+            return (
+              <li key={s.id} className="min-w-0">
+                <button
+                  type="button"
+                  disabled={!reachable || current}
+                  onClick={() => advance(i)}
+                  aria-current={current ? "step" : undefined}
+                  aria-label={`Step ${i + 1}, ${s.label}${current ? " (current)" : done ? " (done)" : open ? (i === STEPS.length - 1 ? " (ready)" : " (needs a look)") : " (not started)"}`}
+                  className={clsx(
+                    "group relative flex w-full min-w-0 flex-col items-start gap-1.5 pt-3.5 pr-2 pb-3 text-left transition-colors duration-200 disabled:cursor-default",
+                    current ? "text-fg" : reachable ? "text-fg/75 hf:text-red" : "text-fg/35",
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={clsx(
+                      "absolute inset-x-0 -top-px h-[2px] transition-colors duration-300",
+                      current ? "bg-red" : done ? "bg-fg" : "bg-transparent",
+                    )}
+                  />
+                  <span className="t-timecode flex items-center gap-1.5">
+                    {String(i + 1).padStart(2, "0")}
+                    {done && <Icon name="check" className="size-3" strokeWidth={2.6} />}
+                  </span>
+                  <span className="t-label w-full truncate max-sm:hidden" aria-hidden>
+                    {s.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        <ProgressBar
+          value={(step / (STEPS.length - 1)) * 100}
+          tone="green"
+          size="sm"
+          className="sr-only"
+          label="Application progress"
+        />
 
-        <div key={step} className="app-enter px-5 py-6 md:px-8 md:py-8">
+        <div key={step} className="app-enter pt-9">
           {prefillFrom?.decisionNote && (
             <aside
               aria-label="Note from the reviewer"
-              className="mb-6 flex gap-3 rounded-card bg-butter p-4"
+              className="mb-8 border-l-2 border-red bg-cream-2 py-3.5 pr-4 pl-4"
             >
-              <Icon
-                name="chat"
-                className="mt-0.5 size-5 shrink-0 text-[#8a5300]"
-              />
               <div className="min-w-0 text-[14px] leading-relaxed">
-                <p className="font-bold">
+                <p className="t-label">
                   {prefillFrom.status === "changes_requested"
                     ? "What the reviewer asked for"
                     : "Why it wasn't a fit last time"}
                 </p>
-                <p className="mt-0.5 text-ink/75">{prefillFrom.decisionNote}</p>
+                <p className="mt-1.5 text-fg/80">{prefillFrom.decisionNote}</p>
               </div>
             </aside>
           )}
-          <h3 ref={headRef} tabIndex={-1} className="t-app-h2 outline-none">
+          <h3
+            ref={headRef}
+            tabIndex={-1}
+            className="font-heading text-[clamp(1.5rem,1.25rem+0.9vw,2rem)] leading-[1.05] font-semibold tracking-[-0.035em] outline-none"
+          >
             {meta.title}
           </h3>
-          <p className="mt-1.5 t-small text-ink/65">{meta.body}</p>
+          <p className="t-small mt-2 text-muted">{meta.body}</p>
 
-          <div className="mt-6 grid gap-5">
+          <div className="mt-8 grid gap-6">
             {step === 0 && signupName && (
-              <p className="app-fade flex gap-2.5 rounded-card bg-cyan/40 p-3.5 text-[14px] leading-snug">
-                <Icon
-                  name="info"
-                  className="mt-0.5 size-4 shrink-0 text-blue-deep"
-                />
+              <p className="app-fade flex gap-3 border-y border-line py-3.5 text-[14px] leading-snug">
+                <span aria-hidden className="mt-[6px] size-[7px] shrink-0 bg-red" />
                 <span>
-                  <strong className="font-bold">
+                  <strong className="font-semibold">
                     Applying from {firstName(profile.name)}&apos;s demo account.
                   </strong>{" "}
                   We filled in the name and email you signed up with,{" "}
@@ -748,15 +724,15 @@ function Wizard({
                     errors.languages ? "ta-languages-err" : "ta-languages-hint"
                   }
                 >
-                  <legend className="mb-1.5 text-[14px] font-bold">
-                    Languages you can teach in{" "}
-                    <span className="text-flame" aria-hidden>
-                      *
+                  <legend className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] uppercase">
+                    Languages you can teach in
+                    <span className="text-red" aria-hidden>
+                      {" "}*
                     </span>
                   </legend>
                   <p
                     id="ta-languages-hint"
-                    className="mb-3 text-[13px] text-ink/70"
+                    className="mb-3 text-[12.5px] leading-snug text-muted"
                   >
                     Pick all that apply. Teaching in Hinglish? Pick English and
                     Hindi.
@@ -768,16 +744,16 @@ function Wizard({
                         <label
                           key={l}
                           className={clsx(
-                            "tap inline-flex h-10 cursor-pointer items-center rounded-full px-3.5 text-[14px] font-bold transition-colors coarse:h-11 coarse:px-4 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue",
+                            "tap inline-flex h-10 cursor-pointer items-center px-3.5 text-[14px] font-medium ring-inset transition-colors coarse:h-11 coarse:px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-red",
                             on
                               ? "bg-ink text-cream ring-1 ring-ink"
                               : errors.languages
-                                ? "bg-white text-ink ring-2 ring-flame"
-                                : "bg-white text-ink ring-1 ring-ink/[0.14] hf:ring-ink/30",
+                                ? "bg-[#fbeae6] text-ink ring-1 ring-red"
+                                : "bg-cream-2 text-ink ring-1 ring-line-strong hf:ring-fg",
                             // the first chip takes focus when the group has an error: show it even after a mouse click
                             li === 0 &&
                               errors.languages &&
-                              "has-[:focus]:outline-3 has-[:focus]:outline-offset-2 has-[:focus]:outline-blue",
+                              "has-[:focus]:outline-2 has-[:focus]:outline-offset-2 has-[:focus]:outline-red",
                           )}
                         >
                           <input
@@ -1012,9 +988,9 @@ function Wizard({
                     ]}
                   />
                 )}
-                <div className="rounded-card bg-butter p-4 text-[14px] leading-relaxed">
-                  <p className="font-bold">How the money works</p>
-                  <p className="mt-1 text-ink/75">
+                <div className="border-l-2 border-red bg-cream-2 py-3.5 pr-4 pl-4 text-[14px] leading-relaxed">
+                  <p className="t-label">How the money works</p>
+                  <p className="mt-1.5 text-fg/80">
                     You set the price. You keep 70% of each sale after GST and
                     payment fees. We only ask for bank or UPI details after
                     you&apos;re approved, never in this form.
@@ -1034,7 +1010,7 @@ function Wizard({
                         <a
                           href="/terms#tutors"
                           target="_blank"
-                          className="underline underline-offset-2"
+                          className="underline decoration-ink/30 underline-offset-[3px] hf:decoration-red"
                         >
                           tutor terms
                         </a>{" "}
@@ -1052,7 +1028,7 @@ function Wizard({
             )}
 
             {step === 4 && (
-              <div className="grid gap-4">
+              <div className="grid gap-8">
                 <ReviewBlock title="About you" onEdit={() => goTo(0)}>
                   <DescriptionList
                     items={[
@@ -1090,16 +1066,16 @@ function Wizard({
                       },
                     ]}
                   />
-                  <p className="mt-3 rounded-tag bg-cream px-3 py-2.5 t-small whitespace-pre-line text-ink/75">
+                  <p className="t-small mt-3 bg-cream-2 px-3 py-2.5 whitespace-pre-line text-fg/80">
                     {f.experience}
                   </p>
                 </ReviewBlock>
                 <ReviewBlock title="Course idea" onEdit={() => goTo(2)}>
-                  <p className="t-app-h3">{f.courseTitle}</p>
-                  <p className="mt-2 t-small whitespace-pre-line text-ink/75">
+                  <p className="font-heading text-[18px] leading-snug font-semibold tracking-[-0.02em]">{f.courseTitle}</p>
+                  <p className="t-small mt-2 whitespace-pre-line text-fg/80">
                     {f.courseOutline}
                   </p>
-                  <p className="mt-3 flex items-start gap-1.5 t-small font-semibold text-blue-deep">
+                  <p className="t-small mt-3 flex items-start gap-1.5 font-medium text-fg">
                     <Icon name="video" className="mt-0.5 size-4 shrink-0" />
                     <LinkText url={f.sampleUrl} className="min-w-0" />
                   </p>
@@ -1135,7 +1111,7 @@ function Wizard({
         {/* footer actions */}
         <div
           ref={actionsRef}
-          className="flex flex-col-reverse gap-3 border-t border-ink/[0.07] bg-cream/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-8"
+          className="mt-10 flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="flex gap-2">
             {step > 0 ? (
@@ -1152,8 +1128,8 @@ function Wizard({
                 Cancel
               </Button>
             ) : (
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink/70">
-                <Icon name="check-circle" className="size-4 text-green" />{" "}
+              <p className="t-label flex items-center gap-2 text-muted">
+                <span aria-hidden className="size-[6px] rounded-full bg-red" />
                 Autosaves in this browser
               </p>
             )}
@@ -1200,7 +1176,7 @@ function Wizard({
             </Button>
           )}
         </div>
-      </Card>
+      </div>
       <WizardBar
         watch={actionsRef}
         step={step}
@@ -1290,12 +1266,9 @@ function ReviewBlock({
   children: React.ReactNode;
 }) {
   return (
-    <section
-      className="rounded-card p-4 ring-1 ring-ink/[0.08]"
-      aria-label={title}
-    >
+    <section className="border-t border-fg pt-3" aria-label={title}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h4 className="t-app-h3">{title}</h4>
+        <h4 className="t-label">{title}</h4>
         <Button
           size="sm"
           variant="ghost"
@@ -1314,11 +1287,11 @@ function ReviewBlock({
 /* ============================================================================= states */
 function WizardSkeleton() {
   return (
-    <Card padding="lg" aria-busy="true" aria-label="Loading your application">
+    <div aria-busy="true" aria-label="Loading your application" className="border-t border-fg pt-3">
       <Skeleton className="h-4 w-40" />
-      <div className="mt-5 flex gap-2">
+      <div className="mt-5 grid grid-cols-5 gap-2">
         {Array.from({ length: 5 }, (_, i) => (
-          <Skeleton key={i} variant="circle" className="size-8 rounded-full" />
+          <Skeleton key={i} className="h-8" />
         ))}
       </div>
       <Skeleton className="mt-8 h-7 w-2/3" />
@@ -1328,18 +1301,19 @@ function WizardSkeleton() {
         <Skeleton className="h-11" />
       </div>
       <Skeleton className="mt-5 h-11" />
-    </Card>
+    </div>
   );
 }
 
 function LoginPrompt({ onAction }: { onAction?: () => void }) {
   const { loginAs } = useDemoAuth();
   return (
-    <div className="grid gap-4">
-      <Card padding="lg" className="text-center">
+    <div className="grid gap-10">
+      <div className="border-y border-line">
         <EmptyState
           art="buddies"
-          tone="mint"
+          eyebrow="Account needed"
+          align="start"
           title="Log in to apply."
           body="Your application is linked to your account, so we can email you the decision and open your course studio when you're approved."
           action={
@@ -1359,9 +1333,9 @@ function LoginPrompt({ onAction }: { onAction?: () => void }) {
               </Button>
             </>
           }
-          className="!py-6"
+          className="!px-0 !pt-8 !pb-5"
         />
-        <p className="mt-2 text-[14px] text-ink/70">
+        <p className="pb-7 text-[13.5px] text-muted">
           Just exploring?{" "}
           <button
             type="button"
@@ -1369,12 +1343,12 @@ function LoginPrompt({ onAction }: { onAction?: () => void }) {
               onAction?.();
               loginAs("student");
             }}
-            className="font-bold text-ink underline decoration-green decoration-2 underline-offset-4"
+            className="link-draw font-medium text-fg"
           >
             Apply as Priya (student demo)
           </button>
         </p>
-      </Card>
+      </div>
       <StepsPreview />
     </div>
   );
@@ -1383,43 +1357,34 @@ function LoginPrompt({ onAction }: { onAction?: () => void }) {
 /** Logged out: what the form will ask, so the column isn't a lonely prompt (and the form sells itself). */
 function StepsPreview() {
   return (
-    <Card padding="lg">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="t-app-h2">What the form asks</h3>
-        <p className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink/70">
-          <Icon name="clock" className="size-4" /> About ten minutes
-        </p>
+    <section aria-labelledby="ta-preview-title">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-fg pb-3">
+        <h3 id="ta-preview-title" className="t-label">
+          What the form asks
+        </h3>
+        <p className="t-timecode text-muted">About 10 min</p>
       </div>
-      <ol className="mt-5 grid gap-4 sm:grid-cols-2">
+      <ol>
         {STEPS.map((s, i) => (
-          <li
-            key={s.id}
-            className={clsx(
-              "flex gap-3",
-              i === STEPS.length - 1 && "sm:col-span-2",
-            )}
-          >
-            <span
-              className="grid size-8 shrink-0 place-items-center rounded-full bg-mint text-[13px] font-bold text-forest"
-              aria-hidden
-            >
-              {i + 1}
+          <li key={s.id} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 border-b border-line py-3.5">
+            <span className="t-timecode pt-[3px] text-muted" aria-hidden>
+              {String(i + 1).padStart(2, "0")}
             </span>
-            <div className="min-w-0 pt-0.5">
-              <p className="text-[15px] font-bold">
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold">
                 <span className="sr-only">Step {i + 1}: </span>
                 {s.label}
               </p>
-              <p className="mt-0.5 t-small text-ink/65">{PREVIEW[s.id]}</p>
+              <p className="t-small mt-0.5 text-muted">{PREVIEW[s.id]}</p>
             </div>
           </li>
         ))}
       </ol>
-      <p className="mt-5 rounded-tag bg-cream px-4 py-3 t-small text-ink/70">
+      <p className="t-small mt-5 text-muted">
         Your draft saves in this browser as you type, so you can stop and come
         back. Bank details are only asked for after you&apos;re approved.
       </p>
-    </Card>
+    </section>
   );
 }
 
@@ -1444,10 +1409,11 @@ function NotForYou({
 }) {
   const { loginAs } = useDemoAuth();
   return (
-    <Card padding="lg">
+    <div className="border-y border-line">
       <EmptyState
-        art={kind === "tutor" ? "tami" : "buddy"}
-        tone={kind === "tutor" ? "mint" : "lilac"}
+        art="buddy"
+        align="start"
+        eyebrow={kind === "tutor" ? "Tutor account" : "Admin account"}
         title={
           kind === "tutor"
             ? `You're already teaching, ${name.split(" ")[0]}.`
@@ -1480,9 +1446,9 @@ function NotForYou({
             </>
           )
         }
-        className="!py-6"
+        className="!px-0 !py-8"
       />
-    </Card>
+    </div>
   );
 }
 
@@ -1566,31 +1532,31 @@ function Timeline({ app }: { app: TutorApp }) {
           {i < steps.length - 1 && (
             <span
               className={clsx(
-                "absolute top-8 bottom-0 left-[15px] w-0.5",
-                s.state === "done" ? "bg-green" : "bg-ink/[0.1]",
+                "absolute top-7 bottom-0 left-[11.5px] w-px",
+                s.state === "done" ? "bg-fg" : "bg-line-strong",
               )}
               aria-hidden
             />
           )}
           <span
             className={clsx(
-              "relative grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-bold",
-              s.state === "done" && "bg-green text-white",
-              s.state === "current" && "bg-ink text-cream",
-              s.state === "todo" && "bg-ink/[0.07] text-ink/70",
+              "t-timecode relative grid size-6 shrink-0 place-items-center",
+              s.state === "done" && "bg-ink text-cream",
+              s.state === "current" && "bg-cream ring-1 ring-fg ring-inset",
+              s.state === "todo" && "bg-cream text-muted ring-1 ring-line-strong ring-inset",
             )}
             aria-hidden
           >
             {s.state === "done" ? (
-              <Icon name="check" className="size-4" strokeWidth={3} />
+              <Icon name="check" className="size-3.5" strokeWidth={2.6} />
             ) : s.state === "current" ? (
-              <span className="size-2 animate-pulse rounded-full bg-sun" />
+              <span className="size-2 animate-pulse rounded-full bg-red" />
             ) : (
               i + 1
             )}
           </span>
-          <div className="pt-1">
-            <p className="text-[15px] font-bold">
+          <div className="pt-0.5">
+            <p className="text-[15px] font-semibold">
               {s.label}
               <span className="sr-only">
                 {s.state === "done"
@@ -1600,7 +1566,7 @@ function Timeline({ app }: { app: TutorApp }) {
                     : " (to do)"}
               </span>
             </p>
-            <p className="t-small text-ink/70">{s.meta}</p>
+            <p className="t-small text-muted">{s.meta}</p>
           </div>
         </li>
       ))}
@@ -1627,7 +1593,7 @@ function AppSummary({ app }: { app: TutorApp }) {
               href={app.sampleUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 break-all text-blue-deep underline-offset-2 hf:underline"
+              className="inline-flex items-center gap-1 break-all text-fg underline decoration-ink/30 underline-offset-[3px] hf:decoration-red"
             >
               Open link <Icon name="external" className="size-3.5" />
             </a>
@@ -1666,21 +1632,11 @@ function Status({
   }, []);
   return (
     <div ref={rootRef} id="application-status" className="scroll-mt-28">
-      <Card padding="none" className="app-enter overflow-hidden">
-        <div
-          className={clsx(
-            "px-5 py-6 md:px-8 md:py-7",
-            {
-              butter: "bg-butter",
-              mint: "bg-mint",
-              blush: "bg-blush",
-              cyan: "bg-cyan",
-            }[c.tone],
-          )}
-        >
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="app-enter">
+        <div className="border-t border-fg pt-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <StatusPill status={app.status} />
-            <span className="t-micro text-ink/70">
+            <span className="t-timecode text-muted">
               {resent ? "Resent" : "Sent"}{" "}
               {formatDate(app.submittedAt, "medium")}
             </span>
@@ -1688,33 +1644,31 @@ function Status({
           <h3
             ref={headRef}
             tabIndex={-1}
-            className="mt-3 t-app-h2 outline-none"
+            className="mt-6 font-heading text-[clamp(1.5rem,1.25rem+0.9vw,2rem)] leading-[1.05] font-semibold tracking-[-0.035em] outline-none"
           >
             {resent && app.status === "pending"
               ? "Your changes are with a human."
               : c.title}
           </h3>
-          <p className="mt-1.5 max-w-[48ch] t-small text-ink/75">{c.body}</p>
+          <p className="t-small mt-2 max-w-[48ch] text-muted">{c.body}</p>
           {app.decisionNote && (
-            <blockquote className="mt-4 rounded-card bg-white/70 p-4 text-[15px] leading-relaxed">
-              <p className="mb-1 t-micro text-ink/70 uppercase">
-                Note from the reviewer
-              </p>
+            <blockquote className="mt-6 border-l-2 border-red bg-cream-2 py-3.5 pr-4 pl-4 text-[15px] leading-relaxed">
+              <p className="t-label mb-1.5">Note from the reviewer</p>
               {app.decisionNote}
             </blockquote>
           )}
         </div>
-        <div className="grid gap-6 px-5 py-6 md:grid-cols-2 md:gap-8 md:px-8 md:py-7">
+        <div className="mt-10 grid gap-10 md:grid-cols-2 md:gap-8">
           <div>
-            <h4 className="mb-4 t-app-h3">Where it&apos;s at</h4>
+            <h4 className="t-label mb-5 border-b border-line pb-3">Where it&apos;s at</h4>
             <Timeline app={app} />
           </div>
           <div>
-            <h4 className="mb-4 t-app-h3">What you sent</h4>
+            <h4 className="t-label mb-1 border-b border-line pb-3">What you sent</h4>
             <AppSummary app={app} />
           </div>
         </div>
-        <div className="flex flex-col gap-2 border-t border-ink/[0.07] bg-cream/60 px-5 py-4 sm:flex-row sm:flex-wrap sm:justify-end md:px-8">
+        <div className="mt-10 flex flex-col gap-2 border-t border-line pt-5 sm:flex-row sm:flex-wrap sm:justify-end">
           {app.status === "pending" && (
             <>
               <Button
@@ -1726,8 +1680,8 @@ function Status({
               >
                 Peek at the admin queue (demo)
               </Button>
-              <Button href="/courses" variant="primary" iconRight="arrow-right">
-                Browse courses while you wait
+              <Button href={FLAGSHIP.href} variant="primary" iconRight="arrow-right">
+                See the course while you wait
               </Button>
             </>
           )}
@@ -1756,7 +1710,7 @@ function Status({
             </Button>
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -1771,54 +1725,57 @@ function Submitted({ app }: { app: TutorApp }) {
       scrollToTarget(root as HTMLElement, { duration: 0.6 });
   }, []);
   return (
-    <Card padding="none" className="app-enter overflow-hidden">
-      <div
-        className="relative bg-forest px-5 py-8 text-white md:px-8 md:py-10"
-        data-field="dark"
-      >
-        <span
-          className="grid size-14 place-items-center rounded-full bg-mint text-forest"
-          aria-hidden
-        >
-          <Icon name="check" className="size-7" strokeWidth={3} />
-        </span>
+    <div className="app-enter">
+      <div className="theatre px-6 py-8 md:px-8 md:py-10">
+        <p className="t-timecode flex items-center gap-2.5 text-ash">
+          <span aria-hidden className="size-[7px] animate-pulse rounded-full bg-red" />
+          That&apos;s a wrap
+        </p>
         <h3
           ref={ref}
           tabIndex={-1}
-          className="mt-5 t-display-m text-mint outline-none"
+          className="t-display-m mt-5 text-cream outline-none"
         >
-          {app.history?.length ? "Changes sent." : "Application sent."}
+          {app.history?.length ? (
+            <>
+              Changes <span className="text-red">sent</span>.
+            </>
+          ) : (
+            <>
+              Application <span className="text-red">sent</span>.
+            </>
+          )}
         </h3>
-        <p className="mt-3 max-w-[46ch] t-body text-white">
+        <p className="t-body mt-4 max-w-[46ch] text-cream/85">
           We&apos;ll read it with human eyes and email{" "}
-          <EmailText email={app.email} /> within five working days.
+          <EmailText email={app.email} className="text-cream" /> within five
+          working days.
         </p>
       </div>
-      <div className="grid gap-6 px-5 py-6 md:grid-cols-2 md:gap-8 md:px-8 md:py-7">
+      <div className="mt-10 grid gap-10 md:grid-cols-2 md:gap-8">
         <div>
-          <h4 className="mb-4 t-app-h3">What happens next</h4>
+          <h4 className="t-label mb-5 border-b border-line pb-3">What happens next</h4>
           <Timeline app={app} />
         </div>
         <div>
-          <h4 className="mb-4 t-app-h3">While you wait</h4>
-          <ul className="grid gap-3 text-[15px]">
+          <h4 className="t-label mb-1 border-b border-line pb-3">While you wait</h4>
+          <ol className="text-[14.5px] leading-snug">
             {[
-              "Watch two or three free first videos to see how other tutors open a course.",
-              "Jot down your module list. Six to ten minute videos work best.",
+              "Watch the free first lesson to see how a Tamada module opens.",
+              "Jot down your lesson list. Six to ten minute videos work best.",
               "Record a test clip on your phone and check the sound in earphones.",
-            ].map((t) => (
-              <li key={t} className="flex gap-2.5">
-                <Icon
-                  name="sparkles"
-                  className="mt-0.5 size-4 shrink-0 text-tangerine"
-                />
-                <span className="text-ink/80">{t}</span>
+            ].map((t, i) => (
+              <li key={t} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-2 border-b border-line py-3">
+                <span className="t-timecode pt-[3px] text-muted" aria-hidden>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="text-fg/80">{t}</span>
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
       </div>
-      <div className="flex flex-col gap-2 border-t border-ink/[0.07] bg-cream/60 px-5 py-4 sm:flex-row sm:justify-end md:px-8">
+      <div className="mt-10 flex flex-col gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
         <Button
           variant="ghost"
           icon="eye"
@@ -1826,10 +1783,10 @@ function Submitted({ app }: { app: TutorApp }) {
         >
           See it in the admin queue (demo)
         </Button>
-        <Button href="/courses" iconRight="arrow-right">
-          Browse free first videos
+        <Button href={FLAGSHIP.freeLessonHref} iconRight="arrow-right">
+          Watch free lesson
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }

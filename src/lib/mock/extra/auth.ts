@@ -5,23 +5,16 @@
    ============================================================================= */
 
 import type { Role } from "@/lib/mock/types";
-import type { Tone } from "@/lib/landing-data";
-import type { IconName } from "@/components/app/icons";
 import { SEED_DB } from "@/lib/mock";
 
 /* ----------------------------------------------------------------------------- demo login */
-export interface DemoAccountCard {
+interface DemoAccountCard {
   role: Role;
   name: string;
   label: string;
-  /** light chip (label + arrow) that keeps small text at AA contrast */
-  chip: string;
   /** what you will see after logging in */
   blurb: string;
   lands: string;
-  tone: Tone;
-  icon: IconName;
-  buddy: { body: string; head: string; hat?: string };
 }
 
 export const DEMO_ACCOUNT_CARDS: DemoAccountCard[] = [
@@ -29,35 +22,23 @@ export const DEMO_ACCOUNT_CARDS: DemoAccountCard[] = [
     role: "student",
     name: "Priya Nair",
     label: "Student",
-    chip: "bg-blush text-ink",
     blurb:
-      "Halfway through Web Dev From Zero, a 5-day streak, two certificates.",
+      "Module 5 of AI Filmmaking, a 5-day streak, a lesson paused at 7:40.",
     lands: "Student space",
-    tone: "hotpink",
-    icon: "book",
-    buddy: { body: "#ff008c", head: "#ffcf3f", hat: "#2668fd" },
   },
   {
     role: "tutor",
     name: "Arjun Rao",
     label: "Tutor",
-    chip: "bg-mint text-forest",
-    blurb: "Two published courses, one in review, a draft in the builder.",
+    blurb: "The flagship course live, a bonus pack in review, a draft in the builder.",
     lands: "Tutor studio",
-    tone: "green",
-    icon: "video",
-    buddy: { body: "#00b351", head: "#f780d4" },
   },
   {
     role: "admin",
     name: "Admin",
     label: "Admin",
-    chip: "bg-purple text-white",
-    blurb: "Tutor applications, course reviews, refunds and reports to clear.",
+    blurb: "Team applications, a course review, refunds and reports to clear.",
     lands: "Admin control room",
-    tone: "purple",
-    icon: "shield",
-    buddy: { body: "#3b308f", head: "#ffcf3f" },
   },
 ];
 
@@ -120,7 +101,7 @@ export function signupLanding(next: string | null): string {
   return to === "home" ? "/dashboard" : to;
 }
 
-/** Friendly name for a ?next= target, e.g. "your wishlist" or "checkout for Web Dev From Zero".
+/** Friendly name for a ?next= target, e.g. "your wishlist" or "checkout for AI Filmmaking: Prompt to Premiere".
  *  null for pages we have no nice name for: callers then use neutral copy, never the raw path. */
 export function describeNext(next: string): string | null {
   const path = next.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
@@ -133,7 +114,7 @@ export function describeNext(next: string): string | null {
     "/dashboard/settings": "your settings",
     "/tutor": "the tutor studio",
     "/admin": "the admin control room",
-    "/courses": "the course catalogue",
+    "/courses": "the course",
     "/become-tutor": "your tutor application",
     "/certificates": "certificate check",
     "/about": "our story",
@@ -275,36 +256,10 @@ export function passwordStrength(pw: string): {
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* ----------------------------------------------------------------------------- become a tutor */
-export const TUTOR_BENEFITS: {
-  title: string;
-  body: string;
-  tone: Tone;
-  icon: IconName;
-}[] = [
-  {
-    title: "Build your way",
-    body: "Add modules, videos, resources and tiny tests in any order. Put a quiz between any two videos.",
-    tone: "sun",
-    icon: "layers",
-  },
-  {
-    title: "Reach curious humans",
-    body: "Your first video is the free trailer. The right learners find it, try it and buy the rest.",
-    tone: "cyan",
-    icon: "users",
-  },
-  {
-    title: "See what sticks",
-    body: "Completion, quiz and replay data show you which lesson lands and which one needs a better example.",
-    tone: "blush",
-    icon: "chart",
-  },
-];
-
 export const TUTOR_PROCESS: { title: string; body: string; when: string }[] = [
   {
     title: "Apply",
-    body: "Tell us what you teach and share a short sample.",
+    body: "Tell us which part of the pipeline you teach and share a short sample.",
     when: "10 minutes",
   },
   {
@@ -314,7 +269,7 @@ export const TUTOR_PROCESS: { title: string; body: string; when: string }[] = [
   },
   {
     title: "Build your first course",
-    body: "Open the course studio, record, upload and add tests.",
+    body: "Open the course studio, record, upload and add checkpoints.",
     when: "Your pace",
   },
   {
@@ -327,15 +282,15 @@ export const TUTOR_PROCESS: { title: string; body: string; when: string }[] = [
 export const TUTOR_FAQ: { q: string; a: string }[] = [
   {
     q: "Who can apply?",
-    a: "Anyone who can teach one practical thing clearly. School teachers, working engineers, home cooks, musicians and accountants all teach here. You don't need a degree in it, you need to have done it.",
+    a: "Filmmakers, editors, colourists, sound designers and AI artists who can teach one part of the pipeline clearly. You don't need a film-school degree, you need finished work and the patience to explain it.",
   },
   {
     q: "How long is review?",
-    a: "Usually two to five working days. A real person watches your sample video and reads your course idea. If something is missing we'll ask for changes instead of saying no.",
+    a: "Usually two to five working days. Someone on the team watches your sample lesson and reads your outline. If something is missing we'll ask for changes instead of saying no.",
   },
   {
     q: "What equipment do I need?",
-    a: "A phone that records in 1080p, a quiet room and a cheap clip-on mic (around ₹600) is honestly enough to start. Good sound matters more than a fancy camera.",
+    a: "A screen recorder, a quiet room and a decent clip-on mic (around ₹600) is honestly enough to start. Good sound and clear examples matter more than a fancy camera.",
   },
   {
     q: "How do payments work?",
@@ -418,176 +373,18 @@ export const PAYOUT_COUNTRIES = [
   },
 ];
 
-/* ----------------------------------------------------------------------------- about */
-export const ABOUT_VALUES: {
-  title: string;
-  body: string;
-  tone: Tone;
-  rotate: number;
-}[] = [
-  {
-    title: "Useful over impressive",
-    body: "If you can't use it by Sunday, it doesn't make the cut. We'd rather teach one thing well than ten things loudly.",
-    tone: "sun",
-    rotate: -2,
-  },
-  {
-    title: "Curious over certain",
-    body: "Good teachers say 'great question' and mean it. Asking is the whole point, so every lesson has a Q&A.",
-    tone: "cyan",
-    rotate: 1.5,
-  },
-  {
-    title: "Progress over perfection",
-    body: "Short videos, tiny tests and visible streaks. Five honest minutes beat a perfect plan you never start.",
-    tone: "blush",
-    rotate: -1.5,
-  },
-  {
-    title: "Human over hype",
-    body: "Real tutors who've done the thing, reviewed by real people. No AI-generated filler courses, ever.",
-    tone: "mint",
-    rotate: 2,
-  },
-];
-
-export const ABOUT_TIMELINE: { when: string; title: string; body: string }[] = [
-  {
-    when: "2023",
-    title: "A WhatsApp group",
-    body: "Twelve friends in Hyderabad teaching each other Excel, guitar and filing taxes over voice notes.",
-  },
-  {
-    when: "2024",
-    title: "The first ten courses",
-    body: "We filmed on phones in a borrowed office in Banjara Hills. The first free video idea came from a learner.",
-  },
-  {
-    when: "2025",
-    title: "Tests between videos",
-    body: "Learners kept forgetting module two. Tiny quizzes fixed it and completion jumped.",
-  },
-  {
-    when: "2026",
-    title: "Tutors across India",
-    body: "Chemistry from Chennai, guitar from Kochi, Excel from Lucknow. Every course still reviewed by humans.",
-  },
-];
-
-export interface TeamMember {
-  name: string;
-  role: string;
-  city: string;
-  note: string;
-  buddy: { body: string; head: string; hat?: string; wave?: boolean };
-  tone: Tone;
-}
-
-export const ABOUT_TEAM: TeamMember[] = [
-  {
-    name: "Ananya Reddy",
-    role: "Co-founder, learning",
-    city: "Hyderabad",
-    note: "Ex-maths teacher. Will turn anything into a 6-minute lesson.",
-    buddy: { body: "#ff008c", head: "#ffcf3f", hat: "#2668fd" },
-    tone: "blush",
-  },
-  {
-    name: "Rohit Menon",
-    role: "Co-founder, product",
-    city: "Bengaluru",
-    note: "Builds the player. Watches every course at 1.25x.",
-    buddy: { body: "#2668fd", head: "#fd4401", wave: true },
-    tone: "cyan",
-  },
-  {
-    name: "Fatima Sheikh",
-    role: "Tutor success",
-    city: "Pune",
-    note: "Reads every tutor application. Yes, every single one.",
-    buddy: { body: "#00b351", head: "#f780d4" },
-    tone: "mint",
-  },
-  {
-    name: "Dev Malhotra",
-    role: "Video & sound",
-    city: "Delhi",
-    note: "Has opinions about clip-on mics. Ask at your own risk.",
-    buddy: { body: "#3b308f", head: "#ffcf3f", hat: "#fd4401" },
-    tone: "lilac",
-  },
-  {
-    name: "Kavya Iyer",
-    role: "Learner support",
-    city: "Chennai",
-    note: "Answers your 'it says payment failed' emails before lunch.",
-    buddy: { body: "#f9a220", head: "#2cd1d0", wave: true },
-    tone: "butter",
-  },
-  {
-    name: "Sameer Joshi",
-    role: "Trust & safety",
-    city: "Ahmedabad",
-    note: "Checks quizzes, captions and refund requests. Fair and fast.",
-    buddy: { body: "#fd4401", head: "#a7eb98" },
-    tone: "sun",
-  },
-];
-
 /* ----------------------------------------------------------------------------- contact */
-export const CONTACT_CHANNELS: {
-  title: string;
-  body: string;
-  email: string;
-  reply: string;
-  tone: Tone;
-  icon: IconName;
-}[] = [
-  {
-    title: "Learner support",
-    body: "Stuck lesson, payment trouble, certificate missing or a refund question.",
-    email: "support@tamada.demo",
-    reply: "Replies within 1 working day",
-    tone: "sun",
-    icon: "book",
-  },
-  {
-    title: "Tutor support",
-    body: "Uploading, the course builder, payouts or your application status.",
-    email: "tutors@tamada.demo",
-    reply: "Replies within 2 working days",
-    tone: "mint",
-    icon: "video",
-  },
-  {
-    title: "Partnerships",
-    body: "Schools, colleges, companies and creators who want to team up.",
-    email: "partners@tamada.demo",
-    reply: "Replies within 3 working days",
-    tone: "cyan",
-    icon: "briefcase",
-  },
-  {
-    title: "Press",
-    body: "Stories, interviews and brand assets. We love a good headline.",
-    email: "press@tamada.demo",
-    reply: "Replies within 2 working days",
-    tone: "blush",
-    icon: "mic",
-  },
-];
-
 export const CONTACT_TOPICS = [
   { value: "learner", label: "Learner support" },
   { value: "payments", label: "Payments and refunds" },
   { value: "certificate", label: "Certificates" },
-  { value: "tutor", label: "Tutor support" },
+  { value: "tutor", label: "Team and mentors" },
   { value: "partnership", label: "Partnerships" },
   { value: "press", label: "Press" },
   { value: "other", label: "Something else" },
 ];
 
-/** Reply promise per topic: matches the channel cards (learner 1, tutor 2, partnerships 3, press 2 working days). */
+/** Reply promise per topic (learner 1, team 2, partnerships 3, press 2 working days). */
 export const CONTACT_TOPIC_REPLY: Record<string, string> = {
   learner: "one working day",
   payments: "one working day",
@@ -597,21 +394,6 @@ export const CONTACT_TOPIC_REPLY: Record<string, string> = {
   press: "two working days",
   other: "two working days",
 };
-
-export const CONTACT_QUICK: { q: string; a: string }[] = [
-  {
-    q: "Is the first lesson really free?",
-    a: "Yes. The first video of every published course is free, no card needed.",
-  },
-  {
-    q: "Can I get a refund?",
-    a: "Within 7 days of purchase if you've watched less than a quarter of the course. Send your order number (it looks like TM-25471).",
-  },
-  {
-    q: "My certificate didn't appear.",
-    a: "Certificates unlock when every lesson is watched and every required test is passed. Check the course for a pending quiz.",
-  },
-];
 
 /** Deterministic support ticket number from the message contents. */
 export function ticketNumber(seed: string) {

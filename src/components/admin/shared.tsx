@@ -15,7 +15,6 @@ import {
 } from "@/components/app";
 import { useDemoSession } from "@/lib/demo/session-client";
 import { cropSrc } from "@/lib/img";
-import { toneBg, toneText } from "@/lib/landing-data";
 import {
   DEMO_ADMIN_ID,
   REFUND_MAX_PROGRESS,
@@ -64,23 +63,23 @@ export function PersonCell({
   /** touch: the name link covers the nearest `relative` row (see STRETCH) */
   stretch?: boolean;
 }) {
-  if (!user) return <span className="text-ink/45">Deleted account</span>;
+  if (!user) return <span className="text-muted">Deleted account</span>;
   const name = href ? (
     <Link
       href={href}
-      className={clsx("truncate font-bold underline-offset-2 hf:underline", stretch && STRETCH)}
+      className={clsx("truncate font-semibold underline-offset-[3px] hf:underline", stretch && STRETCH)}
     >
       {user.name}
     </Link>
   ) : (
-    <span className="truncate font-bold">{user.name}</span>
+    <span className="truncate font-semibold">{user.name}</span>
   );
   return (
     <span className="flex min-w-0 items-center gap-3">
       <Avatar name={user.name} src={user.avatar} tone={user.tone} size={size} />
       <span className="flex min-w-0 flex-col leading-tight">
         {name}
-        <span className="truncate text-[13px] font-medium text-ink/55">
+        <span className="truncate text-[13px] text-muted">
           {sub ?? user.email}
         </span>
       </span>
@@ -100,16 +99,16 @@ export function CourseCell({
   href?: string;
   wide?: boolean;
 }) {
-  if (!course) return <span className="text-ink/45">Removed course</span>;
+  if (!course) return <span className="text-muted">Removed course</span>;
   const title = href ? (
     <Link
       href={href}
-      className="line-clamp-2 font-bold underline-offset-2 hf:underline"
+      className="line-clamp-2 font-semibold underline-offset-[3px] hf:underline"
     >
       {course.title}
     </Link>
   ) : (
-    <span className="line-clamp-2 font-bold">{course.title}</span>
+    <span className="line-clamp-2 font-semibold">{course.title}</span>
   );
   return (
     <span
@@ -118,24 +117,19 @@ export function CourseCell({
         wide ? "min-w-[240px]" : "min-w-[200px]",
       )}
     >
-      <span
-        className={clsx(
-          "relative h-10 w-[54px] shrink-0 overflow-hidden rounded-[10px]",
-          toneBg[course.tone],
-        )}
-      >
+      <span className="relative size-11 shrink-0 overflow-hidden bg-charcoal">
         <Image
-          src={cropSrc(course.thumbnail, 40 / 54)}
+          src={cropSrc(course.thumbnail, 1)}
           alt=""
           fill
-          sizes="54px"
+          sizes="44px"
           className="object-cover"
         />
       </span>
       <span className="flex min-w-0 flex-col leading-tight">
         {title}
         {sub && (
-          <span className="mt-0.5 truncate text-[13px] font-medium text-ink/55">
+          <span className="mt-0.5 truncate text-[13px] text-muted">
             {sub}
           </span>
         )}
@@ -165,52 +159,41 @@ export function MoneyTabs({
   );
 }
 
-/** Colourful "attention" tile: big count, label, link. */
+/** "Needs you" queue row (v2): a ruled row with a mono index, the label, an Anton count and
+ *  an arrow. Use inside a ruled list (`<ul className="border-t border-fg divide-y divide-line">`).
+ *  `tone` / `icon` are legacy and ignored (no coloured tiles or icon circles). */
 export function QueueTile({
   label,
   count,
   href,
-  tone,
-  icon,
   cta,
+  index,
 }: {
   label: string;
   count: number;
   href: string;
-  tone: "sun" | "blush" | "cyan" | "mint" | "lilac" | "butter";
-  icon: IconName;
+  tone?: string;
+  icon?: IconName;
   cta: string;
+  index?: number;
 }) {
   const clear = count === 0;
   return (
     <Link
       href={href}
-      className={clsx(
-        "hover-lift tap group flex min-w-0 flex-col rounded-card p-4 md:p-5",
-        clear ? "bg-white shadow-soft" : [toneBg[tone], toneText[tone]],
-      )}
+      className="group tap relative flex min-w-0 items-center gap-4 py-4 transition-colors hf:bg-cream-2/60 md:gap-5"
     >
-      <span className="flex items-center justify-between gap-3">
-        <span
-          className={clsx(
-            "grid size-9 place-items-center rounded-full",
-            clear ? "bg-cream" : "bg-white/60",
-          )}
-          aria-hidden
-        >
-          <Icon
-            name={clear ? "check" : icon}
-            className="size-[18px]"
-            strokeWidth={2.3}
-          />
+      {index !== undefined && (
+        <span className="w-5 shrink-0 font-mono text-[11px] text-red-deep tabular-nums" aria-hidden>
+          {String(index).padStart(2, "0")}
         </span>
-        <span className="t-stat">{count}</span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] leading-snug font-semibold">{label}</span>
+        <span className="mt-0.5 block text-[12.5px] text-muted">{clear ? "All clear" : cta}</span>
       </span>
-      <span className="mt-3 text-[15px] leading-snug font-bold">{label}</span>
-      <span className="mt-1 inline-flex items-center gap-1 text-[13px] font-bold opacity-70 group-hf:opacity-100">
-        {clear ? "All clear" : cta}
-        <Icon name="arrow-right" className="size-3.5" strokeWidth={2.6} />
-      </span>
+      <span className={clsx("t-display-s shrink-0 tabular-nums", clear && "text-muted")}>{count}</span>
+      <Icon name="arrow-right" strokeWidth={1.6} className="size-4 shrink-0 text-muted transition-[translate,color] duration-300 group-hf:translate-x-1 group-hf:text-fg" />
     </Link>
   );
 }
@@ -228,13 +211,13 @@ export function SectionTitle({
   id?: string;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-t border-fg pt-4">
       <div className="min-w-0">
         <h2 id={id} className="t-app-h2">
           {title}
         </h2>
         {description && (
-          <p className="mt-1.5 t-small text-ink/65">{description}</p>
+          <p className="mt-1.5 t-small text-muted">{description}</p>
         )}
       </div>
       {action && (
@@ -257,13 +240,13 @@ export function couponState(c: Coupon): CouponState {
 }
 export const COUPON_STATE_META: Record<
   CouponState,
-  { label: string; tone: "mint" | "blue" | "neutral" | "flame" | "lilac" }
+  { label: string; tone: "mint" | "butter" | "neutral" | "ink" }
 > = {
   live: { label: "Live", tone: "mint" },
-  scheduled: { label: "Scheduled", tone: "blue" },
+  scheduled: { label: "Scheduled", tone: "butter" },
   expired: { label: "Expired", tone: "neutral" },
-  off: { label: "Switched off", tone: "flame" },
-  used_up: { label: "Used up", tone: "lilac" },
+  off: { label: "Switched off", tone: "neutral" },
+  used_up: { label: "Used up", tone: "ink" },
 };
 
 /** Download rows as CSV (client only). */
@@ -334,10 +317,10 @@ export function MetaRow({
   items: { icon: IconName; label: React.ReactNode }[];
 }) {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-semibold text-ink/65">
+    <ul className="flex flex-wrap gap-x-5 gap-y-1.5 font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
       {items.map((it, i) => (
         <li key={i} className="inline-flex items-center gap-1.5">
-          <Icon name={it.icon} className="size-4 text-ink/45" />
+          <Icon name={it.icon} strokeWidth={1.6} className="size-3.5" />
           {it.label}
         </li>
       ))}
@@ -394,7 +377,7 @@ export const COMPACT_BOX = 600;
 /** Small inline facts row for the stacked (phone) first column of a table. */
 export function CompactFacts({ children }: { children: React.ReactNode }) {
   return (
-    <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-semibold text-ink/60">
+    <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted">
       {children}
     </span>
   );
@@ -439,7 +422,7 @@ export function PhoneRow({
       <span className="flex min-w-0 flex-1 flex-col">
         <span
           className={clsx(
-            "min-w-0 text-[15px] leading-snug font-bold",
+            "min-w-0 text-[15px] leading-snug font-semibold tracking-[-0.01em]",
             clampTitle ? "line-clamp-2 [overflow-wrap:anywhere]" : "truncate",
           )}
         >
@@ -449,7 +432,7 @@ export function PhoneRow({
           Array.isArray(l) ? (
             <span
               key={i}
-              className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 overflow-hidden text-[13px] leading-snug font-medium text-ink/60"
+              className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 overflow-hidden text-[13px] leading-snug text-muted"
             >
               {l.filter(Boolean).map((part, j, arr) => (
                 <span
@@ -460,7 +443,7 @@ export function PhoneRow({
                     j > 0 &&
                       isText(part) &&
                       isText(arr[j - 1]) &&
-                      "before:absolute before:-left-2 before:text-ink/35 before:content-['·']",
+                      "before:absolute before:-left-2 before:opacity-50 before:content-['·']",
                   )}
                 >
                   {part}
@@ -470,7 +453,7 @@ export function PhoneRow({
           ) : (
             <span
               key={i}
-              className="mt-0.5 min-w-0 truncate text-[13px] leading-snug font-medium text-ink/60"
+              className="mt-0.5 min-w-0 truncate text-[13px] leading-snug text-muted"
             >
               {l}
             </span>
@@ -480,7 +463,7 @@ export function PhoneRow({
       {(trailing != null || badge != null) && (
         <span className="flex shrink-0 flex-col items-end gap-1 text-right">
           {trailing != null && (
-            <span className="text-[15px] leading-tight font-bold whitespace-nowrap tabular-nums">
+            <span className="font-heading text-[15px] leading-tight font-semibold whitespace-nowrap tabular-nums">
               {trailing}
             </span>
           )}
@@ -516,11 +499,12 @@ export function useNoneInView(...refs: React.RefObject<HTMLElement | null>[]) {
 
 const isText = (n: React.ReactNode) => typeof n === "string" || typeof n === "number";
 
-/** 64x40 course thumbnail (16:10) for phone list rows. */
-export function PhoneThumb({ src, tone }: { src: string; tone?: Course["tone"] }) {
+/** 44px square course still for phone list rows. */
+export function PhoneThumb({ src, tone: _tone }: { src: string; tone?: Course["tone"] }) {
+  void _tone;
   return (
-    <span className={clsx("relative block h-10 w-16 overflow-hidden rounded-[10px]", tone ? toneBg[tone] : "bg-cream")}>
-      <Image src={cropSrc(src, 10 / 16)} alt="" fill sizes="64px" className="object-cover" />
+    <span className="relative block size-11 overflow-hidden bg-charcoal">
+      <Image src={cropSrc(src, 1)} alt="" fill sizes="44px" className="object-cover" />
     </span>
   );
 }

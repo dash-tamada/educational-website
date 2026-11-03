@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Button, Field, Icon, Input, toast } from "@/components/app";
+import { Button, Field, Input, toast } from "@/components/app";
 import { EMAIL_RE } from "@/lib/mock/extra/auth";
 import { EmailText } from "@/components/auth/EmailText";
 import { focusField } from "./fields";
@@ -57,66 +56,50 @@ export function ForgotForm() {
 
   if (sentTo)
     return (
-      <div className="app-enter text-center">
-        <div
-          className="mx-auto grid size-20 place-items-center rounded-full bg-cyan"
-          aria-hidden
-        >
-          <Icon name="mail" className="size-9 text-ink" strokeWidth={1.8} />
-        </div>
+      <div className="app-enter">
+        <p className="t-label flex items-center gap-2.5 text-muted">
+          <span aria-hidden className="size-[7px] rounded-full bg-red" />
+          Link sent
+        </p>
         <h2
           ref={doneRef}
           tabIndex={-1}
-          className="mt-5 t-chunky-card outline-none"
+          className="mt-4 font-heading text-[clamp(1.75rem,1.4rem+1.2vw,2.375rem)] leading-[1.02] font-semibold tracking-[-0.04em] outline-none"
         >
           Check your inbox.
         </h2>
-        <p className="mx-auto mt-3 max-w-[34ch] t-body text-ink/70">
+        <p className="t-body mt-3 max-w-[38ch] text-muted">
           A reset link is on its way to{" "}
-          <EmailText email={sentTo} className="text-ink" />, if it has a Tamada
-          account. It works for 30 minutes.
+          <EmailText email={sentTo} className="font-semibold text-fg" />, if it
+          has a Tamada account. It works for 30 minutes.
         </p>
-        <ul className="mx-auto mt-6 grid max-w-[340px] gap-2 text-left text-[14px] text-ink/70">
-          <li className="flex gap-2.5">
-            <Icon
-              name="check-circle"
-              className="mt-0.5 size-4 shrink-0 text-green"
-            />{" "}
-            Look in Promotions or Spam if it isn&apos;t there in a minute.
-          </li>
-          <li className="flex gap-2.5">
-            <Icon
-              name="check-circle"
-              className="mt-0.5 size-4 shrink-0 text-green"
-            />{" "}
-            <span>
-              The email comes from{" "}
-              <span className="whitespace-nowrap">no-reply@tamada.demo</span>.
-            </span>
-          </li>
-          <li className="flex gap-2.5">
-            <Icon name="info" className="mt-0.5 size-4 shrink-0 text-blue" />{" "}
-            Demo: no email is actually sent. Use a demo account to log in.
-          </li>
-        </ul>
-        <div className="mt-7 grid gap-2.5">
-          <Button
-            href="/login"
-            variant="accent"
-            size="lg"
-            fullWidth
-            iconRight="arrow-right"
-          >
+        <ol className="mt-8 border-t border-line text-[14px] leading-snug">
+          {[
+            <>Look in Promotions or Spam if it isn&apos;t there in a minute.</>,
+            <>
+              It comes from{" "}
+              <span className="font-mono text-[13px] whitespace-nowrap">no-reply@tamada.demo</span>.
+            </>,
+            <>Demo: no email is actually sent. Use a demo account to log in.</>,
+          ].map((t, i) => (
+            <li key={i} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-2 border-b border-line py-3">
+              <span className="t-timecode pt-[3px] text-muted">{String(i + 1).padStart(2, "0")}</span>
+              <span className="text-fg/80">{t}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-8 grid gap-2.5">
+          <Button href="/login" variant="accent" size="lg" fullWidth iconRight="arrow-right">
             Back to log in
           </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            fullWidth
-            onClick={resend}
-            disabled={cooldown > 0}
-          >
-            {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend the link"}
+          <Button variant="secondary" size="lg" fullWidth onClick={resend} disabled={cooldown > 0}>
+            {cooldown > 0 ? (
+              <span>
+                Resend in <span className="font-mono tabular-nums">{cooldown}s</span>
+              </span>
+            ) : (
+              "Resend the link"
+            )}
           </Button>
           <button
             type="button"
@@ -124,9 +107,9 @@ export function ForgotForm() {
               setSentTo(null);
               window.setTimeout(() => inputRef.current?.focus(), 0);
             }}
-            className="mt-1 justify-self-center rounded-full px-3 text-[14px] font-bold text-ink/70 underline-offset-2 coarse:min-h-11 hf:text-ink hf:underline"
+            className="t-label mt-2 inline-flex min-h-11 items-center justify-self-start text-muted transition-colors hf:text-fg"
           >
-            Use a different email
+            <span className="link-draw">Use a different email</span>
           </button>
         </div>
       </div>
@@ -134,15 +117,11 @@ export function ForgotForm() {
 
   return (
     <>
-      <h2 className="t-chunky-card">Reset your password</h2>
-      <p className="mt-2 mb-6 t-small text-ink/65">
-        Enter the email on your account. The link expires in 30 minutes.
-      </p>
-      <form noValidate onSubmit={onSubmit} className="grid gap-4">
+      <form noValidate onSubmit={onSubmit} className="grid gap-5">
         <Field
           label="Email"
           error={error}
-          hint="We'll send a link to choose a new password."
+          hint="We'll send a link to choose a new password. It expires in 30 minutes."
         >
           <Input
             ref={inputRef}
@@ -170,15 +149,6 @@ export function ForgotForm() {
         >
           {busy ? "Sending…" : "Send reset link"}
         </Button>
-        <p className="text-center text-[14px] text-ink/65">
-          Remembered it?{" "}
-          <Link
-            href="/login"
-            className="font-bold text-blue-deep underline-offset-2 hf:underline"
-          >
-            Log in
-          </Link>
-        </p>
       </form>
     </>
   );

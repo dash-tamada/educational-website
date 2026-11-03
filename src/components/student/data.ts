@@ -20,7 +20,7 @@ import {
 } from "@/lib/mock";
 import { getItemAccessMap, type AccessResult } from "@/lib/access";
 import type { IconName } from "@/components/app";
-import type { Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 
 /* ----------------------------------------------------------------------------- enrolments */
 /**

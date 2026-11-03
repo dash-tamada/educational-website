@@ -6,23 +6,21 @@ import clsx from "clsx";
 import {
   Badge,
   Button,
-  Card,
   ConfirmDialog,
+  Eyebrow,
   Icon,
   ProgressBar,
-  ProgressRing,
   Segmented,
   StickyActionBar,
   toast,
 } from "@/components/app";
-import { Mascot } from "@/components/decor/Mascot";
-import { BlockBuddy } from "@/components/decor/BlockBuddy";
 import {
   formatDate,
   getQuizAttempts,
   getQuizForTaking,
   gradeQuiz,
   itemTitle,
+  pad2,
   plural,
   type ItemContext,
   type ModuleItem,
@@ -190,7 +188,21 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
     : [];
 
   return (
-    <Card padding="none" className="overflow-hidden">
+    <section className="@container border border-line bg-night">
+      {/* exam-paper header: what this is, and where you are in it */}
+      <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line px-5 py-2.5 font-mono text-[10.5px] tracking-[0.1em] text-muted uppercase tabular-nums md:px-8 lg:px-10">
+        <span className="flex min-w-0 items-center gap-2.5 text-fg">
+          <span aria-hidden className="size-[6px] shrink-0 rounded-full bg-red" />
+          <span className="truncate">{ctx.label.replace(" / ", " · ")}</span>
+        </span>
+        <span className="shrink-0">
+          {phase.kind === "taking"
+            ? `${total - unanswered}/${total} answered${remaining !== null ? ` · ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")} left` : ""}`
+            : phase.kind === "result"
+              ? `Scored ${phase.score}% · pass ${quiz.passPercentage}%`
+              : `${plural(total, "question")} · pass ${quiz.passPercentage}%`}
+        </span>
+      </div>
       <div
         ref={topRef}
         id="quiz-top"
@@ -215,15 +227,19 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
         )}
 
         {phase.kind === "taking" && (
-          <div className="p-5 md:p-8">
+          <div className="p-5 md:p-8 lg:p-10">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="t-eyebrow text-blue">
+              <div className="min-w-0">
+                <Eyebrow>
                   {practice && tracking
                     ? "Practice run · not saved"
-                    : "Tiny test time"}
-                </p>
-                <h1 className="mt-1.5 t-app-h2">{quiz.title}</h1>
+                    : quiz.isGating
+                      ? "Checkpoint test"
+                      : "Tiny test"}
+                </Eyebrow>
+                <h1 className="mt-3 font-heading text-[17px] leading-tight font-semibold tracking-[-0.02em] text-muted">
+                  {quiz.title}
+                </h1>
               </div>
               <div className="flex items-center gap-2">
                 {remaining !== null && (
@@ -234,10 +250,6 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                     </span>
                   </Badge>
                 )}
-                <Badge tone="neutral">
-                  {forTaking.questions.length - unanswered}/
-                  {forTaking.questions.length} answered
-                </Badge>
               </div>
             </div>
 
@@ -246,14 +258,13 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                 <ProgressBar
                   value={((step + 1) / forTaking.questions.length) * 100}
                   size="sm"
-                  tone="blue"
-                  className="mt-5 max-sm:hidden"
+                  className="mt-6 max-sm:hidden"
                   label={`Question ${step + 1} of ${forTaking.questions.length}`}
                 />
                 {/* phones: one segment per question (tap one to jump there) */}
                 <nav
                   aria-label="Jump to question"
-                  className="mt-5 flex gap-1.5 sm:hidden"
+                  className="mt-6 flex gap-1 sm:hidden"
                 >
                   {forTaking.questions.map((q, i) => (
                     <button
@@ -263,12 +274,12 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                       aria-current={i === step ? "step" : undefined}
                       aria-label={`Question ${i + 1}${answered(q) ? ", answered" : ""}`}
                       className={clsx(
-                        "hit h-2 min-w-0 flex-1 rounded-full transition-colors",
+                        "hit h-[3px] min-w-0 flex-1 transition-colors",
                         i === step
-                          ? "bg-ink"
+                          ? "bg-fg"
                           : answered(q)
-                            ? "bg-blue"
-                            : "bg-ink/[0.1]",
+                            ? "bg-red"
+                            : "bg-line-strong",
                       )}
                     />
                   ))}
@@ -283,19 +294,43 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                   autoFocus
                 />
                 {/* phones: these live in the sticky action bar below */}
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-ink/[0.07] pt-5 max-sm:hidden">
-                  <Button
-                    variant="ghost"
-                    icon="chevron-left"
-                    onClick={() => setStep((s) => Math.max(0, s - 1))}
-                    disabled={step === 0}
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 max-sm:hidden">
+                  <nav
+                    aria-label="Jump to question"
+                    className="flex flex-wrap gap-1.5"
                   >
-                    Back
-                  </Button>
+                    {forTaking.questions.map((q, i) => (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => setStep(i)}
+                        aria-current={i === step ? "step" : undefined}
+                        aria-label={`Question ${i + 1}${answered(q) ? ", answered" : ""}`}
+                        className={clsx(
+                          "tap grid size-9 place-items-center font-mono text-[11.5px] tabular-nums ring-1 transition-colors ring-inset",
+                          i === step
+                            ? "bg-fg text-surface ring-fg"
+                            : answered(q)
+                              ? "text-red-lite ring-red/60"
+                              : "text-muted ring-line-strong hf:text-fg hf:ring-fg",
+                        )}
+                      >
+                        {pad2(i + 1)}
+                      </button>
+                    ))}
+                  </nav>
                   <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      icon="arrow-left"
+                      onClick={() => setStep((s) => Math.max(0, s - 1))}
+                      disabled={step === 0}
+                    >
+                      Back
+                    </Button>
                     {step < forTaking.questions.length - 1 ? (
                       <Button
-                        iconRight="chevron-right"
+                        iconRight="arrow-right"
                         onClick={() => setStep((s) => s + 1)}
                       >
                         {answered(forTaking.questions[step])
@@ -304,7 +339,7 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                       </Button>
                     ) : (
                       <Button
-                        variant="accent"
+                        variant="red"
                         icon="check"
                         onClick={() =>
                           unanswered ? setConfirm(true) : submit()
@@ -315,30 +350,6 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                     )}
                   </div>
                 </div>
-                <nav
-                  aria-label="Jump to question"
-                  className="mt-4 flex flex-wrap gap-1.5 max-sm:hidden"
-                >
-                  {forTaking.questions.map((q, i) => (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => setStep(i)}
-                      aria-current={i === step ? "step" : undefined}
-                      aria-label={`Question ${i + 1}${answered(q) ? ", answered" : ""}`}
-                      className={clsx(
-                        "tap grid size-8 place-items-center rounded-full text-[13px] font-bold tabular-nums transition-colors",
-                        i === step
-                          ? "bg-ink text-cream"
-                          : answered(q)
-                            ? "bg-[#dfe8ff] text-blue-deep"
-                            : "bg-ink/[0.06] text-ink/65 hf:bg-ink/10",
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </nav>
               </>
             ) : (
               <form
@@ -349,7 +360,7 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                 }}
                 noValidate
               >
-                <ol className="mt-2 divide-y divide-ink/[0.07]">
+                <ol className="mt-4 divide-y divide-line">
                   {forTaking.questions.map((q, i) => (
                     <li key={q.id}>
                       <QuestionBlock
@@ -362,17 +373,17 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
                     </li>
                   ))}
                 </ol>
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-ink/[0.07] pt-5">
-                  <p className="t-small text-ink/65">
-                    Pass mark {quiz.passPercentage}%.{" "}
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6">
+                  <p className="font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
+                    Pass mark {quiz.passPercentage}% ·{" "}
                     {unanswered
-                      ? `${plural(unanswered, "question")} still blank.`
-                      : "All answered."}
+                      ? `${plural(unanswered, "question")} still blank`
+                      : "All answered"}
                   </p>
                   <Button
                     ref={submitBtn}
                     type="submit"
-                    variant="accent"
+                    variant="red"
                     icon="check"
                     className="max-sm:w-full"
                   >
@@ -413,13 +424,14 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
           <StickyActionBar
             show
             label="Test actions"
+            surface="ink"
             title={`${total - unanswered} of ${total} answered`}
             sub={`Pass mark ${quiz.passPercentage}%`}
           >
             <Button
-              variant="secondary"
+              variant="outline"
               iconOnly
-              icon="chevron-left"
+              icon="arrow-left"
               aria-label="Previous question"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
@@ -427,7 +439,7 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
             {step < total - 1 ? (
               <Button
                 className="h-12"
-                iconRight="chevron-right"
+                iconRight="arrow-right"
                 onClick={() => setStep((s) => s + 1)}
               >
                 {answered(forTaking.questions[step]) ? "Next" : "Skip"}
@@ -435,7 +447,7 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
             ) : (
               <Button
                 className="h-12"
-                variant="accent"
+                variant="red"
                 icon="check"
                 onClick={() => (unanswered ? setConfirm(true) : submit())}
               >
@@ -447,12 +459,13 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
           <StickyActionBar
             watch={submitBtn}
             label="Test actions"
+            surface="ink"
             title={`${total - unanswered} of ${total} answered`}
             sub={`Pass mark ${quiz.passPercentage}%`}
           >
             <Button
               className="h-12"
-              variant="accent"
+              variant="red"
               icon="check"
               onClick={() => (unanswered ? setConfirm(true) : submit())}
             >
@@ -468,8 +481,10 @@ export function QuizRunner({ ctx }: { ctx: ItemContext & { item: QuizItem } }) {
         description="Blank answers count as wrong. You can go back and fill them in first."
         confirmLabel="Submit anyway"
         cancelLabel="Keep answering"
+        surface="ink"
+        eyebrow="Checkpoint"
       />
-    </Card>
+    </section>
   );
 }
 
@@ -504,52 +519,46 @@ function Intro({
   const attempts =
     session && tracking ? getQuizAttempts(session.userId, ctx.item.id, db) : [];
   const facts = [
-    { icon: "quiz", label: "Questions", value: String(quiz.questions.length) },
+    { label: "Questions", value: String(quiz.questions.length) },
+    { label: "Pass mark", value: `${quiz.passPercentage}%` },
     {
-      icon: "check-circle",
-      label: "Pass mark",
-      value: `${quiz.passPercentage}%`,
-    },
-    {
-      icon: "refresh",
-      label: "Attempts left",
+      label: "Tries left",
       value: tracking
         ? left === Infinity
-          ? "Unlimited"
+          ? "∞"
           : String(left)
         : quiz.maxAttempts
           ? String(quiz.maxAttempts)
-          : "Unlimited",
+          : "∞",
     },
     {
-      icon: "clock",
       label: "Time",
-      value: quiz.timeLimitMin ? `${quiz.timeLimitMin} min` : "No limit",
+      value: quiz.timeLimitMin ? `${quiz.timeLimitMin}m` : "Open",
     },
   ];
+  const rules = [
+    "No trick questions. Each one checks a single idea from the lessons before it.",
+    "Every answer comes with a short explanation, so a miss still teaches you something.",
+    "Correct answers show once you pass or use your last attempt.",
+    quiz.isGating
+      ? "Checkpoint: the lessons after this stay locked until you pass."
+      : "Practice test: nothing gets locked, but passing counts toward your progress.",
+  ];
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_220px] lg:grid-cols-[minmax(0,1fr)_260px]">
-      <div className="min-w-0 p-5 md:p-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="t-eyebrow text-blue">Tiny test time</p>
-          {quiz.isGating && (
-            <Badge tone="butter" dot size="sm">
-              Checkpoint
-            </Badge>
-          )}
+    <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="min-w-0 p-5 md:p-8 lg:p-10">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Eyebrow>{quiz.isGating ? "Checkpoint test" : "Tiny test"}</Eyebrow>
           {passedBefore && (
             <Badge tone="mint" dot size="sm">
               Passed
             </Badge>
           )}
         </div>
-        <h1
-          className="mt-eyebrow t-display-m"
-          style={{ fontSize: "clamp(1.875rem, 1.2rem + 1.6vw, 2.75rem)" }}
-        >
+        <h1 className="mt-5 max-w-[18ch] font-display text-[clamp(2.25rem,1.4rem+2.6vw,4rem)] leading-[0.92] uppercase">
           {quiz.title}
         </h1>
-        <p className="mt-sub max-w-[56ch] t-body text-ink/70">
+        <p className="mt-4 max-w-[52ch] t-body-l text-muted">
           {plural(quiz.questions.length, "quick question")}. Pass with{" "}
           {quiz.passPercentage}%{" "}
           {quiz.isGating
@@ -557,24 +566,29 @@ function Intro({
             : "to lock in what you learned."}
         </p>
 
-        <dl className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-2 xl:grid-cols-4">
-          {facts.map((f) => (
+        <dl className="mt-8 grid grid-cols-2 border-t border-l border-line sm:grid-cols-4">
+          {facts.map((f, i) => (
             <div
               key={f.label}
-              className="rounded-[18px] bg-cream/70 px-3.5 py-3"
+              className="min-w-0 border-r border-b border-line px-4 pt-3 pb-4"
             >
-              <dt className="flex items-center gap-1.5 text-[12px] font-bold text-ink/65">
-                <Icon name={f.icon} className="size-3.5" />
-                {f.label}
+              <dt className="flex items-center justify-between gap-2 text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase">
+                <span className="truncate">{f.label}</span>
+                <span className="font-mono font-normal tracking-normal opacity-70">
+                  {pad2(i + 1)}
+                </span>
               </dt>
-              <dd className="mt-1 font-display text-[24px] leading-none tracking-[0.01em]">
+              <dd className="mt-4 font-display text-[34px] leading-none">
                 {f.value}
               </dd>
             </div>
           ))}
         </dl>
 
-        <div className="mt-6 flex flex-wrap items-end gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="text-[11px] font-semibold tracking-[0.16em] text-muted uppercase">
+            Format
+          </span>
           <Segmented
             label="How do you want to answer?"
             value={mode}
@@ -588,36 +602,23 @@ function Intro({
         </div>
 
         {outOfTries && (
-          <p
-            className={clsx(
-              "mt-6 flex items-start gap-2 rounded-[18px] px-4 py-3 text-[14px] font-semibold",
-              passedBefore
-                ? "bg-mint text-forest"
-                : "bg-[#ffe1d4] text-[#9a2900]",
-            )}
-          >
-            <Icon
-              name={passedBefore ? "check-circle" : "alert"}
-              className="mt-0.5 size-4 shrink-0"
-            />
-            <span>
-              {passedBefore
-                ? `Passed. You've used all ${plural(quiz.maxAttempts, "attempt")}, so this score is locked in.`
-                : "You've used every attempt on this test. Message the tutor from the Q&A tab and they can help."}
-            </span>
+          <p className="mt-7 max-w-[60ch] border-l-2 border-red pl-4 text-[14px] leading-snug text-fg/90">
+            {passedBefore
+              ? `Passed. You've used all ${plural(quiz.maxAttempts, "attempt")}, so this score is locked in.`
+              : "You've used every attempt on this test. Message the tutor from the Q&A tab and they can help."}
           </p>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
           {outOfTries || (tracking && passedBefore) ? (
             // nothing left to prove (or no tries left): rounds here aren't saved
             <Button
               id="quiz-start"
               size="lg"
-              variant={outOfTries ? "secondary" : "accent"}
+              variant={outOfTries ? "outline" : "red"}
               icon="refresh"
               onClick={onPractice}
-              className="scroll-mt-24"
+              className="scroll-mt-24 max-sm:w-full"
             >
               {passedBefore ? "Retake for practice" : "Practice run"}
             </Button>
@@ -625,20 +626,20 @@ function Intro({
             <Button
               id="quiz-start"
               size="lg"
-              variant="accent"
+              variant="red"
               iconRight="arrow-right"
               onClick={onStart}
-              className="scroll-mt-24"
+              className="scroll-mt-24 max-sm:w-full"
             >
               {attemptsCount ? "Try again" : "Start the test"}
             </Button>
           )}
           {!tracking ? (
-            <p className="t-small text-ink/65">
+            <p className="t-small text-muted">
               Preview mode: answers are graded but not saved.
             </p>
           ) : outOfTries || passedBefore ? (
-            <p className="t-small text-ink/65">
+            <p className="t-small text-muted">
               Practice rounds are graded but not saved, and don&apos;t use an
               attempt.
             </p>
@@ -646,95 +647,90 @@ function Intro({
         </div>
 
         {attempts.length > 0 && (
-          <div className="mt-8">
-            <h3 className="t-app-h3">Your attempts</h3>
-            <p className="mt-1 t-small text-ink/65">Best score {best}%.</p>
-            {/* phones: one stacked row per attempt */}
-            <ul className="mt-3 divide-y divide-ink/[0.07] sm:hidden">
-              {attempts.map((a, i) => (
-                <li
-                  key={a.id}
-                  className="flex min-h-12 items-center gap-3 py-2.5 text-[14px]"
-                >
-                  <span className="min-w-0 flex-1 font-semibold text-ink/70">
-                    <span className="font-bold text-ink tabular-nums">
-                      #{i + 1}
-                    </span>{" "}
-                    · {formatDate(a.createdAt, "short")} ·{" "}
-                    <span className="font-bold text-ink tabular-nums">
-                      {a.score}%
-                    </span>
-                  </span>
-                  <Badge tone={a.passed ? "mint" : "flame"} dot size="sm">
-                    {a.passed ? "Passed" : "Not yet"}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 overflow-x-auto max-sm:hidden">
-              <table className="w-full text-left text-[14px]">
-                <caption className="sr-only">
-                  Previous attempts on {quiz.title}
-                </caption>
-                <thead>
-                  <tr className="text-[12px] font-bold text-ink/65 uppercase">
-                    <th scope="col" className="py-2 pr-3 font-bold">
-                      #
-                    </th>
-                    <th scope="col" className="py-2 pr-3 font-bold">
-                      When
-                    </th>
-                    <th scope="col" className="py-2 pr-3 font-bold">
-                      Score
-                    </th>
-                    <th scope="col" className="py-2 font-bold">
-                      Result
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink/[0.07]">
-                  {attempts.map((a, i) => (
-                    <tr key={a.id}>
-                      <td className="py-2.5 pr-3 font-bold tabular-nums">
-                        {i + 1}
-                      </td>
-                      <td className="py-2.5 pr-3 text-ink/70">
-                        {formatDate(a.createdAt, "datetime")}
-                      </td>
-                      <td className="py-2.5 pr-3 font-bold tabular-nums">
-                        {a.score}%
-                      </td>
-                      <td className="py-2.5">
-                        <Badge tone={a.passed ? "mint" : "flame"} dot size="sm">
-                          {a.passed ? "Passed" : "Not yet"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="mt-12">
+            <div className="flex items-baseline justify-between gap-4 border-b border-fg pb-3">
+              <h3 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Your attempts
+              </h3>
+              <p className="font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
+                Best {best}%
+              </p>
             </div>
+            <table className="w-full text-left">
+              <caption className="sr-only">
+                Previous attempts on {quiz.title}
+              </caption>
+              <thead className="max-sm:sr-only">
+                <tr className="text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase">
+                  <th scope="col" className="w-14 py-2.5 pr-3 font-semibold">
+                    No.
+                  </th>
+                  <th scope="col" className="py-2.5 pr-3 font-semibold">
+                    When
+                  </th>
+                  <th scope="col" className="py-2.5 pr-3 font-semibold">
+                    Score
+                  </th>
+                  <th scope="col" className="py-2.5 text-right font-semibold">
+                    Result
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line border-t border-line">
+                {attempts.map((a, i) => (
+                  <tr key={a.id} className="text-[14px]">
+                    <td className="py-3 pr-3 font-mono text-[11.5px] text-muted tabular-nums">
+                      {pad2(i + 1)}
+                    </td>
+                    <td className="py-3 pr-3 text-muted">
+                      <span className="max-sm:hidden">
+                        {formatDate(a.createdAt, "datetime")}
+                      </span>
+                      <span className="sm:hidden">
+                        {formatDate(a.createdAt, "short")}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-3 font-display text-[22px] leading-none tabular-nums">
+                      {a.score}%
+                    </td>
+                    <td className="py-3 text-right">
+                      <Badge
+                        tone={a.passed ? "mint" : "flame"}
+                        dot
+                        size="sm"
+                      >
+                        {a.passed ? "Passed" : "Not yet"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
-      <div
-        className="relative hidden flex-col items-center justify-center gap-4 overflow-hidden bg-butter p-6 md:flex"
-        aria-hidden
+      {/* house rules: the right margin of the exam paper */}
+      <aside
+        aria-label="How this test works"
+        className="border-t border-line p-5 md:p-8 lg:border-t-0 lg:border-l lg:p-8"
       >
-        <span className="absolute -top-10 -right-10 size-40 rounded-full bg-sun" />
-        <span className="absolute -bottom-12 -left-8 size-36 rounded-full bg-white/60" />
-        <div className="relative flex items-end gap-2">
-          <BlockBuddy body="#2668fd" head="#ffcf3f" wave className="w-14" />
-          <Mascot
-            title=""
-            className="w-24"
-            style={{ transform: "rotate(-8deg)" }}
-          />
-        </div>
-        <p className="relative text-center t-hand">
-          no trick questions, promise
+        <p className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+          House rules
         </p>
-      </div>
+        <ol className="mt-4 border-t border-line">
+          {rules.map((r, i) => (
+            <li
+              key={r}
+              className="flex gap-3.5 border-b border-line py-3.5 text-[13.5px] leading-snug text-muted"
+            >
+              <span className="w-5 shrink-0 font-mono text-[11px] text-red-lite tabular-nums">
+                {pad2(i + 1)}
+              </span>
+              {r}
+            </li>
+          ))}
+        </ol>
+      </aside>
     </div>
   );
 }
@@ -768,18 +764,21 @@ function QuestionBlock({
           : "Pick one.";
   const name = `q-${q.id}`;
   return (
-    <fieldset className="app-fade py-6">
+    <fieldset className="app-fade py-8">
       <legend className="contents">
-        <span className="block text-[13px] font-bold text-ink/65">
-          Question {index + 1} of {total}
+        <span className="flex items-baseline gap-3 font-mono text-[11px] tracking-[0.1em] text-muted uppercase tabular-nums">
+          <span className="text-red-lite">Q{pad2(index + 1)}</span>
+          <span>
+            Question {pad2(index + 1)} / {pad2(total)}
+          </span>
         </span>
-        <span className="mt-1.5 block text-[19px] leading-snug font-bold md:text-[21px]">
+        <span className="mt-4 block max-w-[30ch] font-heading text-[clamp(1.5rem,1.15rem+1.2vw,2.25rem)] leading-[1.12] font-semibold tracking-[-0.03em]">
           {q.text}
         </span>
       </legend>
-      <p className="mt-1 t-small text-ink/65">{hint}</p>
+      <p className="mt-3 t-small text-muted">{hint}</p>
       {q.type === "short" ? (
-        <div className="mt-4 max-w-md">
+        <div className="mt-6 max-w-md">
           <label htmlFor={name} className="sr-only">
             Your answer
           </label>
@@ -792,14 +791,14 @@ function QuestionBlock({
             value={typeof value === "string" ? value : ""}
             onChange={(e) => onChange(q.id, e.target.value)}
             placeholder="Your answer"
-            className="h-12 w-full rounded-tag bg-white px-4 text-[16px] font-semibold ring-1 ring-ink/[0.15] placeholder:text-ink/35 focus:ring-2 focus:ring-blue focus:outline-none"
+            className="h-12 w-full border-b border-line-strong bg-transparent px-0 text-[18px] font-medium placeholder:text-muted focus:border-red focus:outline-none"
           />
         </div>
       ) : (
         <div
           className={clsx(
-            "mt-4 grid gap-2",
-            q.type === "true_false" ? "max-w-md grid-cols-2" : "sm:grid-cols-2",
+            "mt-6 grid gap-2",
+            q.type === "true_false" ? "max-w-md grid-cols-2" : "@[640px]:grid-cols-2",
           )}
         >
           {q.options.map((o, i) => {
@@ -809,10 +808,10 @@ function QuestionBlock({
               <label
                 key={o.id}
                 className={clsx(
-                  "tap group relative flex cursor-pointer items-center gap-3 rounded-[18px] px-4 py-3.5 text-[15px] font-semibold ring-1 transition-[background-color,box-shadow] duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue max-sm:min-h-14 max-sm:text-[16px]",
+                  "tap group relative flex min-h-14 cursor-pointer items-center gap-4 px-4 py-3.5 text-[15px] leading-snug ring-1 transition-[background-color,box-shadow] duration-150 ring-inset has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red max-sm:text-[16px]",
                   checked
-                    ? "bg-[#dfe8ff] ring-blue"
-                    : "bg-white ring-ink/[0.12] hf:bg-cream/70",
+                    ? "bg-fg/[0.07] ring-fg"
+                    : "ring-line-strong hf:bg-fg/[0.03] hf:ring-fg/60",
                 )}
               >
                 <input
@@ -836,22 +835,23 @@ function QuestionBlock({
                 <span
                   aria-hidden
                   className={clsx(
-                    "grid size-6 shrink-0 place-items-center text-[12px] font-bold transition-colors",
-                    multi ? "rounded-[7px]" : "rounded-full",
+                    "grid size-7 shrink-0 place-items-center font-mono text-[11.5px] transition-colors",
                     checked
-                      ? "bg-blue text-white"
-                      : "bg-ink/[0.06] text-ink/65",
+                      ? "bg-red text-white"
+                      : "text-muted ring-1 ring-line-strong ring-inset group-hf:text-fg",
                   )}
                 >
                   {checked ? (
-                    <Icon name="check" className="size-3.5" strokeWidth={3} />
+                    <Icon name="check" className="size-3.5" strokeWidth={2.4} />
                   ) : q.type === "true_false" ? (
-                    ""
+                    i === 0 ? "T" : "F"
                   ) : (
                     String.fromCharCode(65 + i)
                   )}
                 </span>
-                <span className="min-w-0">{o.text}</span>
+                <span className={clsx("min-w-0", checked && "font-medium")}>
+                  {o.text}
+                </span>
               </label>
             );
           })}
@@ -867,7 +867,7 @@ function FinishedCta() {
   const { progress, certificate, showCompletion } = useLearn();
   if (progress.percent < 100) return null;
   return (
-    <Button variant="sun" icon="award" onClick={showCompletion} className={FIT}>
+    <Button variant="red" icon="award" onClick={showCompletion} className={FIT}>
       {certificate ? "View certificate" : "Celebrate"}
     </Button>
   );
@@ -914,273 +914,276 @@ function Result({
   })();
   return (
     <div>
-      <div
-        className={clsx(
-          "relative overflow-hidden p-5 md:p-8",
-          phase.passed ? "bg-mint" : "bg-butter",
-        )}
-      >
-        {phase.passed && <Burst />}
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div className="flex shrink-0 items-center gap-4">
-            <ProgressRing
-              value={phase.score}
-              size={112}
-              stroke={11}
-              tone={phase.passed ? "green" : "tangerine"}
-              label="Your score"
-              className="rounded-full bg-white/70"
-            >
-              <span className="font-display text-[34px] leading-none">
-                {phase.score}%
-              </span>
-            </ProgressRing>
-            {/* phones: a smaller Tami joins the celebration beside the ring */}
-            {phase.passed && (
-              <span className="shrink-0 sm:hidden" aria-hidden>
-                <Mascot
-                  title=""
-                  wink
-                  className="w-12"
-                  style={{ transform: "rotate(8deg)" }}
-                />
-              </span>
+      <div className="grid gap-x-12 gap-y-6 border-b border-line p-5 md:p-8 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-end lg:p-10">
+        {/* the score, in Anton, over a line with the pass mark on it */}
+        <div className="min-w-0">
+          <p
+            className={clsx(
+              "flex items-center gap-2.5 font-mono text-[11px] tracking-[0.1em] uppercase",
+              phase.passed ? "text-fg" : "text-red-lite",
             )}
+          >
+            <span
+              aria-hidden
+              className={clsx(
+                "size-[6px] shrink-0",
+                phase.passed ? "bg-fg" : "bg-red",
+              )}
+            />
+            {practice
+              ? `Practice · ${phase.passed ? "passed" : "not passed"}`
+              : phase.passed
+                ? "Passed"
+                : "Not quite yet"}
+          </p>
+          <p
+            className="mt-3 font-display text-[clamp(5.5rem,3rem+8vw,10rem)] leading-[0.8] tracking-[-0.01em] tabular-nums"
+            aria-label={`Score ${phase.score}%`}
+          >
+            {phase.score}
+            <span className="text-[0.5em] text-muted">%</span>
+          </p>
+          <div className="relative mt-5 h-[3px] w-full max-w-[320px] bg-line-strong" aria-hidden>
+            <span
+              className={clsx(
+                "absolute inset-y-0 left-0",
+                phase.passed ? "bg-fg" : "bg-red",
+              )}
+              style={{ width: `${phase.score}%` }}
+            />
+            <span
+              className="absolute -top-1.5 h-[15px] w-px bg-red-lite"
+              style={{ left: `${quiz.passPercentage}%` }}
+            />
           </div>
-          <div className="min-w-0 flex-1" role="status">
-            <h1 className="t-eyebrow">
-              <span className="sr-only">{quiz.title}: </span>
-              {practice
-                ? `Practice run · not saved · ${phase.passed ? "passed" : "not passed"}`
-                : phase.passed
-                  ? "Passed"
-                  : "Not quite yet"}
-            </h1>
-            <p
-              className="mt-2 t-display-m"
-              style={{ fontSize: "clamp(1.75rem, 1.2rem + 1.4vw, 2.5rem)" }}
-            >
-              {practice
-                ? phase.passed
-                  ? passedBefore
-                    ? "Still got it. Nicely done."
-                    : "You got it in practice. This run isn't saved."
-                  : "Practice makes progress. Check the explanations below."
-                : phase.passed
-                  ? quiz.isGating
-                    ? "You got it. The next lesson is unlocked."
-                    : "You got it. Nicely done."
-                  : phase.score >= 50
-                    ? "So close. Check the explanations and try again."
-                    : prevVideo
-                      ? `Not this time. Rewatch “${truncate(itemTitle(prevVideo), 40)}” and come back.`
-                      : "Not this time. Read the explanations below and come back."}
-            </p>
-            <p className="mt-2 t-small text-ink/70">
-              {correctCount} of {phase.results.length} right · pass mark{" "}
-              {quiz.passPercentage}%{!tracking && " · preview mode, not saved"}
-              {practice && " · no attempt used"}
-              {tracking &&
-                !practice &&
-                !phase.passed &&
-                attemptsLeft !== Infinity &&
-                ` · ${plural(attemptsLeft, "attempt")} left`}
-            </p>
-          </div>
-          <div className="hidden shrink-0 sm:block" aria-hidden>
-            {phase.passed ? (
-              <Mascot
-                title=""
-                wink
-                className="w-24"
-                style={{ transform: "rotate(8deg)" }}
-              />
-            ) : (
-              <BlockBuddy body="#fd4401" head="#ffcf3f" className="w-14" />
+          <p className="mt-2 font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase">
+            {correctCount}/{phase.results.length} right · pass {quiz.passPercentage}%
+          </p>
+        </div>
+        <div className="min-w-0" role="status">
+          <h1 className="sr-only">
+            {quiz.title}:{" "}
+            {practice
+              ? `practice run, ${phase.passed ? "passed" : "not passed"}`
+              : phase.passed
+                ? "passed"
+                : "not quite yet"}
+          </h1>
+          <p className="max-w-[26ch] font-heading text-[clamp(1.5rem,1.15rem+1.2vw,2.25rem)] leading-[1.1] font-semibold tracking-[-0.03em]">
+            {practice
+              ? phase.passed
+                ? passedBefore
+                  ? "Still got it. Nicely done."
+                  : "You got it in practice. This run isn't saved."
+                : "Practice makes progress. Check the explanations below."
+              : phase.passed
+                ? quiz.isGating
+                  ? "You got it. The next lesson is unlocked."
+                  : "You got it. Nicely done."
+                : phase.score >= 50
+                  ? "So close. Check the explanations and try again."
+                  : prevVideo
+                    ? `Not this time. Rewatch “${truncate(itemTitle(prevVideo), 40)}” and come back.`
+                    : "Not this time. Read the explanations below and come back."}
+          </p>
+          <p className="mt-3 t-small text-muted">
+            {!tracking && "Preview mode, not saved. "}
+            {practice && "No attempt used. "}
+            {tracking &&
+              !practice &&
+              !phase.passed &&
+              attemptsLeft !== Infinity &&
+              `${plural(attemptsLeft, "attempt")} left.`}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {phase.passed && nextItem && nextOpen && (
+              <Button
+                href={`/learn/${courseSlug}/${nextItem.id}`}
+                variant="red"
+                iconRight="arrow-right"
+                aria-label={`Continue: ${itemTitle(nextItem)}`}
+                className={FIT}
+              >
+                <span className="min-w-0 truncate">
+                  Continue: {itemTitle(nextItem)}
+                </span>
+              </Button>
             )}
+            {phase.passed && !nextItem && tracking && <FinishedCta />}
+            {!phase.passed && !practice && attemptsLeft > 0 && (
+              <Button
+                variant="red"
+                icon="refresh"
+                onClick={onRetry}
+                className={FIT}
+              >
+                Try again
+              </Button>
+            )}
+            {!phase.passed && prevVideo && (
+              <Button
+                variant="outline"
+                icon="play"
+                href={learnHref(courseSlug, prevVideo.id)}
+                aria-label={`Rewatch: ${itemTitle(prevVideo)}`}
+                className={FIT}
+              >
+                <span className="min-w-0 truncate">
+                  Rewatch: {itemTitle(prevVideo)}
+                </span>
+              </Button>
+            )}
+            {/* A real attempt only while one is left and the test isn't passed;
+                otherwise a practice round (graded here, nothing saved). */}
+            {(phase.passed || practice || attemptsLeft === 0) && (
+              <Button
+                variant="outline"
+                icon="refresh"
+                onClick={tracking ? onPractice : onRetry}
+                className={FIT}
+              >
+                {!tracking
+                  ? "Take it again"
+                  : phase.passed || passedBefore
+                    ? "Retake for practice"
+                    : "Practice run"}
+              </Button>
+            )}
+            <Button variant="ghost" onClick={onBack} className={FIT}>
+              Test details
+            </Button>
           </div>
+          {phase.passed && !practice && unlocked.length > 0 && quiz.isGating && (
+            <div className="mt-7 border-t border-line pt-4">
+              <p className="flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-red-lite uppercase">
+                <Icon name="unlock" className="size-3.5" strokeWidth={1.8} />
+                Just unlocked
+              </p>
+              <ul className="mt-2">
+                {unlocked.map((it) => (
+                  <li key={it.id}>
+                    <Link
+                      href={learnHref(courseSlug, it.id)}
+                      className="inline-flex min-h-9 items-center gap-2 text-[14.5px] underline-offset-4 hf:underline"
+                    >
+                      {itemTitle(it)}
+                      <Icon name="arrow-right" className="size-3.5" strokeWidth={1.8} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-        <div className="relative mt-5 flex flex-wrap gap-2">
-          {phase.passed && nextItem && nextOpen && (
-            <Button
-              href={`/learn/${courseSlug}/${nextItem.id}`}
-              iconRight="arrow-right"
-              aria-label={`Continue: ${itemTitle(nextItem)}`}
-              className={FIT}
-            >
-              <span className="min-w-0 truncate">
-                Continue: {itemTitle(nextItem)}
-              </span>
-            </Button>
-          )}
-          {phase.passed && !nextItem && tracking && <FinishedCta />}
-          {!phase.passed && !practice && attemptsLeft > 0 && (
-            <Button
-              variant="accent"
-              icon="refresh"
-              onClick={onRetry}
-              className={FIT}
-            >
-              Try again
-            </Button>
-          )}
-          {!phase.passed && prevVideo && (
-            <Button
-              variant="secondary"
-              icon="play"
-              href={learnHref(courseSlug, prevVideo.id)}
-              aria-label={`Rewatch: ${itemTitle(prevVideo)}`}
-              className={FIT}
-            >
-              <span className="min-w-0 truncate">
-                Rewatch: {itemTitle(prevVideo)}
-              </span>
-            </Button>
-          )}
-          {/* A real attempt only while one is left and the test isn't passed;
-              otherwise a practice round (graded here, nothing saved). */}
-          {(phase.passed || practice || attemptsLeft === 0) && (
-            <Button
-              variant="secondary"
-              icon="refresh"
-              onClick={tracking ? onPractice : onRetry}
-              className={FIT}
-            >
-              {!tracking
-                ? "Take it again"
-                : phase.passed || passedBefore
-                  ? "Retake for practice"
-                  : "Practice run"}
-            </Button>
-          )}
-          <Button variant="ghost" onClick={onBack} className={FIT}>
-            Back to test details
-          </Button>
-        </div>
-        {phase.passed && !practice && unlocked.length > 0 && quiz.isGating && (
-          <div className="relative mt-5 rounded-[18px] bg-white/70 p-4">
-            <p className="flex items-center gap-1.5 text-[13px] font-bold text-forest">
-              <Icon name="unlock" className="size-4" />
-              Just unlocked
-            </p>
-            <ul className="mt-2 space-y-1">
-              {unlocked.map((it) => (
-                <li key={it.id}>
-                  <Link
-                    href={learnHref(courseSlug, it.id)}
-                    className="text-[14px] font-semibold underline-offset-2 hf:underline"
-                  >
-                    {itemTitle(it)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
-      <div className="p-5 md:p-8">
-        <h3 className="t-app-h2">Review your answers</h3>
-        <p className="mt-1 t-small text-ink/65">
-          {revealCorrect
-            ? "Correct answers and explanations below."
-            : "Correct answers show once you pass or run out of attempts. The explanations are a big hint."}
-        </p>
-        <ol className="mt-5 space-y-3">
+      <div className="p-5 md:p-8 lg:p-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-fg pb-3">
+          <h3 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+            Review your answers
+          </h3>
+          <p className="t-small text-muted">
+            {revealCorrect
+              ? "Correct answers and explanations below."
+              : "Correct answers show once you pass or run out of attempts. The explanations are a big hint."}
+          </p>
+        </div>
+        <ol className="divide-y divide-line">
           {quiz.questions.map((q, i) => {
             const r = phase.results.find((x) => x.questionId === q.id);
             const a = phase.answers[q.id];
             const picked = Array.isArray(a) ? a : [];
             const text = typeof a === "string" ? a : "";
             return (
-              <li
-                key={q.id}
-                className={clsx(
-                  "rounded-[20px] p-4 md:p-5",
-                  r?.correct ? "bg-[#e9f9e4]" : "bg-[#fff0e9]",
-                )}
-              >
-                <div className="flex items-start gap-3">
+              <li key={q.id} className="flex gap-4 py-6 md:gap-6">
+                <div className="flex w-12 shrink-0 flex-col items-start gap-2">
+                  <span className="font-mono text-[11px] text-muted tabular-nums">
+                    Q{pad2(i + 1)}
+                  </span>
                   <span
                     className={clsx(
-                      "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-white",
-                      r?.correct ? "bg-green" : "bg-flame",
+                      "grid size-7 place-items-center",
+                      r?.correct
+                        ? "text-fg ring-1 ring-fg ring-inset"
+                        : "bg-red text-white",
                     )}
                   >
                     <Icon
                       name={r?.correct ? "check" : "x"}
-                      className="size-4"
-                      strokeWidth={3}
+                      className="size-3.5"
+                      strokeWidth={2.4}
                     />
                     <span className="sr-only">
                       {r?.correct ? "Correct" : "Incorrect"}
                     </span>
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-bold text-ink/65">
-                      Question {i + 1}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-heading text-[18px] leading-snug font-semibold tracking-[-0.02em]">
+                    {q.text}
+                  </p>
+                  {q.type === "short" ? (
+                    <p className="mt-3 t-small text-muted">
+                      Your answer:{" "}
+                      <strong className="font-semibold text-fg">
+                        {text.trim() || "(blank)"}
+                      </strong>
+                      {revealCorrect &&
+                      !r?.correct &&
+                      q.acceptedAnswers?.length ? (
+                        <>
+                          {" "}
+                          · Accepted:{" "}
+                          <strong className="font-semibold text-fg">
+                            {q.acceptedAnswers[0]}
+                          </strong>
+                        </>
+                      ) : null}
                     </p>
-                    <p className="mt-0.5 text-[16px] leading-snug font-bold">
-                      {q.text}
-                    </p>
-                    {q.type === "short" ? (
-                      <p className="mt-2 t-small">
-                        Your answer: <strong>{text.trim() || "(blank)"}</strong>
-                        {revealCorrect &&
-                        !r?.correct &&
-                        q.acceptedAnswers?.length ? (
-                          <>
-                            {" "}
-                            · Accepted: <strong>{q.acceptedAnswers[0]}</strong>
-                          </>
-                        ) : null}
-                      </p>
-                    ) : (
-                      <ul className="mt-2 flex flex-wrap gap-1.5">
-                        {q.options.map((o) => {
-                          const mine = picked.includes(o.id);
-                          const showRight = revealCorrect && o.isCorrect;
-                          if (!mine && !showRight) return null;
-                          return (
-                            <li
-                              key={o.id}
-                              className={clsx(
-                                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-semibold",
-                                showRight
-                                  ? "bg-green text-white"
-                                  : mine && revealCorrect
-                                    ? "bg-flame text-white"
-                                    : "bg-white text-ink ring-1 ring-ink/10",
-                              )}
-                            >
-                              {mine && (
-                                <span className="text-[11px] font-bold uppercase opacity-80">
-                                  You
-                                </span>
-                              )}
-                              {o.text}
-                              {showRight && (
-                                <Icon
-                                  name="check"
-                                  className="size-3.5"
-                                  strokeWidth={3}
-                                />
-                              )}
-                            </li>
-                          );
-                        })}
-                        {!picked.length && (
-                          <li className="text-[13px] font-semibold text-ink/65">
-                            (blank)
+                  ) : (
+                    <ul className="mt-3 flex flex-wrap gap-1.5">
+                      {q.options.map((o) => {
+                        const mine = picked.includes(o.id);
+                        const showRight = revealCorrect && o.isCorrect;
+                        if (!mine && !showRight) return null;
+                        return (
+                          <li
+                            key={o.id}
+                            className={clsx(
+                              "inline-flex min-h-8 items-center gap-2 px-2.5 py-1 text-[13px] ring-1 ring-inset",
+                              showRight
+                                ? "text-fg ring-fg"
+                                : mine && revealCorrect
+                                  ? "text-red-lite ring-red/60 line-through decoration-red/70"
+                                  : "text-fg/85 ring-line-strong",
+                            )}
+                          >
+                            {mine && (
+                              <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase opacity-70">
+                                You
+                              </span>
+                            )}
+                            {o.text}
+                            {showRight && (
+                              <Icon
+                                name="check"
+                                className="size-3.5"
+                                strokeWidth={2.2}
+                              />
+                            )}
                           </li>
-                        )}
-                      </ul>
-                    )}
-                    <p className="mt-3 flex items-start gap-1.5 t-small text-ink/75">
-                      <Icon name="info" className="mt-0.5 size-4 text-ink/65" />
-                      <span>{q.explanation}</span>
-                    </p>
-                  </div>
+                        );
+                      })}
+                      {!picked.length && (
+                        <li className="font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
+                          (blank)
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                  <p className="mt-4 max-w-[64ch] border-l border-line-strong pl-3.5 t-small text-muted">
+                    {q.explanation}
+                  </p>
                 </div>
               </li>
             );
@@ -1200,37 +1203,9 @@ function focusTop(el: HTMLElement | null) {
     window.scrollBy({ top: top - 84, behavior: "smooth" });
 }
 
-/** Result CTAs: full width on phones, never wider than the card. */
+/** Result CTAs: full width on phones, never wider than the column. */
 const FIT =
   "max-sm:w-full min-w-0 max-w-full sm:max-w-[420px] [&>svg]:shrink-0";
 
 const truncate = (s: string, n: number) =>
   s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
-
-const BURST = Array.from({ length: 16 }, (_, i) => ({
-  a: (i / 16) * 360,
-  d: 70 + (i % 3) * 26,
-  c: ["#ffcf3f", "#ff008c", "#2668fd", "#fd4401"][i % 4],
-}));
-function Burst() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute top-14 left-14 motion-reduce:hidden sm:top-[88px] sm:left-[88px]"
-    >
-      <style>{`@keyframes tm-burst{0%{transform:rotate(var(--a)) translateX(0) scale(.4);opacity:1}100%{transform:rotate(var(--a)) translateX(var(--d)) scale(1);opacity:0}}`}</style>
-      {BURST.map((b, i) => (
-        <span
-          key={i}
-          className="absolute size-2.5 rounded-full"
-          style={{
-            background: b.c,
-            ["--a" as string]: `${b.a}deg`,
-            ["--d" as string]: `${b.d}px`,
-            animation: `tm-burst .9s ${i * 0.01}s cubic-bezier(.16,1,.3,1) both`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}

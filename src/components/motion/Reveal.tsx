@@ -308,16 +308,8 @@ type RecipeProps = Omit<Props, "effect">;
 export const SplitLines = ({ as = "h2", ...p }: RecipeProps) => (
   <Reveal effect="lines" as={as} {...p} />
 );
-/** R3 letter pop: one giant word per page. */
-export const LetterPop = ({ as = "span", ...p }: RecipeProps) => (
-  <Reveal effect="letters" as={as} {...p} />
-);
-/** R7 hand-note write-on. */
-export const WriteOn = (p: RecipeProps) => <Reveal effect="write" {...p} />;
-/** R5 sticker pop (small items). */
+/** R5 pop (small items). */
 export const Pop = (p: RecipeProps) => <Reveal effect="pop" {...p} />;
-/** R6 card rise. */
-export const Rise = (p: RecipeProps) => <Reveal effect="card" {...p} />;
 
 /**
  * Attribute API for Server Components: any element with

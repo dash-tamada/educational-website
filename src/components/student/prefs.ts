@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { DEMO_STUDENT_ID, getUser } from "@/lib/mock";
-import type { Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import { useDb } from "@/lib/demo/store";
 import { useDemoSession } from "@/lib/demo/session-client";
 

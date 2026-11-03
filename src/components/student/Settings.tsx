@@ -7,7 +7,6 @@ import {
   Badge,
   Button,
   Card,
-  CardHeader,
   ConfirmDialog,
   Field,
   Icon,
@@ -22,8 +21,7 @@ import {
   toast,
   useScrollHide,
 } from "@/components/app";
-import { Mascot } from "@/components/decor/Mascot";
-import { toneBg, type Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import { useDb, demo } from "@/lib/demo/store";
 import { useDemoAuth } from "@/lib/demo/session-client";
 import {
@@ -46,28 +44,18 @@ const SECTIONS = [
   { id: "danger", label: "Danger zone", icon: "alert" },
 ] as const;
 
+/* The initials avatar draws one of three editorial fills (see Avatar in the app kit):
+   red-family tones -> ink, dark tones -> charcoal, light tones -> sand. One swatch each. */
 const TONES: { tone: Tone; label: string }[] = [
-  { tone: "hotpink", label: "Hot pink" },
-  { tone: "blue", label: "Blue" },
-  { tone: "green", label: "Green" },
-  { tone: "sun", label: "Sunshine" },
-  { tone: "tangerine", label: "Tangerine" },
-  { tone: "turquoise", label: "Turquoise" },
-  { tone: "lilac", label: "Lilac" },
-  { tone: "purple", label: "Purple" },
+  { tone: "hotpink", label: "Ink" },
+  { tone: "blue", label: "Charcoal" },
+  { tone: "sun", label: "Sand" },
 ];
+const RED_FILL = new Set<Tone>(["hotpink", "flame", "tomato", "magenta"]);
+const DARK_FILL = new Set<Tone>(["blue", "green", "forest", "purple", "indigo", "olive", "ink"]);
+const swatchFill = (t: Tone) => (RED_FILL.has(t) ? "bg-ink" : DARK_FILL.has(t) ? "bg-charcoal" : "bg-sand");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const DARK_TONES = new Set<Tone>([
-  "hotpink",
-  "blue",
-  "green",
-  "purple",
-  "indigo",
-  "flame",
-  "forest",
-  "magenta",
-]);
 
 const IDS = SECTIONS.map((x) => x.id);
 
@@ -179,8 +167,11 @@ function useActiveSection() {
 
 const HEADER = {
   eyebrow: "Student space",
-  eyebrowTone: "hotpink" as const,
-  title: "Your account.",
+  title: (
+    <>
+      Your <em>account</em>.
+    </>
+  ),
   description:
     "Name, password, nudges and goals. Tweak away, nothing here is permanent.",
   breadcrumbs: [
@@ -191,7 +182,7 @@ const HEADER = {
 
 /** The page's own skeleton (real header), shared by the store gate and the route's loading.tsx. */
 export function SettingsFallback() {
-  return <SettingsSkeleton header={<PageHeader {...HEADER} />} />;
+  return <SettingsSkeleton header={<PageHeader {...HEADER} rule={false} />} />;
 }
 
 export function Settings() {
@@ -249,19 +240,19 @@ function SettingsInner() {
 
   return (
     <div className="app-enter">
-      <PageHeader {...HEADER} />
+      <PageHeader {...HEADER} rule={false} />
       {/* anchors clear the sticky top bar, plus the sticky section row below lg */}
-      <div className="grid items-start gap-5 [--header-offset:152px] md:[--header-offset:164px] lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8 lg:[--header-offset:112px]">
+      <div className="grid items-start gap-5 [--header-offset:152px] md:[--header-offset:164px] lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12 lg:[--header-offset:112px]">
         <div
           data-bar-hidden={barHidden || undefined}
-          className="sticky top-16 z-20 -mx-4 min-w-0 bg-cream/95 px-4 py-2 backdrop-blur-md transition-[translate] duration-300 ease-ui max-sm:top-[calc(56px+var(--sat))] max-sm:bg-cream/[0.97] max-sm:data-bar-hidden:-translate-y-14 sm:-mx-6 sm:px-6 md:top-[72px] lg:top-24 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+          className="sticky top-16 z-20 -mx-4 min-w-0 bg-cream/95 px-4 pt-1 backdrop-blur-md transition-[translate] duration-300 ease-ui max-sm:top-[calc(56px+var(--sat))] max-sm:bg-cream/[0.97] max-sm:data-bar-hidden:-translate-y-14 sm:-mx-6 sm:px-6 md:top-[72px] lg:top-24 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
         >
           <nav
             ref={nav}
             aria-label="Settings sections"
-            className="-m-1 no-scrollbar flex gap-1 overflow-x-auto p-1 lg:m-0 lg:flex-col lg:overflow-visible lg:p-0"
+            className="no-scrollbar flex gap-6 overflow-x-auto border-b border-line lg:flex-col lg:gap-0 lg:overflow-visible lg:border-t lg:border-b-0 lg:border-fg"
           >
-            {SECTIONS.map((s) => (
+            {SECTIONS.map((s, i) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
@@ -270,21 +261,20 @@ function SettingsInner() {
                 onClick={() => jumpTo(s.id)}
                 aria-current={active === s.id ? "true" : undefined}
                 className={clsx(
-                  "tap inline-flex h-10 shrink-0 items-center gap-2.5 rounded-full px-3.5 text-[14.5px] font-semibold transition-colors max-sm:h-11 focus-visible:bg-white hf:bg-white hf:text-ink",
-                  active === s.id
-                    ? "bg-white text-ink shadow-soft"
-                    : s.id === "danger"
-                      ? "text-[#b02f00]"
-                      : "text-ink/75",
+                  "tap relative inline-flex h-11 shrink-0 items-center gap-3 text-[14px] tracking-[-0.005em] whitespace-nowrap transition-colors lg:h-12 lg:border-b lg:border-line lg:pl-3 hf:text-fg focus-visible:text-fg",
+                  active === s.id ? "font-semibold text-fg" : "font-medium text-muted",
                 )}
               >
-                <Icon name={s.icon} className="size-[18px]" />
+                {active === s.id && <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] bg-red lg:inset-x-auto lg:top-0 lg:bottom-0 lg:left-0 lg:h-auto lg:w-[2px]" />}
+                <span className={clsx("font-mono text-[10.5px] tracking-[0.04em]", active === s.id || s.id === "danger" ? "text-red-deep" : "text-muted")}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 {s.label}
               </a>
             ))}
           </nav>
         </div>
-        <div className="min-w-0 space-y-5">
+        <div className="min-w-0 space-y-12 md:space-y-16">
           <ProfileSection onDirtyChange={setProfileDirty} />
           <PasswordSection barAllowed={!profileDirty} />
           <NotificationsSection />
@@ -292,6 +282,39 @@ function SettingsInner() {
           <DangerSection />
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Section head: mono index, Inter Tight title, the description underneath (always on its own
+ * line) and an optional status / slate on the right of the title row.
+ */
+function SetHead({
+  id,
+  title,
+  description,
+  action,
+  eyebrow,
+}: {
+  id?: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  eyebrow?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6 md:mb-8">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          {eyebrow && <p className="t-label mb-2.5 text-muted">{eyebrow}</p>}
+          <h2 id={id} className="t-app-h2">
+            {title}
+          </h2>
+        </div>
+        {action && <div className="flex shrink-0 items-center gap-2 pt-1">{action}</div>}
+      </div>
+      {description && <p className="mt-2 max-w-[60ch] t-small text-muted">{description}</p>}
     </div>
   );
 }
@@ -403,20 +426,23 @@ function ProfileSection({
 
   return (
     <Card
+      variant="ruled"
+      padding="lg"
       as="section"
       aria-labelledby="profile"
       className="scroll-mt-24 max-sm:scroll-mt-32"
     >
-      <CardHeader
+      <SetHead
         id="profile"
+        eyebrow={<span className="font-mono tracking-[0.04em] text-red-deep">01</span>}
         title="Profile"
         description="How you show up on certificates, Q&A and reviews."
       />
       <form ref={formRef} onSubmit={submit} noValidate>
-        <div className="flex flex-col gap-5 rounded-card bg-cream p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-6 border-y border-line py-5 sm:flex-row sm:items-center">
           <div className="flex shrink-0 flex-col items-start gap-2.5 sm:items-center">
             {form.photo ? (
-              <span className="relative block size-[72px] overflow-hidden rounded-full bg-white shadow-soft">
+              <span className="relative block size-[72px] overflow-hidden rounded-full bg-paper ring-1 ring-line">
                 {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview, nothing to optimise */}
                 <img
                   src={form.photo}
@@ -435,7 +461,7 @@ function ProfileSection({
             {errors.photo && (
               <p
                 role="alert"
-                className="flex max-w-[200px] items-start gap-1 text-[13px] leading-snug font-semibold text-[#c13500]"
+                className="flex max-w-[200px] items-start gap-1 text-[13px] leading-snug font-medium text-red-deep"
               >
                 <Icon
                   name="alert"
@@ -447,8 +473,8 @@ function ProfileSection({
             )}
           </div>
           <fieldset className="min-w-0" disabled={!!form.photo}>
-            <legend className="text-[14px] font-bold">Avatar colour</legend>
-            <p className="mt-0.5 text-[13px] text-ink/70">
+            <legend className="text-[11px] font-semibold tracking-[0.14em] uppercase">Avatar colour</legend>
+            <p className="mt-1.5 t-small text-muted">
               {form.photo
                 ? "Using your photo. Remove it to go back to initials on a colour."
                 : "Your initials sit on this colour, or upload a photo instead."}
@@ -477,8 +503,8 @@ function ProfileSection({
                   <span
                     aria-hidden
                     className={clsx(
-                      "grid size-9 place-items-center rounded-full ring-offset-2 ring-offset-cream transition-shadow peer-checked:ring-2 peer-checked:ring-ink peer-focus-visible:outline-3 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-blue",
-                      toneBg[t.tone],
+                      "grid size-10 place-items-center ring-1 ring-line-strong ring-offset-2 ring-offset-cream transition-shadow peer-checked:ring-2 peer-checked:ring-red peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-red",
+                      swatchFill(t.tone),
                     )}
                   >
                     {form.tone === t.tone && (
@@ -486,7 +512,7 @@ function ProfileSection({
                         name="check"
                         className={clsx(
                           "size-4",
-                          DARK_TONES.has(t.tone) ? "text-white" : "text-ink",
+                          swatchFill(t.tone) === "bg-sand" ? "text-ink" : "text-cream",
                         )}
                         strokeWidth={3}
                       />
@@ -562,7 +588,8 @@ function ProfileSection({
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
           {dirty && (
-            <span className="mr-auto text-[13px] font-semibold text-ink/70 max-sm:w-full">
+            <span className="mr-auto inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.06em] text-muted uppercase max-sm:w-full">
+              <span aria-hidden className="size-[6px] bg-red" />
               Unsaved changes
             </span>
           )}
@@ -707,7 +734,7 @@ function PhotoPicker({
           icon="trash"
           aria-label="Remove photo"
           onClick={onRemove}
-          className="text-ink/65"
+          className="text-muted"
         />
       )}
     </div>
@@ -725,11 +752,11 @@ function strength(pw: string) {
   return Math.min(4, s);
 }
 const STRENGTH = [
-  { label: "Too short", tone: "bg-flame" },
-  { label: "Weak", tone: "bg-flame" },
-  { label: "Okay", tone: "bg-tangerine" },
-  { label: "Good", tone: "bg-green" },
-  { label: "Strong", tone: "bg-green" },
+  { label: "Too short", tone: "bg-red" },
+  { label: "Weak", tone: "bg-red" },
+  { label: "Okay", tone: "bg-smoke" },
+  { label: "Good", tone: "bg-fg" },
+  { label: "Strong", tone: "bg-fg" },
 ];
 
 function PasswordSection({ barAllowed = true }: { barAllowed?: boolean }) {
@@ -798,7 +825,7 @@ function PasswordSection({ barAllowed = true }: { barAllowed?: boolean }) {
     <button
       type="button"
       onClick={() => setShow((v) => !v)}
-      className="hit grid size-8 place-items-center rounded-full text-ink/70 hf:bg-ink/[0.06]"
+      className="hit grid size-8 place-items-center text-muted transition-colors hf:text-fg"
       aria-label={show ? "Hide passwords" : "Show passwords"}
       aria-pressed={show}
     >
@@ -808,12 +835,15 @@ function PasswordSection({ barAllowed = true }: { barAllowed?: boolean }) {
 
   return (
     <Card
+      variant="ruled"
+      padding="lg"
       as="section"
       aria-labelledby="password"
       className="scroll-mt-24 max-sm:scroll-mt-32"
     >
-      <CardHeader
+      <SetHead
         id="password"
+        eyebrow={<span className="font-mono tracking-[0.04em] text-red-deep">02</span>}
         title="Password"
         description="Use something long that you don't use anywhere else."
         action={<Badge tone="butter">Demo</Badge>}
@@ -865,15 +895,15 @@ function PasswordSection({ barAllowed = true }: { barAllowed?: boolean }) {
                   <span
                     key={i}
                     className={clsx(
-                      "h-1.5 rounded-full transition-colors",
+                      "h-[3px] transition-colors",
                       i < Math.max(1, level)
                         ? STRENGTH[level].tone
-                        : "bg-ink/[0.08]",
+                        : "bg-line",
                     )}
                   />
                 ))}
               </div>
-              <span className="w-20 text-right text-[13px] font-bold">
+              <span className="w-20 text-right font-mono text-[11px] tracking-[0.06em] uppercase">
                 {STRENGTH[level].label}
               </span>
             </div>
@@ -982,12 +1012,15 @@ function NotificationsSection() {
 
   return (
     <Card
+      variant="ruled"
+      padding="lg"
       as="section"
       aria-label="Notification settings"
       className="scroll-mt-24 max-sm:scroll-mt-32"
     >
-      <CardHeader
+      <SetHead
         id="notifications"
+        eyebrow={<span className="font-mono tracking-[0.04em] text-red-deep">03</span>}
         title="Notifications"
         description="We'd rather you learn than read emails. Pick what's worth it."
         action={
@@ -995,7 +1028,7 @@ function NotificationsSection() {
             role="status"
             aria-live="polite"
             className={clsx(
-              "text-[13px] font-bold text-[#00813a] transition-opacity",
+              "font-mono text-[11px] tracking-[0.06em] uppercase transition-opacity",
               status ? "opacity-100" : "opacity-0",
             )}
           >
@@ -1013,11 +1046,11 @@ function NotificationsSection() {
         }
       />
       {(["Email", "WhatsApp"] as const).map((g) => (
-        <fieldset key={g} className="mt-2 first-of-type:mt-0">
-          <legend className="mb-1 text-[12px] font-bold tracking-[0.06em] text-ink/70 uppercase">
+        <fieldset key={g} className="mt-8 first-of-type:mt-0">
+          <legend className="mb-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
             {g}
           </legend>
-          <div className="divide-y divide-ink/[0.07]">
+          <div className="divide-y divide-line border-y border-line">
             {NOTIFS.filter((n) => n.group === g).map((n) => (
               <Switch
                 key={n.key}
@@ -1038,7 +1071,7 @@ function NotificationsSection() {
 /* ----------------------------------------------------------------------------- goals */
 /** Segmented control that fills its column and shares the width evenly (never scrolls or clips). */
 const SEGMENT_FILL =
-  "flex! w-full max-w-[420px] bg-cream! shadow-none! [&>button]:min-w-0 [&>button]:flex-1 [&>button]:px-2";
+  "flex! w-full max-w-[420px] [&>button]:min-w-0 [&>button]:flex-1 [&>button]:px-2";
 function GoalSection() {
   const db = useDb();
   const profile = useStudentProfile();
@@ -1055,18 +1088,21 @@ function GoalSection() {
 
   return (
     <Card
+      variant="ruled"
+      padding="lg"
       as="section"
       aria-labelledby="goals"
       className="scroll-mt-24 max-sm:scroll-mt-32"
     >
-      <CardHeader
+      <SetHead
         id="goals"
+        eyebrow={<span className="font-mono tracking-[0.04em] text-red-deep">04</span>}
         title="Learning goal"
         description="Small and steady beats heroic and rare."
       />
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
         <div className="min-w-0">
-          <p className="mb-2 text-[14px] font-bold">Minutes per learning day</p>
+          <p className="mb-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase">Minutes per learning day</p>
           <Segmented
             label="Minutes per learning day"
             className={SEGMENT_FILL}
@@ -1079,7 +1115,7 @@ function GoalSection() {
           />
         </div>
         <div className="min-w-0">
-          <p className="mb-2 text-[14px] font-bold">Days a week</p>
+          <p className="mb-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase">Days a week</p>
           <Segmented
             label="Learning days per week"
             className={SEGMENT_FILL}
@@ -1129,10 +1165,13 @@ function GoalSection() {
           />
         </Field>
       </div>
-      <p className="mt-5 rounded-card bg-butter p-4 text-[14.5px] font-semibold">
-        That&apos;s <strong>{weekly} minutes a week</strong>. You&apos;ve done{" "}
+      <p className="mt-8 grid gap-1 border-y border-line py-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-baseline sm:gap-6">
+        <span className="t-display-s text-[2.25rem] leading-none">{weekly} min</span>
+        <span className="t-small text-muted">
+        a week. You&apos;ve done{" "}
         {week} so far this week
         {week >= weekly ? ". Goal smashed!" : `, ${weekly - week} to go.`}
+        </span>
       </p>
     </Card>
   );
@@ -1209,53 +1248,56 @@ function DangerSection() {
 
   return (
     <Card
+      variant="ruled"
+      padding="lg"
       as="section"
       aria-labelledby="danger"
-      className="scroll-mt-24 ring-2 ring-[#ffe1d4] max-sm:scroll-mt-32"
+      className="scroll-mt-24 border-red! max-sm:scroll-mt-32"
     >
-      <CardHeader
+      <SetHead
         id="danger"
+        eyebrow={<span className="font-mono tracking-[0.04em] text-red-deep">05</span>}
         title="Danger zone"
         description="Careful with these. In the demo, nothing touches a real account."
       />
-      <ul className="divide-y divide-ink/[0.07]">
-        <li className="flex flex-col gap-3 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
+      <ul className="divide-y divide-line border-y border-line">
+        <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold">Download my data</p>
-            <p className="t-small text-ink/70">
+            <p className="font-medium">Download my data</p>
+            <p className="t-small text-muted">
               Courses, orders, certificates and notes as a JSON file.
             </p>
           </div>
           <Button
-            variant="secondary"
+            variant="outline"
             icon="download"
             onClick={exportData}
-            className="bg-cream! shadow-none! max-sm:h-12 max-sm:w-full hf:bg-butter!"
+            className="max-sm:h-12 max-sm:w-full"
           >
             Download
           </Button>
         </li>
         <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold">Reset demo data</p>
-            <p className="t-small text-ink/70">
+            <p className="font-medium">Reset demo data</p>
+            <p className="t-small text-muted">
               Undo every purchase, lesson and setting you changed in this
               browser.
             </p>
           </div>
           <Button
-            variant="secondary"
+            variant="outline"
             icon="refresh"
             onClick={() => setResetOpen(true)}
-            className="bg-cream! shadow-none! max-sm:h-12 max-sm:w-full hf:bg-butter!"
+            className="max-sm:h-12 max-sm:w-full"
           >
             Reset
           </Button>
         </li>
-        <li className="flex flex-col gap-3 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+        <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold text-[#b02f00]">Delete my account</p>
-            <p className="t-small text-ink/70">
+            <p className="font-medium text-red-deep">Delete my account</p>
+            <p className="t-small text-muted">
               Removes your progress, certificates and order history for good.
             </p>
           </div>
@@ -1330,13 +1372,9 @@ function DangerSection() {
         }
       >
         {deleted ? (
-          <div className="flex items-center gap-4 rounded-card bg-cream p-4">
-            <Mascot
-              title=""
-              className="w-12 shrink-0"
-              style={{ transform: "rotate(-8deg)" }}
-            />
-            <p className="t-small text-ink/80">
+          <div className="border-l-2 border-red py-1 pl-4">
+            <p className="font-mono text-[11px] tracking-[0.06em] text-red-deep uppercase">Sample data · nothing deleted</p>
+            <p className="mt-1.5 t-small text-muted">
               Phew. In the real app this would wipe everything, so we ask twice.
               Here it just signs you out.
             </p>

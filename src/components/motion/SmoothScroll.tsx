@@ -43,7 +43,10 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       });
       lenis.on("scroll", ScrollTrigger.update);
       tick = (time: number) => lenis?.raf(time * 1000);
-      gsap.ticker.add(tick);
+      // prioritized: Lenis scrolls (and ScrollTrigger reads the new position) BEFORE GSAP
+      // renders this frame's tweens. Added last, its window.scrollTo ran right after the
+      // tweens' style writes and forced an extra synchronous style + layout every frame.
+      gsap.ticker.add(tick, false, true);
       gsap.ticker.lagSmoothing(0);
       setLenis(lenis);
     };

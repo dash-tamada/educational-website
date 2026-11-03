@@ -1,71 +1,109 @@
 import clsx from "clsx";
-import type { Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 
 /* =============================================================================
-   Badge / StatusPill. Flat pills; colour + a dot + text (never colour alone).
+   Badge / StatusPill, design system v2: square-ish slates in mono caps. Meaning is
+   carried by the WORD plus a small square marker (never colour alone):
+     ■ filled ink   = positive / live      □ hollow ring = pending / waiting
+     ■ red          = needs attention      · grey        = neutral / archived
      <Badge tone="mint">New</Badge>
-     <StatusPill status="in_review" />          course / order / account / application / payout status
-     <DemoPill />                                "Demo data" indicator (shells, catalog)
+     <Badge tone="red">Bestseller</Badge>            solid red slate (use sparingly)
+     <Badge tone="ink" size="sm">Draft</Badge>       solid ink slate
+     <StatusPill status="in_review" />               course / order / account / application / payout status
+     <DemoPill />                                    "Demo data" slate with the red rec dot
+   Tones: the legacy v1 names still work and fold into five editorial looks:
+     positive (mint, green, forest)  pending (butter, sun, tangerine, yellow)
+     alert (flame, tomato)           solid red (hotpink, red)   solid ink (ink, purple, indigo)
+     quiet (neutral, blue, cyan, lilac, blush, white …)
+   `variant="text"` drops the frame (a marker + word, for dense tables).
    ============================================================================= */
 
-const BADGE: Partial<Record<Tone, string>> & Record<"neutral", string> = {
-  neutral: "bg-ink/[0.07] text-ink/75",
-  mint: "bg-mint text-forest",
-  butter: "bg-butter text-[#6b5400]",
-  sun: "bg-sun text-ink",
-  blush: "bg-blush text-[#8a0d55]",
-  cyan: "bg-cyan text-[#0b5d5e]",
-  lilac: "bg-[#e7e0fb] text-indigo",
-  flame: "bg-[#ffe1d4] text-[#b02f00]",
-  blue: "bg-[#dfe8ff] text-[#1a4cc0]",
-  green: "bg-green text-ink",
-  hotpink: "bg-hotpink-deep text-white",
-  purple: "bg-purple text-white",
-  ink: "bg-ink text-cream",
-  white: "bg-white text-ink",
-};
-const DOT: Record<string, string> = {
-  neutral: "bg-ink/40",
-  mint: "bg-green",
-  butter: "bg-tangerine",
-  sun: "bg-ink",
-  blush: "bg-hotpink",
-  cyan: "bg-turquoise",
-  lilac: "bg-indigo",
-  flame: "bg-flame",
-  blue: "bg-blue",
-  green: "bg-ink",
-  hotpink: "bg-white",
-  purple: "bg-white",
-  ink: "bg-sun",
-  white: "bg-ink/50",
+type Look = "positive" | "pending" | "alert" | "red" | "ink" | "quiet";
+const LOOK: Record<string, Look> = {
+  neutral: "quiet",
+  mint: "positive",
+  green: "positive",
+  forest: "positive",
+  lime: "positive",
+  butter: "pending",
+  sun: "pending",
+  yellow: "pending",
+  tangerine: "pending",
+  orange: "pending",
+  flame: "alert",
+  tomato: "alert",
+  hotpink: "red",
+  red: "red",
+  magenta: "red",
+  ink: "ink",
+  purple: "ink",
+  indigo: "ink",
+  blue: "quiet",
+  cyan: "quiet",
+  aqua: "quiet",
+  turquoise: "quiet",
+  lilac: "quiet",
+  blush: "quiet",
+  bubblegum: "quiet",
+  olive: "quiet",
+  white: "quiet",
 };
 
-export type BadgeTone = keyof typeof BADGE;
+const FRAME: Record<Look, string> = {
+  positive: "bg-transparent text-fg ring-1 ring-inset ring-line-strong",
+  pending: "bg-cream-2 text-ink ring-1 ring-inset ring-ink/15 on-dark:bg-white/10 on-dark:text-cream on-dark:ring-white/20",
+  alert: "bg-transparent text-red-deep ring-1 ring-inset ring-red/45 on-dark:text-red-lite on-dark:ring-red-lite/50",
+  red: "bg-red text-white",
+  ink: "bg-ink text-cream on-dark:bg-cream on-dark:text-ink",
+  quiet: "bg-transparent text-muted ring-1 ring-inset ring-line",
+};
+const MARK: Record<Look, string> = {
+  positive: "bg-current",
+  pending: "ring-1 ring-current ring-inset",
+  alert: "bg-red on-dark:bg-red-lite",
+  red: "bg-white",
+  ink: "bg-red",
+  quiet: "bg-current opacity-60",
+};
+const TEXT_ONLY: Record<Look, string> = {
+  positive: "text-fg",
+  pending: "text-fg",
+  alert: "text-red-deep on-dark:text-red-lite",
+  red: "text-red-deep on-dark:text-red-lite",
+  ink: "text-fg",
+  quiet: "text-muted",
+};
+
+export type BadgeTone = "neutral" | "red" | Tone;
 
 export function Badge({
   children,
   tone = "neutral",
   dot,
   size = "md",
+  variant = "slate",
   className,
 }: {
   children: React.ReactNode;
   tone?: BadgeTone;
+  /** small square marker before the word */
   dot?: boolean;
   size?: "sm" | "md";
+  /** slate (default): framed mono caps; text: marker + word only */
+  variant?: "slate" | "text";
   className?: string;
 }) {
+  const look = LOOK[tone] ?? "quiet";
   return (
     <span
       className={clsx(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full font-bold whitespace-nowrap",
-        size === "sm" ? "h-[22px] px-2 text-[11.5px]" : "h-[26px] px-2.5 text-[12.5px]",
-        BADGE[tone] ?? BADGE.neutral,
+        "inline-flex shrink-0 items-center gap-1.5 rounded-[2px] font-mono font-medium whitespace-nowrap uppercase tabular-nums",
+        size === "sm" ? "h-[20px] text-[10px] tracking-[0.07em]" : "h-[23px] text-[10.5px] tracking-[0.08em]",
+        variant === "text" ? ["px-0", TEXT_ONLY[look]] : [size === "sm" ? "px-1.5" : "px-2", FRAME[look]],
         className,
       )}
     >
-      {dot && <span aria-hidden className={clsx("size-1.5 rounded-full", DOT[tone] ?? DOT.neutral)} />}
+      {dot && <span aria-hidden className={clsx("size-[6px] shrink-0", MARK[look])} />}
       {children}
     </span>
   );
@@ -90,7 +128,7 @@ export const STATUS_META: Record<string, { label: string; tone: BadgeTone }> = {
   suspended: { label: "Suspended", tone: "flame" },
   // tutor applications
   approved: { label: "Approved", tone: "mint" },
-  changes_requested: { label: "Changes requested", tone: "blue" },
+  changes_requested: { label: "Changes requested", tone: "butter" },
   // payouts
   scheduled: { label: "Scheduled", tone: "neutral" },
   processing: { label: "Processing", tone: "butter" },
@@ -100,44 +138,53 @@ export const STATUS_META: Record<string, { label: string; tone: BadgeTone }> = {
   resolved: { label: "Resolved", tone: "mint" },
   dismissed: { label: "Dismissed", tone: "neutral" },
   // roles
-  student: { label: "Student", tone: "blush" },
+  student: { label: "Student", tone: "neutral" },
   tutor: { label: "Tutor", tone: "cyan" },
-  admin: { label: "Admin", tone: "lilac" },
+  admin: { label: "Admin", tone: "ink" },
   // enrollment sources
   purchase: { label: "Purchase", tone: "mint" },
   admin_grant: { label: "Admin grant", tone: "blue" },
   free: { label: "Free", tone: "neutral" },
 };
 
-export function StatusPill({ status, label, size, className }: { status: string; label?: string; size?: "sm" | "md"; className?: string }) {
+export function StatusPill({
+  status,
+  label,
+  size,
+  variant,
+  className,
+}: {
+  status: string;
+  label?: string;
+  size?: "sm" | "md";
+  variant?: "slate" | "text";
+  className?: string;
+}) {
   const m = STATUS_META[status] ?? { label: status.replace(/_/g, " "), tone: "neutral" as const };
   return (
-    <Badge tone={m.tone} dot size={size} className={className}>
+    <Badge tone={m.tone} dot size={size} variant={variant} className={className}>
       {label ?? m.label}
     </Badge>
   );
 }
 
 /**
- * "Demo data" indicator: shells and the catalog show it so sample numbers are never mistaken for real ones.
- *   tone="light" (default) butter pill for white/cream surfaces
- *   tone="white" white pill for butter, sun, lime and other yellow panels (where butter disappears)
- *   tone="dark"  translucent pill for ink and other dark panels
+ * "Demo data" slate: shells and the catalog show it so sample numbers are never mistaken for real ones.
+ *   tone="light" (default) hairline slate for cream / paper surfaces
+ *   tone="white" paper slate for tinted panels
+ *   tone="dark"  for ink / theatre surfaces
  */
 export function DemoPill({ className, tone = "light" }: { className?: string; tone?: "light" | "white" | "dark" }) {
   return (
     <span
       title="Everything here is sample data for the demo: people, numbers, orders and reviews."
       className={clsx(
-        "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-bold whitespace-nowrap",
-        tone === "dark" ? "bg-white/15 text-white" : tone === "white" ? "bg-white text-[#6b5400] shadow-soft" : "bg-butter text-[#6b5400]",
+        "inline-flex h-[23px] shrink-0 items-center gap-1.5 rounded-[2px] px-2 font-mono text-[10.5px] font-medium tracking-[0.08em] whitespace-nowrap uppercase",
+        tone === "dark" ? "text-cream/80 ring-1 ring-white/20 ring-inset" : tone === "white" ? "bg-paper text-ink ring-1 ring-ink/15 ring-inset" : "text-ink/75 ring-1 ring-ink/20 ring-inset",
         className,
       )}
     >
-      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
-        <path d="M9 3.5h6M10 3.5v5.2L4.8 18a1.8 1.8 0 0 0 1.6 2.5h11.2a1.8 1.8 0 0 0 1.6-2.5L14 8.7V3.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M7.5 14.5h9" strokeLinecap="round" />
-      </svg>
+      <span aria-hidden className="size-[6px] rounded-full bg-red" />
       Demo data
     </span>
   );
@@ -151,11 +198,8 @@ export function DemoPill({ className, tone = "light" }: { className?: string; to
  */
 export function SampleNote({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={clsx("t-small flex items-start gap-2 text-ink/65", className)}>
-      <svg viewBox="0 0 24 24" className="mt-[3px] size-4 shrink-0 text-ink/45" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 11v5M12 7.6v.4" strokeLinecap="round" />
-      </svg>
+    <p className={clsx("t-small flex items-start gap-2.5 text-muted", className)}>
+      <span aria-hidden className="mt-[7px] h-px w-4 shrink-0 bg-current opacity-60" />
       <span className="min-w-0">{children}</span>
     </p>
   );

@@ -3,12 +3,11 @@
 import Image from "next/image";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { toneBg, type Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import { cropSrc } from "@/lib/img";
 import { DEMO_TUTOR_ID, formatINR, getCourseSales, getTutor, type Db } from "@/lib/mock";
 import { useDb, useStoreHydrated } from "@/lib/demo/store";
 import { useDemoSession } from "@/lib/demo/session-client";
-import { Icon, type IconName } from "@/components/app";
 
 /** The signed-in tutor (falls back to the default demo tutor), the live db and the hydration flag. */
 export function useTutorContext() {
@@ -78,31 +77,13 @@ export function tutorCourses(db: Db, userId: string) {
   return db.courses.filter((c) => c.tutorId === userId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-/** Rounded course thumbnail on its card tone. */
-export function CourseThumb({ src, tone = "sun", className, ratio = 3 / 4, sizes = "120px", alt = "", eager }: { src: string; tone?: Tone; className?: string; ratio?: number; sizes?: string; alt?: string; eager?: boolean }) {
+/** Square-cornered course still on charcoal (tone kept for older callers, ignored: no tone fills in v2).
+ *  `ratio` = HEIGHT / WIDTH of the crop (default 3/4, i.e. a 4:3 frame). */
+export function CourseThumb({ src, tone: _tone, className, ratio = 3 / 4, sizes = "120px", alt = "", eager }: { src: string; tone?: Tone; className?: string; ratio?: number; sizes?: string; alt?: string; eager?: boolean }) {
+  void _tone;
   return (
-    <span className={clsx("relative block shrink-0 overflow-hidden rounded-[14px]", toneBg[tone], className)}>
+    <span className={clsx("relative block shrink-0 overflow-hidden bg-charcoal", className)}>
       <Image src={cropSrc(src, ratio)} alt={alt} fill sizes={sizes} loading={eager ? "eager" : undefined} className="object-cover" />
-    </span>
-  );
-}
-
-/** Small round icon chip used for item types and list markers. */
-export function IconChip({ name, tone = "cream", className, size = "md" }: { name: IconName; tone?: "cream" | "blue" | "sun" | "mint" | "blush" | "lilac" | "ink" | "white" | "flame"; className?: string; size?: "sm" | "md" }) {
-  const cls = {
-    cream: "bg-cream text-ink",
-    blue: "bg-[#dfe8ff] text-blue",
-    sun: "bg-butter text-[#6b5400]",
-    mint: "bg-mint text-forest",
-    blush: "bg-blush text-[#8a0d55]",
-    lilac: "bg-[#e7e0fb] text-indigo",
-    ink: "bg-ink text-cream",
-    white: "bg-white text-ink",
-    flame: "bg-[#ffe1d4] text-[#b02f00]",
-  }[tone];
-  return (
-    <span className={clsx("grid shrink-0 place-items-center rounded-full", size === "sm" ? "size-8" : "size-10", cls, className)} aria-hidden>
-      <Icon name={name} className={size === "sm" ? "size-4" : "size-[18px]"} strokeWidth={2.2} />
     </span>
   );
 }

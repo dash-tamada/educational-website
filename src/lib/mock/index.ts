@@ -167,7 +167,7 @@ export function getCourseBySlug(slug: string, db: Db = SEED_DB): Course | null {
 export function getCourseById(id: string, db: Db = SEED_DB): Course | null {
   return db.courses.find((c) => c.id === id) ?? null;
 }
-/** Accepts an id ("crs_webdev") or a slug ("web-dev-from-zero"). */
+/** Accepts an id ("crs_aifilm") or a slug ("ai-filmmaking"). */
 export function getCourse(idOrSlug: string, db: Db = SEED_DB): Course | null {
   return db.courses.find((c) => c.id === idOrSlug || c.slug === idOrSlug) ?? null;
 }
@@ -843,7 +843,7 @@ export function getPlatformSeries(range: AnalyticsRange = "12m") {
     // modelled daily shape, scaled so 1-5 Oct adds up to "October so far" and September's days to September
     signups: cut(fitDailyToMonthly(dailySeries(12, lastFull(PLATFORM_SERIES.signups).value / 30), PLATFORM_SERIES.signups)),
     enrollments: ledger.enrollments,
-    activeLearners: cut(dailySeries(14, 2_100, 0.002)),
+    activeLearners: cut(dailySeries(14, 770, 0.002)),
   };
 }
 

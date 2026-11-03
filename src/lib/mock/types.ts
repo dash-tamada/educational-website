@@ -5,7 +5,7 @@
    whole rupees (INR) unless a field says otherwise.
    ============================================================================= */
 
-import type { Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 
 export type { Tone };
 
@@ -123,6 +123,8 @@ export interface Course {
   reviewNote?: string;
   featured?: boolean;
   hasCertificate: boolean;
+  /** title printed on the certificate, e.g. "Certified AI Filmmaker" (falls back to the course title) */
+  certificateTitle?: string;
 }
 
 /* ----------------------------------------------------------------------------- curriculum */

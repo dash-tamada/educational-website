@@ -7,7 +7,6 @@ import clsx from "clsx";
 import {
   Badge,
   Button,
-  Card,
   DataTable,
   DescriptionList,
   Drawer,
@@ -25,7 +24,8 @@ import {
   type Column,
 } from "@/components/app";
 import { cropSrc } from "@/lib/img";
-import { toneBg } from "@/lib/landing-data";
+import { lessonPoster } from "@/lib/media";
+import { FLAGSHIP } from "@/lib/content/site";
 import { useDb, demo } from "@/lib/demo/store";
 import {
   REFUND_MAX_PROGRESS,
@@ -41,6 +41,7 @@ import {
 } from "@/lib/mock";
 import { Hydrated, TablePageSkeleton } from "./Hydrated";
 import { BADGE_SM, TILE_TIGHT } from "./bits";
+import type { Course } from "@/lib/mock";
 import { useMinWidth } from "./hooks";
 import {
   downloadInvoice,
@@ -57,12 +58,18 @@ type StatusFilter =
 const statusKey = (o: OrderRow) => (isGrant(o) ? "grant" : o.status);
 const hasInvoice = (o: OrderRow) =>
   o.status !== "failed" && o.status !== "pending";
-const SAVINGS_GREEN = "text-[#006b30]";
+/** coupon savings: mono, muted (no green: red is the only accent) */
+const SAVINGS = "font-mono text-[11px] tracking-[0.04em] uppercase text-muted";
+/** the course still: the flagship uses its module-one poster */
+const thumbOf = (c: Course) => (c.id === FLAGSHIP.id ? lessonPoster(1).src : c.thumbnail);
 
 const HEADER = {
   eyebrow: "Student space",
-  eyebrowTone: "hotpink" as const,
-  title: "Orders and receipts.",
+  title: (
+    <>
+      Orders and <em>receipts</em>.
+    </>
+  ),
   description: "Every course you bought, with a GST invoice a click away.",
   breadcrumbs: [
     { label: "Dashboard", href: "/dashboard" },
@@ -208,10 +215,10 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
             width: "136px",
             cell: (o: OrderRow) => (
               <div>
-                <span className="font-mono text-[13.5px] font-bold whitespace-nowrap">
+                <span className="font-mono text-[13px] font-medium whitespace-nowrap">
                   {o.number}
                 </span>
-                <span className="block text-[12.5px] font-semibold text-ink/70">
+                <span className="mt-0.5 block font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
                   {isGrant(o) ? "Gift" : o.method}
                 </span>
               </div>
@@ -225,29 +232,16 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
       header: "Course",
       cell: (o) => (
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            className={clsx(
-              "relative size-11 shrink-0 overflow-hidden rounded-[12px] max-sm:hidden",
-              o.course && toneBg[o.course.tone],
-            )}
-          >
-            {o.course && (
-              <Image
-                src={cropSrc(o.course.thumbnail, 1)}
-                alt=""
-                fill
-                sizes="44px"
-                className="object-cover"
-              />
-            )}
+          <span className="relative aspect-[16/10] w-[72px] shrink-0 overflow-hidden bg-ink max-sm:hidden">
+            {o.course && <Image src={cropSrc(thumbOf(o.course), 10 / 16)} alt="" fill sizes="72px" className="object-cover" />}
           </span>
           <span className="min-w-0">
-            <span className="line-clamp-2 font-bold">
+            <span className="line-clamp-2 font-medium tracking-[-0.01em]">
               {o.course?.title ?? "Removed course"}
             </span>
             {/* below xl the Order and Date columns fold into this cell */}
             {!wide && (
-              <span className="mt-0.5 flex flex-wrap gap-x-2 text-[12.5px] font-semibold text-ink/70">
+              <span className="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">
                 <span className="font-mono whitespace-nowrap">{o.number}</span>
                 <span className="whitespace-nowrap">
                   {formatDate(o.createdAt, "short")}
@@ -258,13 +252,8 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
               </span>
             )}
             {o.couponCode && (
-              <span
-                className={clsx(
-                  "block text-[12.5px] font-semibold",
-                  SAVINGS_GREEN,
-                )}
-              >
-                {o.couponCode} saved {formatINR(o.discount)}
+              <span className={clsx("mt-1 block", SAVINGS)}>
+                {o.couponCode} · saved {formatINR(o.discount)}
               </span>
             )}
             {!sm && <span className="mt-1.5 flex">{statusCell(o)}</span>}
@@ -280,7 +269,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
             header: "Date",
             width: "124px",
             cell: (o: OrderRow) => (
-              <span className="whitespace-nowrap">
+              <span className="font-mono text-[12.5px] whitespace-nowrap tabular-nums">
                 {formatDate(o.createdAt)}
               </span>
             ),
@@ -294,7 +283,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
       align: "right",
       width: "108px",
       cell: (o) => (
-        <span className="font-bold whitespace-nowrap">
+        <span className="font-mono text-[13.5px] font-medium whitespace-nowrap tabular-nums">
           {formatINR(o.amount)}
         </span>
       ),
@@ -340,36 +329,42 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
       <PageHeader {...HEADER} />
 
       {all.length === 0 ? (
-        <Card padding="none">
+        <div className="border-t border-fg">
           <EmptyState
-            art="buddy"
-            tone="butter"
+            art="none"
+            align="start"
+            eyebrow="00 orders"
+            className="px-0!"
             title="No orders yet. Your wallet thanks you."
-            body="When you buy a course, the receipt and a GST invoice land here. Until then, every course's first lesson is free."
+            body="When you buy the course, the receipt and a GST invoice land here. Until then, the first lesson is free."
             action={
-              <Button href="/courses" variant="accent" iconRight="arrow-right">
-                Browse courses
-              </Button>
+              <>
+                <Button href={FLAGSHIP.freeLessonHref} variant="red" icon="play">
+                  Watch free lesson
+                </Button>
+                <Button href={FLAGSHIP.href} variant="outline">
+                  Course page
+                </Button>
+              </>
             }
           />
-        </Card>
+        </div>
       ) : (
         <>
-          <StatGrid className="mb-6 md:mb-8">
+          <StatGrid className="mb-10 md:mb-12">
             <StatTile
               className={TILE_TIGHT}
               label="Total spent"
               value={formatINR(spent)}
-              tone="blush"
-              icon="wallet"
+              variant="ink"
+              index="01"
               hint="GST included"
             />
             <StatTile
               className={TILE_TIGHT}
               label="Courses bought"
               value={paid.length}
-              tone="cyan"
-              icon="book"
+              index="02"
               hint={
                 all.some(isGrant)
                   ? `+ ${all.filter(isGrant).length} gifted`
@@ -380,8 +375,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
               className={TILE_TIGHT}
               label="Saved with codes"
               value={formatINR(saved)}
-              tone="mint"
-              icon="ticket"
+              index="03"
               hint={
                 saved
                   ? `on ${paid.filter((o) => o.discount > 0).length} of ${paid.length} orders`
@@ -394,8 +388,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
               value={
                 paid[0] ? formatDate(paid[0].createdAt, "short") : "None yet"
               }
-              tone="butter"
-              icon="calendar"
+              index="04"
               hint={paid[0] ? timeAgo(paid[0].createdAt) : undefined}
             />
           </StatGrid>
@@ -473,7 +466,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
                 : "When you buy a course, the receipt lands here.",
               action: filtered ? (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   icon="refresh"
                   onClick={() => {
@@ -484,22 +477,22 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
                   Show all orders
                 </Button>
               ) : (
-                <Button href="/courses" variant="secondary" size="sm">
-                  Browse courses
+                <Button href={FLAGSHIP.href} variant="outline" size="sm">
+                  Course page
                 </Button>
               ),
-              art: "buddy",
+              art: "none",
             }}
           />
-          <p className="mt-4 flex items-start gap-2 t-small text-ink/70">
-            <Icon name="info" className="mt-0.5 size-4 shrink-0" />
+          <p className="mt-6 flex items-start gap-2.5 border-t border-line pt-4 t-small text-muted">
+            <Icon name="info" className="mt-0.5 size-4 shrink-0" strokeWidth={1.6} />
             <span>
               Changed your mind? Open an order to ask for a refund (within{" "}
               {REFUND_WINDOW_DAYS} days, under {REFUND_MAX_PROGRESS}% watched).
               Anything else, write to us from the{" "}
               <Link
                 href="/contact"
-                className="font-bold text-ink underline decoration-ink/30 underline-offset-2"
+                className="text-fg underline decoration-line-strong underline-offset-4 hf:text-red hf:decoration-red"
               >
                 contact page
               </Link>{" "}
@@ -512,6 +505,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
       <Drawer
         open={!!open}
         onClose={closeOrder}
+        eyebrow="Receipt"
         title={open ? `Order ${open.number}` : "Order"}
         description={open ? formatDate(open.createdAt, "datetime") : undefined}
         footer={
@@ -528,7 +522,7 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
               )}
               {open.course && isEnrolled(uid, open.course.id, db) && (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   href={`/learn/${open.course.slug}`}
                   iconRight="arrow-right"
                 >
@@ -549,43 +543,25 @@ function OrdersInner({ initialOrder }: { initialOrder?: string }) {
 function OrderPhoneRow({ o }: { o: OrderRow }) {
   return (
     <div className="flex items-center gap-3">
-      <span
-        className={clsx(
-          "relative size-11 shrink-0 overflow-hidden rounded-[12px]",
-          o.course ? toneBg[o.course.tone] : "bg-ink/[0.06]",
-        )}
-      >
-        {o.course && (
-          <Image
-            src={cropSrc(o.course.thumbnail, 1)}
-            alt=""
-            fill
-            sizes="44px"
-            className="object-cover"
-          />
-        )}
+      <span className="relative size-12 shrink-0 overflow-hidden bg-ink">
+        {o.course && <Image src={cropSrc(thumbOf(o.course), 1)} alt="" fill sizes="48px" className="object-cover" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-2 text-[15px] leading-snug font-bold">
+        <span className="line-clamp-2 text-[15px] leading-snug font-medium">
           {o.course?.title ?? "Removed course"}
         </span>
-        <span className="mt-0.5 block truncate text-[13px] font-medium text-ink/65">
+        <span className="mt-1 block truncate font-mono text-[11px] tracking-[0.04em] text-muted uppercase">
           <span className="font-mono">{o.number}</span> ·{" "}
           {formatDate(o.createdAt, "short")} · {isGrant(o) ? "Gift" : o.method}
         </span>
         {o.couponCode && (
-          <span
-            className={clsx(
-              "block truncate text-[12.5px] font-semibold",
-              SAVINGS_GREEN,
-            )}
-          >
-            {o.couponCode} saved {formatINR(o.discount)}
+          <span className={clsx("mt-0.5 block truncate", SAVINGS)}>
+            {o.couponCode} · saved {formatINR(o.discount)}
           </span>
         )}
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1">
-        <span className="text-[15px] font-bold whitespace-nowrap tabular-nums">
+        <span className="font-mono text-[14px] font-medium whitespace-nowrap tabular-nums">
           {formatINR(o.amount)}
         </span>
         <StatusPill
@@ -611,34 +587,23 @@ function OrderDetails({ o, db }: { o: OrderRow; db: Db }) {
       {o.course && (
         <Link
           href={`/courses/${o.course.slug}`}
-          className="flex items-center gap-3 rounded-card bg-cream p-3 hf:bg-butter"
+          className="group grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 border-y border-line py-3"
         >
-          <span
-            className={clsx(
-              "relative size-16 shrink-0 overflow-hidden rounded-img",
-              toneBg[o.course.tone],
-            )}
-          >
-            <Image
-              src={cropSrc(o.course.thumbnail, 1)}
-              alt=""
-              fill
-              sizes="64px"
-              className="object-cover"
-            />
+          <span className="relative aspect-[16/10] overflow-hidden bg-ink">
+            <Image src={cropSrc(thumbOf(o.course), 10 / 16)} alt="" fill sizes="96px" className="object-cover" />
           </span>
           <span className="min-w-0">
-            <span className="block font-heading text-[17px] leading-tight font-extrabold">
+            <span className="block font-heading text-[17px] leading-tight font-semibold tracking-[-0.02em] transition-colors group-hf:text-red">
               {o.course.title}
             </span>
-            <span className="mt-1 block text-[13px] font-semibold text-ink/70">
+            <span className="mt-1.5 block font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
               Lifetime access · {o.course.language}
             </span>
           </span>
         </Link>
       )}
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[14px] font-bold">Status</span>
+        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">Status</span>
         <span className="flex flex-wrap justify-end gap-1.5">
           <StatusPill
             status={statusKey(o)}
@@ -648,12 +613,12 @@ function OrderDetails({ o, db }: { o: OrderRow; db: Db }) {
         </span>
       </div>
       {grant ? (
-        <p className="rounded-card bg-[#dfe8ff] p-4 t-small text-ink/80">
+        <p className="border-l-2 border-fg py-1 pl-4 t-small text-muted">
           The Tamada team gave you this course. No payment was taken, and it
           stays yours.
         </p>
       ) : (
-        <div className="rounded-card bg-cream p-4">
+        <div className="border-y border-line py-4">
           <DescriptionList
             items={[
               { label: "Course price", value: formatINR(o.subtotal) },
@@ -662,7 +627,7 @@ function OrderDetails({ o, db }: { o: OrderRow; db: Db }) {
                     {
                       label: `Discount${o.couponCode ? ` (${o.couponCode})` : ""}`,
                       value: (
-                        <span className={SAVINGS_GREEN}>
+                        <span className={SAVINGS}>
                           −{formatINR(o.discount)}
                         </span>
                       ),
@@ -673,12 +638,12 @@ function OrderDetails({ o, db }: { o: OrderRow; db: Db }) {
               { label: TAX_LABEL, value: formatINR(o.tax) },
               {
                 label: (
-                  <span className="font-bold text-ink">
+                  <span className="text-fg">
                     Total {o.status === "refunded" ? "refunded" : "paid"}
                   </span>
                 ),
                 value: (
-                  <span className="text-[16px]">{formatINR(o.amount)}</span>
+                  <span className="t-display-s text-[1.5rem]">{formatINR(o.amount)}</span>
                 ),
               },
             ]}
@@ -710,13 +675,13 @@ function OrderDetails({ o, db }: { o: OrderRow; db: Db }) {
         ]}
       />
       {o.status === "failed" && (
-        <p className="rounded-card bg-[#ffe1d4] p-4 t-small text-[#8a2600]">
+        <p className="border-l-2 border-red py-1 pl-4 t-small text-red-deep">
           This payment didn&apos;t go through, so nothing was charged. You can
           try again from the course page.
         </p>
       )}
       {o.status === "pending" && (
-        <p className="rounded-card bg-butter p-4 t-small">
+        <p className="border-l-2 border-line-strong py-1 pl-4 t-small text-muted">
           Your bank is still confirming this one. It usually settles within an
           hour.
         </p>
@@ -786,38 +751,38 @@ function RefundBlock({ o, db }: { o: OrderRow; db: Db }) {
   return (
     <section
       aria-labelledby={`refund-${o.id}`}
-      className="rounded-card border border-ink/[0.08] p-4"
+      className="border-t border-fg pt-4"
     >
       <h3
         id={`refund-${o.id}`}
-        className="flex items-center gap-2 text-[15px] font-bold"
+        className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] uppercase"
       >
-        <Icon name="refresh" className="size-4" /> Refund
+        <Icon name="refresh" className="size-4" strokeWidth={1.6} /> Refund
       </h3>
       {req ? (
         <>
           <p
             ref={statusRef}
             tabIndex={-1}
-            className="mt-2 rounded-sm t-small focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-blue"
+            className="mt-2 t-small focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red"
           >
-            <span className="font-bold">Refund requested</span> ·{" "}
+            <span className="font-semibold">Refund requested</span> ·{" "}
             {formatDate(req.requestedAt)}
           </p>
-          <p className="mt-1 t-small text-ink/75">&ldquo;{req.reason}&rdquo;</p>
+          <p className="mt-1 t-small text-muted">&ldquo;{req.reason}&rdquo;</p>
           {req.outsidePolicy && (
-            <p className="mt-2 rounded-[14px] bg-butter p-3 text-[13px] leading-snug font-semibold">
+            <p className="mt-3 border-l-2 border-red py-1 pl-3 text-[13px] leading-snug">
               Outside our usual policy: {req.outsidePolicy} The team will still
               take a look.
             </p>
           )}
-          <p className="mt-2 t-small text-ink/70">
+          <p className="mt-2 t-small text-muted">
             We usually reply within two working days.
           </p>
           <Button
             size="sm"
-            variant="secondary"
-            className="mt-3 bg-cream! shadow-none! hf:bg-butter!"
+            variant="outline"
+            className="mt-3"
             onClick={() => {
               pendingFocus.current = "request";
               demo.withdrawRefundRequest(o.id);
@@ -832,15 +797,15 @@ function RefundBlock({ o, db }: { o: OrderRow; db: Db }) {
         </>
       ) : (
         <>
-          <p className="mt-2 t-small text-ink/80">{check.message}</p>
+          <p className="mt-2 t-small">{check.message}</p>
           {check.eligible && (
-            <p className="mt-1 text-[13px] font-semibold text-ink/70">
+            <p className="mt-1.5 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">
               {check.daysLeft} day{check.daysLeft === 1 ? "" : "s"} left ·{" "}
               {check.progress}% of the course watched
             </p>
           )}
           {o.refundDeclinedAt && (
-            <p className="mt-2 rounded-[14px] bg-cream p-3 text-[13px] leading-snug font-semibold">
+            <p className="mt-3 border-l-2 border-line-strong py-1 pl-3 text-[13px] leading-snug text-muted">
               Your last request was declined on {formatDate(o.refundDeclinedAt)}
               {o.refundDeclineNote ? `: ${o.refundDeclineNote}` : "."}
             </p>
@@ -892,7 +857,7 @@ function RefundBlock({ o, db }: { o: OrderRow; db: Db }) {
                   </Button>
                   <Button
                     type="submit"
-                    variant="primary"
+                    variant="red"
                     size="sm"
                     loading={busy}
                   >
@@ -904,9 +869,9 @@ function RefundBlock({ o, db }: { o: OrderRow; db: Db }) {
               <Button
                 ref={requestRef}
                 size="sm"
-                variant="secondary"
+                variant="outline"
                 icon="refresh"
-                className="mt-3 bg-cream! shadow-none! hf:bg-butter!"
+                className="mt-3"
                 onClick={() => setFormOpen(true)}
               >
                 Request a refund

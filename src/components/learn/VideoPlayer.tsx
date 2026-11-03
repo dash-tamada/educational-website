@@ -900,14 +900,14 @@ export function VideoPlayer({
       onKeyDown={onMenuKey}
       data-lenis-prevent
       className={clsx(
-        "app-fade bg-white text-ink",
+        "app-fade bg-ink text-cream ring-1 ring-white/15",
         sheet
-          ? "pointer-events-auto absolute inset-2 z-[9] overflow-y-auto overscroll-contain rounded-[18px] p-1.5 shadow-lift"
-          : "absolute right-0 bottom-[calc(100%+8px)] z-10 w-56 rounded-[18px] p-1.5 shadow-lift",
+          ? "pointer-events-auto absolute inset-2 z-[9] overflow-y-auto overscroll-contain p-1.5"
+          : "absolute right-0 bottom-[calc(100%+8px)] z-10 w-60 p-1.5",
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 flex-1 truncate px-3 pt-1.5 pb-1 text-[11.5px] font-bold tracking-[0.04em] text-ink/65 uppercase">
+        <p className="min-w-0 flex-1 truncate px-3 pt-2 pb-1.5 text-[10.5px] font-semibold tracking-[0.16em] text-white/55 uppercase">
           Playback speed
         </p>
         {sheet && (
@@ -917,10 +917,10 @@ export function VideoPlayer({
             aria-label="Shortcut list"
             title="Shortcut list"
             onClick={openKeys}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-blue hf:bg-butter"
+            className="flex h-9 shrink-0 items-center gap-1.5 px-2.5 text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-cream hf:bg-white/10"
           >
             Keys
-            <kbd className="grid h-6 min-w-6 place-items-center rounded-[7px] bg-ink/[0.07] px-1.5 font-sans text-[12px] font-bold">
+            <kbd className="grid h-6 min-w-6 place-items-center px-1.5 font-mono text-[11px] ring-1 ring-white/25 ring-inset">
               ?
             </kbd>
           </button>
@@ -934,7 +934,7 @@ export function VideoPlayer({
               setMenu(false);
               menuBtn.current?.focus({ preventScroll: true });
             }}
-            className="grid size-9 shrink-0 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-blue hf:bg-ink/[0.06]"
+            className="grid size-9 shrink-0 place-items-center outline-none focus-visible:ring-2 focus-visible:ring-cream hf:bg-white/10"
           >
             <Icon name="x" className="size-4" />
           </button>
@@ -957,16 +957,16 @@ export function VideoPlayer({
               flash(`${r}x speed`);
             }}
             className={clsx(
-              "h-9 rounded-[12px] font-bold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-blue",
-              sheet ? "text-[12.5px]" : "text-[13.5px]",
-              rate === r ? "bg-ink text-cream" : "hf:bg-butter",
+              "h-9 font-mono tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-cream",
+              sheet ? "text-[11.5px]" : "text-[12.5px]",
+              rate === r ? "bg-cream text-ink" : "ring-1 ring-white/10 ring-inset hf:bg-white/10",
             )}
           >
             {r}x
           </button>
         ))}
       </div>
-      <div role="separator" className="my-1 h-px bg-ink/[0.07]" />
+      <div role="separator" className="my-1.5 h-px bg-white/10" />
       <div className={clsx(sheet && "grid grid-cols-2 gap-x-1")}>
         <MenuSwitch
           checked={autoplay}
@@ -987,10 +987,10 @@ export function VideoPlayer({
           type="button"
           role="menuitem"
           onClick={openKeys}
-          className="flex h-10 w-full items-center justify-between gap-3 rounded-[12px] px-3 text-[14px] font-semibold outline-none focus-visible:bg-butter hf:bg-butter"
+          className="flex h-10 w-full items-center justify-between gap-3 px-3 text-[13.5px] font-medium outline-none focus-visible:bg-white/10 hf:bg-white/10"
         >
           Shortcut list
-          <kbd className="grid h-6 min-w-6 place-items-center rounded-[7px] bg-ink/[0.07] px-1.5 font-sans text-[12px] font-bold">
+          <kbd className="grid h-6 min-w-6 place-items-center px-1.5 font-mono text-[11px] ring-1 ring-white/25 ring-inset">
             ?
           </kbd>
         </button>
@@ -1007,11 +1007,11 @@ export function VideoPlayer({
           fs
             ? "h-full rounded-none"
             : [
-                "aspect-video rounded-card-lg shadow-photo",
+                "aspect-video ring-1 ring-line",
                 // phones: edge to edge, straight under the top bar
-                "max-sm:-mx-3 max-sm:-mt-2 max-sm:w-[calc(100%+1.5rem)] max-sm:max-w-none max-sm:scroll-mt-[calc(3.5rem+var(--sat))] max-sm:rounded-none max-sm:shadow-none",
+                "max-sm:-mx-3 max-sm:-mt-2 max-sm:w-[calc(100%+1.5rem)] max-sm:max-w-none max-sm:scroll-mt-[calc(3.5rem+var(--sat))] max-sm:ring-0",
                 // short landscape: the whole screen, letterboxed
-                "land:mx-[calc(50%-50vw)] land:mt-0 land:aspect-auto land:h-dvh land:w-screen land:max-w-none land:scroll-mt-0 land:rounded-none land:shadow-none",
+                "land:mx-[calc(50%-50vw)] land:mt-0 land:aspect-auto land:h-dvh land:w-screen land:max-w-none land:scroll-mt-0 land:ring-0",
                 pinned &&
                   "max-sm:sticky max-sm:top-[calc(3.5rem+var(--sat))] max-sm:z-20",
               ],
@@ -1103,7 +1103,7 @@ export function VideoPlayer({
                 : "right-0 rounded-l-[50%]",
             )}
           >
-            <span className="flex flex-col items-center gap-1 text-[14px] font-bold tabular-nums">
+            <span className="flex flex-col items-center gap-1 font-mono text-[12px] tabular-nums">
               <Glyph
                 name={ripple.side === "l" ? "back10" : "fwd10"}
                 className="size-8"
@@ -1139,13 +1139,15 @@ export function VideoPlayer({
           )}
         >
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold tracking-[0.04em] uppercase backdrop-blur-sm">
-              {label}
+            {/* from sm the letterbox slate above the frame carries the label */}
+            <span className="flex items-center gap-2 font-mono text-[10.5px] tracking-[0.1em] text-cream uppercase sm:hidden">
+              <span aria-hidden className="size-[6px] rounded-full bg-red" />
+              {label.replace(" / ", " · ")}
             </span>
             {badge && (
               <span
                 className={clsx(
-                  "rounded-full bg-mint px-2.5 py-1 text-[11px] font-bold text-forest",
+                  "px-1.5 py-0.5 font-mono text-[10px] tracking-[0.1em] text-cream uppercase ring-1 ring-white/30 ring-inset sm:hidden",
                   fit("max-sm:hidden", "hidden", ""),
                 )}
               >
@@ -1153,7 +1155,7 @@ export function VideoPlayer({
               </span>
             )}
             <span
-              className="pointer-events-auto rounded-full bg-black/35 px-2.5 py-1 text-[11px] font-semibold text-white/80"
+              className="pointer-events-auto font-mono text-[10px] tracking-[0.1em] text-white/55 uppercase sm:hidden"
               title={credit}
             >
               Sample footage
@@ -1161,7 +1163,7 @@ export function VideoPlayer({
           </div>
           <p
             className={clsx(
-              "mt-2 line-clamp-1 max-w-[80%] text-[17px] font-bold",
+              "mt-2.5 line-clamp-1 max-w-[80%] font-heading text-[19px] font-semibold tracking-[-0.025em] sm:mt-0",
               fit("max-sm:hidden", "hidden", ""),
             )}
           >
@@ -1177,7 +1179,7 @@ export function VideoPlayer({
             onClick={play}
             aria-label={started ? "Play" : `Play ${title}`}
             className={clsx(
-              "tap app-fade absolute left-1/2 z-[8] grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-flame text-white shadow-lift transition-[scale] duration-300 ease-spring hf:scale-110",
+              "tap app-fade absolute left-1/2 z-[8] grid -translate-x-1/2 -translate-y-1/2 place-items-center bg-red text-white transition-[background-color,scale] duration-300 ease-ui hf:scale-105 hf:bg-red-deep",
               fit(
                 "top-[42%] size-14 sm:top-1/2 sm:size-20",
                 "top-[42%] size-14",
@@ -1200,7 +1202,7 @@ export function VideoPlayer({
           <span
             role="status"
             aria-label="Loading video"
-            className="absolute top-1/2 left-1/2 z-[4] size-12 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-4 border-white/25 border-t-white"
+            className="absolute top-1/2 left-1/2 z-[4] size-11 -translate-x-1/2 -translate-y-1/2 animate-spin rounded-full border-2 border-white/20 border-t-red"
           />
         )}
 
@@ -1209,7 +1211,7 @@ export function VideoPlayer({
           <span
             key={osd.n}
             aria-live="polite"
-            className="app-fade pointer-events-none absolute top-[22%] left-1/2 z-[5] -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-[14px] font-bold"
+            className="app-fade pointer-events-none absolute top-[22%] left-1/2 z-[5] -translate-x-1/2 bg-black/75 px-3 py-1.5 font-mono text-[12px] tracking-[0.08em] uppercase tabular-nums"
           >
             {osd.text}
           </span>
@@ -1228,13 +1230,13 @@ export function VideoPlayer({
         {caption && (
           <p
             className={clsx(
-              "pointer-events-none absolute inset-x-0 z-[3] mx-auto w-fit max-w-[86%] rounded-md bg-black/75 px-3 py-1.5 text-center text-[14px] leading-snug font-semibold transition-[bottom] sm:text-[17px]",
+              "pointer-events-none absolute inset-x-0 z-[3] mx-auto w-fit max-w-[86%] bg-black/80 px-3 py-1.5 text-center text-[14px] leading-snug font-medium transition-[bottom] sm:text-[17px]",
               showControls ? "bottom-[88px] sm:bottom-24" : "bottom-6",
               // phones: the big play button covers the middle while paused
               !playing && "max-sm:hidden",
             )}
           >
-            <span className="mb-0.5 block text-[10px] font-bold tracking-[0.06em] text-white/60 uppercase">
+            <span className="mb-0.5 block font-mono text-[9.5px] tracking-[0.12em] text-white/55 uppercase">
               Sample captions
             </span>
             {caption}
@@ -1258,7 +1260,7 @@ export function VideoPlayer({
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button
                   size="sm"
-                  variant="sun"
+                  variant="cream"
                   icon="refresh"
                   onClick={() => {
                     setError(false);
@@ -1271,7 +1273,7 @@ export function VideoPlayer({
                 {next && !next.locked && (
                   <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     href={next.href}
                     iconRight="arrow-right"
                   >
@@ -1285,7 +1287,7 @@ export function VideoPlayer({
 
         {/* end card */}
         {ended && !error && (
-          <div className="app-fade absolute inset-0 z-[7] grid place-items-center bg-ink/80 p-4 backdrop-blur-[2px] max-[419px]:p-3">
+          <div className="app-fade absolute inset-0 z-[7] grid place-items-center bg-black/85 p-4 backdrop-blur-[2px] max-[419px]:p-3">
             <EndCard
               next={next}
               countdown={countdown}
@@ -1338,31 +1340,31 @@ export function VideoPlayer({
             onPointerLeave={() => setHover(null)}
             onKeyDown={onTrackKey}
             className={clsx(
-              "group/seek relative flex h-5 cursor-pointer touch-none items-center rounded-full focus-visible:outline-offset-2 focus-visible:outline-sun coarse:h-8",
+              "group/seek relative flex h-5 cursor-pointer touch-none items-center focus-visible:outline-offset-2 focus-visible:outline-cream coarse:h-8",
               barLive && "pointer-events-auto",
             )}
             style={{ "--played": 0 } as React.CSSProperties}
           >
             <div
               className={clsx(
-                "relative h-1.5 w-full overflow-hidden rounded-full bg-white/25 transition-[height] duration-150 group-hover/seek:h-2",
+                "relative h-[3px] w-full overflow-hidden bg-white/20 transition-[height] duration-150 group-hover/seek:h-[5px]",
                 // touch: a 4px track in a 32px zone, 6px while dragging
-                scrub !== null ? "coarse:h-1.5" : "coarse:h-1",
+                scrub !== null ? "coarse:h-[5px]" : "coarse:h-[3px]",
               )}
             >
               <div
-                className="absolute inset-y-0 left-0 bg-white/35"
+                className="absolute inset-y-0 left-0 bg-white/30"
                 style={{ width: `${buffered * 100}%` }}
               />
               <div
-                className="absolute inset-y-0 left-0 bg-flame"
+                className="absolute inset-y-0 left-0 bg-red"
                 style={{ width: "calc(var(--played) * 100%)" }}
               />
               {scaledChapters.slice(1).map((c) => (
                 <span
                   key={c.at}
                   aria-hidden
-                  className="absolute inset-y-0 w-[3px] -translate-x-1/2 bg-ink/70"
+                  className="absolute inset-y-0 w-[2px] -translate-x-1/2 bg-black"
                   style={{ left: `${(c.at / dur) * 100}%` }}
                 />
               ))}
@@ -1374,12 +1376,12 @@ export function VideoPlayer({
               className="pointer-events-none absolute inset-0"
               style={{ transform: "translateX(calc(var(--played) * 100%))" }}
             >
-              <span className="absolute top-1/2 left-0 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow transition-[scale] group-hover/seek:scale-110 coarse:size-4" />
+              <span className="absolute top-1/2 left-0 h-3.5 w-[3px] -translate-x-1/2 -translate-y-1/2 bg-cream transition-[scale] group-hover/seek:scale-y-125 coarse:h-4" />
             </span>
             {hover && dur > 0 && (
               <span
                 aria-hidden
-                className="pointer-events-none absolute bottom-[calc(100%+8px)] -translate-x-1/2 rounded-full bg-white px-2.5 py-1 text-[12px] font-bold whitespace-nowrap text-ink shadow"
+                className="pointer-events-none absolute bottom-[calc(100%+8px)] -translate-x-1/2 bg-cream px-2 py-1 font-mono text-[11px] whitespace-nowrap text-ink tabular-nums"
                 style={{
                   left: `clamp(48px, ${hover.r * 100}%, calc(100% - 48px))`,
                 }}
@@ -1450,11 +1452,11 @@ export function VideoPlayer({
             </div>
             <span
               className={clsx(
-                "ml-1 font-semibold whitespace-nowrap tabular-nums",
+                "ml-1.5 font-mono tracking-[0.04em] whitespace-nowrap tabular-nums",
                 fit(
-                  "text-[12.5px] sm:text-[13px]",
+                  "text-[11.5px] sm:text-[12.5px]",
+                  "text-[11.5px]",
                   "text-[12.5px]",
-                  "text-[13px]",
                 ),
               )}
             >
@@ -1480,7 +1482,7 @@ export function VideoPlayer({
               {captionsOn && captionsAvailable && (
                 <span
                   aria-hidden
-                  className="absolute bottom-1 left-1/2 h-[3px] w-4 -translate-x-1/2 rounded-full bg-flame"
+                  className="absolute bottom-1 left-1/2 h-[2px] w-4 -translate-x-1/2 bg-red"
                 />
               )}
             </CtrlButton>
@@ -1492,7 +1494,7 @@ export function VideoPlayer({
                 aria-expanded={menu}
                 aria-label={`Playback settings, speed ${rate}x`}
                 onClick={() => setMenu((m) => !m)}
-                className="tap flex h-10 items-center gap-1 rounded-full px-2.5 text-[13px] font-bold hf:bg-white/15 phone-s:px-2 coarse:h-11"
+                className="tap flex h-10 items-center gap-1.5 px-2.5 font-mono text-[12px] hf:bg-white/10 phone-s:px-2 coarse:h-11"
               >
                 <Glyph name="cog" className="size-5" />
                 <span className="tabular-nums">{rate}x</span>
@@ -1518,8 +1520,8 @@ export function VideoPlayer({
         />
       )}
       {shownDur > 0 && nominalSec - shownDur > 5 && !fs && (
-        <p className="mt-2 flex items-start gap-1.5 text-[12.5px] leading-snug font-semibold text-ink/65">
-          <Icon name="info" className="mt-px size-3.5 shrink-0" />
+        <p className="mt-2.5 flex items-start gap-2 font-mono text-[10.5px] leading-relaxed tracking-[0.02em] text-muted max-sm:mt-2">
+          <Icon name="info" className="mt-px size-3.5 shrink-0" strokeWidth={1.6} />
           <span>
             Sample clip ({formatDuration(shownDur, "clock")}), shorter than the
             real {formatDuration(nominalSec, "clock")} lesson.
@@ -1531,11 +1533,12 @@ export function VideoPlayer({
         <BottomSheet
           open={menu}
           onClose={() => setMenu(false)}
+          surface="ink"
           title="Playback settings"
         >
           <p
             id="speed-label"
-            className="text-[13px] font-bold tracking-[0.04em] text-ink/65 uppercase"
+            className="text-[11px] font-semibold tracking-[0.16em] text-muted uppercase"
           >
             Speed
           </p>
@@ -1555,15 +1558,15 @@ export function VideoPlayer({
                   flash(`${r}x speed`);
                 }}
                 className={clsx(
-                  "tap h-12 rounded-[14px] text-[16px] font-bold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-blue",
-                  rate === r ? "bg-ink text-cream" : "bg-cream",
+                  "tap h-12 font-mono text-[14px] tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-red",
+                  rate === r ? "bg-ink text-cream" : "ring-1 ring-line-strong ring-inset",
                 )}
               >
                 {r === 1 ? "Normal" : `${r}x`}
               </button>
             ))}
           </div>
-          <div className="mt-4 divide-y divide-ink/[0.07] border-t border-ink/[0.07]">
+          <div className="mt-4 divide-y divide-line border-t border-line">
             <Switch
               className="py-3"
               checked={captionsAvailable && captionsOn}
@@ -1584,7 +1587,7 @@ export function VideoPlayer({
               description="Counts down 5 seconds at the end of a video."
             />
           </div>
-          <p className="mt-3 text-[13px] font-semibold text-ink/65">
+          <p className="mt-3 text-[13px] text-muted">
             Tip: double-tap the left or right of the video to jump 10 seconds.
           </p>
         </BottomSheet>
@@ -1592,6 +1595,8 @@ export function VideoPlayer({
       <Modal
         open={keysOpen}
         onClose={() => setKeysOpen(false)}
+        surface="ink"
+        eyebrow="Player"
         title="Keyboard shortcuts"
         description={
           keysOn
@@ -1674,20 +1679,20 @@ function MenuSwitch({
       role="menuitemcheckbox"
       aria-checked={checked}
       onClick={onToggle}
-      className="flex h-10 w-full items-center justify-between gap-3 rounded-[12px] px-3 text-[14px] font-semibold outline-none focus-visible:bg-butter hf:bg-butter"
+      className="flex h-10 w-full items-center justify-between gap-3 px-3 text-[13.5px] font-medium outline-none focus-visible:bg-white/10 hf:bg-white/10"
     >
       {label}
       <span
         aria-hidden
         className={clsx(
-          "relative h-5 w-9 shrink-0 rounded-full transition-colors",
-          checked ? "bg-green" : "bg-ink/20",
+          "relative h-[18px] w-8 shrink-0 ring-1 transition-colors ring-inset",
+          checked ? "bg-red ring-red" : "bg-transparent ring-white/35",
         )}
       >
         <span
           className={clsx(
-            "absolute top-0.5 size-4 rounded-full bg-white shadow transition-[left]",
-            checked ? "left-[18px]" : "left-0.5",
+            "absolute top-[3px] size-3 transition-[left]",
+            checked ? "left-[17px] bg-white" : "left-[3px] bg-cream/60",
           )}
         />
       </span>
@@ -1707,7 +1712,7 @@ function ResumeChip({
   return (
     <div
       className={clsx(
-        "app-enter flex items-center gap-2 rounded-full bg-white py-1.5 pr-1.5 pl-3.5 text-[13px] font-semibold text-ink shadow-lift",
+        "app-enter flex items-center gap-3 bg-black/80 py-1 pr-1 pl-3 font-mono text-[11px] tracking-[0.06em] text-cream uppercase ring-1 ring-white/15 backdrop-blur-sm tabular-nums",
         className,
       )}
     >
@@ -1715,7 +1720,7 @@ function ResumeChip({
       <button
         type="button"
         onClick={onRestart}
-        className="tap hit rounded-full bg-ink/[0.07] px-2.5 py-1 font-bold hf:bg-butter"
+        className="tap hit bg-white/10 px-2 py-1 tracking-[0.1em] hf:bg-red"
       >
         Start over
       </button>
@@ -1727,7 +1732,7 @@ function ResumeChip({
 /* The frame is only ~167-190px tall on 320-360px phones, so below 420px every
    card goes compact: smaller ring, one-line titles, small buttons. */
 const END_LINK =
-  "tap hit inline-flex h-9 items-center gap-1 rounded-full px-2.5 text-[13.5px] font-bold text-white underline-offset-2 hf:bg-white/10 hf:underline max-[419px]:h-8 max-[419px]:text-[13px]";
+  "tap hit inline-flex h-9 items-center gap-1 px-2.5 text-[11px] font-semibold tracking-[0.14em] text-white uppercase underline-offset-4 hf:underline max-[419px]:h-8";
 const END_BTN_XS =
   "hit max-[419px]:h-8 max-[419px]:gap-1 max-[419px]:px-3 max-[419px]:text-[13px]";
 
@@ -1750,21 +1755,21 @@ function EndCard({
     const extra = next.lockExtra ?? [];
     return (
       <div className="w-full max-w-md text-center">
-        <p className="t-micro text-sun uppercase">
+        <p className="font-mono text-[11px] tracking-[0.1em] text-red-lite uppercase">
           {next.lockTitle ?? "That was the free preview"}
         </p>
         {/* Phones get a compact card: the 16:9 frame is only ~200px tall there. */}
-        <p className="mt-1.5 line-clamp-2 text-[17px] leading-tight font-bold max-[419px]:mt-1 max-[419px]:line-clamp-1 max-[419px]:text-[15px] sm:mt-2 sm:line-clamp-none sm:t-app-h2">
+        <p className="mt-2 line-clamp-2 font-heading text-[18px] leading-tight font-semibold tracking-[-0.025em] max-[419px]:mt-1 max-[419px]:line-clamp-1 max-[419px]:text-[15px] sm:mt-3 sm:line-clamp-none sm:text-[26px]">
           {next.lockBody ??
             "Liked it? There’s a lot more where that came from."}
         </p>
-        <p className="mt-2 t-small text-white/75 max-sm:hidden">
+        <p className="mt-2 font-mono text-[11px] tracking-[0.04em] text-white/60 uppercase max-sm:hidden">
           Up next: {next.title}
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-2 max-[419px]:mt-2.5 sm:mt-4">
           {next.lockHref ? (
             <Button
-              variant="accent"
+              variant="red"
               href={next.lockHref}
               iconRight="arrow-right"
               className={clsx(
@@ -1776,7 +1781,7 @@ function EndCard({
             </Button>
           ) : next.lockAction ? (
             <Button
-              variant="accent"
+              variant="red"
               icon={next.lockAction.icon}
               onClick={next.lockAction.onClick}
               className={clsx(
@@ -1814,7 +1819,7 @@ function EndCard({
             variant="ghost"
             icon="refresh"
             onClick={onReplay}
-            className="text-white max-sm:hidden hf:bg-white/10"
+            className="text-white max-sm:hidden"
           >
             Replay
           </Button>
@@ -1848,7 +1853,7 @@ function EndCard({
   if (!next)
     return (
       <div className="max-w-md text-center">
-        <p className="t-app-h2 max-[419px]:text-[17px]">
+        <p className="font-heading text-[24px] leading-tight font-semibold tracking-[-0.025em] max-[419px]:text-[17px]">
           That&apos;s the last item in the course.
         </p>
         <p className="mt-2 t-small text-white/75 max-[419px]:hidden">
@@ -1899,9 +1904,9 @@ function EndCard({
               cy="32"
               r={r}
               fill="none"
-              stroke="#ffcf3f"
+              stroke="#e3061b"
               strokeWidth="5"
-              strokeLinecap="round"
+              strokeLinecap="butt"
               strokeDasharray={c}
               strokeDashoffset={c * (countdown / COUNTDOWN)}
               className="transition-[stroke-dashoffset] duration-1000 ease-linear"
@@ -1914,7 +1919,7 @@ function EndCard({
       )}
       <p
         className={clsx(
-          "t-micro text-sun uppercase",
+          "font-mono text-[11px] tracking-[0.1em] text-red-lite uppercase",
           countdown !== null && "mt-3 max-[419px]:mt-1.5",
         )}
         aria-live="polite"
@@ -1926,18 +1931,18 @@ function EndCard({
             : "Up next"}{" "}
         · {next.kindLabel}
       </p>
-      <p className="mt-1.5 line-clamp-2 t-app-h2 max-[419px]:mt-1 max-[419px]:line-clamp-1 max-[419px]:text-[16px]">
+      <p className="mt-2 line-clamp-2 font-heading text-[24px] leading-tight font-semibold tracking-[-0.025em] max-[419px]:mt-1 max-[419px]:line-clamp-1 max-[419px]:text-[16px]">
         {next.title}
       </p>
       {launching ? (
         <span
           aria-hidden
-          className="mt-4 size-8 animate-spin rounded-full border-4 border-white/25 border-t-sun max-[419px]:mt-2"
+          className="mt-4 size-8 animate-spin rounded-full border-2 border-white/20 border-t-red max-[419px]:mt-2"
         />
       ) : (
         <div className="mt-4 flex flex-wrap justify-center gap-2 max-[419px]:mt-2">
           <Button
-            variant="sun"
+            variant="cream"
             icon={go.icon}
             onClick={onPlayNow}
             className={END_BTN_XS}
@@ -1993,11 +1998,11 @@ export function ShortcutList({ className }: { className?: string }) {
       {SHORTCUTS.map(([k, v]) => (
         <div key={k} className="contents">
           <dt>
-            <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-[7px] bg-white px-1.5 font-sans text-[12px] font-bold shadow-soft ring-1 ring-ink/[0.06]">
+            <kbd className="inline-flex h-6 min-w-6 items-center justify-center px-1.5 font-mono text-[11px] font-medium ring-1 ring-line-strong ring-inset">
               {k}
             </kbd>
           </dt>
-          <dd className="self-center font-semibold text-ink/75">{v}</dd>
+          <dd className="self-center text-muted">{v}</dd>
         </div>
       ))}
     </dl>
@@ -2026,7 +2031,7 @@ function CtrlButton({
       aria-pressed={pressed}
       title={label}
       className={clsx(
-        "tap relative grid size-10 shrink-0 place-items-center rounded-full hf:bg-white/15 phone-s:size-10 coarse:size-11",
+        "tap relative grid size-10 shrink-0 place-items-center hf:bg-white/10 phone-s:size-10 coarse:size-11",
         className,
       )}
     >

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import clsx from "clsx";
 import { useIsClient } from "./overlay-core";
 import { useBottomUi, useIsPhone } from "./mobile";
+import { CREAM_SURFACE, INK_SURFACE } from "./surfaces";
 
 /* =============================================================================
    StickyActionBar (MOBILE_SPEC §1.8): the phone home of a page's primary action.
@@ -27,13 +28,14 @@ import { useBottomUi, useIsPhone } from "./mobile";
    Props
    - show?: boolean            explicit visibility (wins over `watch`)
    - watch?: RefObject         element whose visibility hides the bar (visible = it is off screen)
-   - title / sub / money       left context: 15px bold title + 13px sub, or Londrina 26px money
+   - title / sub / money       left context: 15px title + 12px mono sub, or an Anton money figure
    - context?: ReactNode       custom left side (instead of title/sub/money)
    - children                  actions (right). Primary: h-12 accent/ink pill; secondary: 44px.
    - avoidFooter = true        hides while a page <footer> is on screen
    - keyboard = "ride"         iOS: rides above the keyboard (--kb); "hide" = hides while typing
    - phoneOnly = true          false: also renders from 640px (centred, max 720px, beside the sidebar)
    - label                     accessible name of the region (default "Page actions")
+   - surface = "cream"         "ink" on theatre pages (the learn player's test bar)
    Layout contract: while visible it publishes --bottom-ui (main padding, toasts and
    scroll-padding clear it) and html[data-action-bar].
    ============================================================================= */
@@ -50,6 +52,7 @@ export function StickyActionBar({
   keyboard = "ride",
   phoneOnly = true,
   label = "Page actions",
+  surface = "cream",
   className,
 }: {
   show?: boolean;
@@ -63,6 +66,8 @@ export function StickyActionBar({
   keyboard?: "ride" | "hide";
   phoneOnly?: boolean;
   label?: string;
+  /** bar ground: cream (default) or ink (theatre pages) */
+  surface?: "cream" | "ink";
   className?: string;
 }) {
   const client = useIsClient();
@@ -106,11 +111,13 @@ export function StickyActionBar({
       inert={!visible}
       data-hidden={!visible || undefined}
       data-kbd-hide={keyboard === "hide" ? "" : undefined}
+      data-field={surface === "ink" ? "dark" : undefined}
       className={clsx(
-        "bottom-bar fixed z-40 flex min-h-16 items-center gap-3 rounded-card bg-white py-2.5 pr-2.5 pl-4 shadow-lift",
-        "right-[max(12px,var(--sar))] bottom-[calc(max(12px,var(--sab))+var(--kb,0px))] left-[max(12px,var(--sal))]",
-        "kbd:bottom-[calc(8px+var(--kb,0px))]",
-        !phoneOnly && "sm:right-6 sm:left-[calc(var(--app-main-left)+24px)] sm:mx-auto sm:max-w-[720px]",
+        "bottom-bar fixed z-40 flex min-h-16 items-center gap-3 rounded-none border-t border-line-strong pt-2.5 pr-[max(10px,var(--sar))] pb-[calc(10px+var(--sab))] pl-[max(16px,var(--sal))]",
+        surface === "ink" ? INK_SURFACE : CREAM_SURFACE,
+        "right-0 bottom-[var(--kb,0px)] left-0",
+        "kbd:pb-2.5",
+        !phoneOnly && "sm:right-6 sm:bottom-6 sm:left-[calc(var(--app-main-left)+24px)] sm:mx-auto sm:max-w-[720px] sm:border sm:pb-2.5 sm:shadow-xl",
         className,
       )}
     >
@@ -118,13 +125,13 @@ export function StickyActionBar({
         {context ??
           (money !== undefined ? (
             <>
-              <p className="font-display text-[26px] leading-none font-black tracking-[0.01em]">{money}</p>
-              {sub && <p className="mt-1 truncate text-[13px] leading-tight font-semibold text-ink/60">{sub}</p>}
+              <p className="font-display text-[28px] leading-none tracking-[0.01em]">{money}</p>
+              {sub && <p className="mt-1.5 truncate font-mono text-[11px] leading-tight tracking-[0.06em] text-muted uppercase">{sub}</p>}
             </>
           ) : (
             <>
-              {title && <p className="line-clamp-2 text-[15px] leading-tight font-bold">{title}</p>}
-              {sub && <p className="mt-0.5 truncate text-[13px] leading-tight font-semibold text-ink/60">{sub}</p>}
+              {title && <p className="line-clamp-2 text-[15px] leading-tight font-medium tracking-[-0.01em]">{title}</p>}
+              {sub && <p className="mt-1 truncate font-mono text-[11px] leading-tight tracking-[0.06em] text-muted uppercase">{sub}</p>}
             </>
           ))}
       </div>

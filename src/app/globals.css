@@ -1,55 +1,75 @@
 @import "tailwindcss";
 
 /* =============================================================================
-   TAMADA MEDIA DESIGN SYSTEM  (Style spec V2: Maxima system + Aardvark panels,
-   Krackerz seasoning). Read this header before styling a section.
+   TAMADA MEDIA DESIGN SYSTEM v2: "CINEMATIC EDITORIAL"
+   (Marlowe mood x Mobius structure. The v1 playful system is archived on the
+   git tag/branch design-v1-playful.) Read this header before styling anything.
 
-   CANVAS   One page background: cream #F5F0E3 + 7% ink dot grid (24px) on <body>.
-            Sections are TRANSPARENT. Never give a section bg-paper / bg-dots / bg-cream.
-            Colour lives in exactly one of:
-              (a) inset panel   .panel  (+ .panel-y)  Aardvark colour block, rounded
-              (b) full-bleed    .field                Maxima flat colour section
-              (c) canvas        .section-y            transparent on the cream canvas
-            Two full-bleed fields of different colours meet with <ScallopEdge>
-            (or a diagonal/wave), never a straight seam.
+   PALETTE  ink #0b0b0b · night #121110 · charcoal #1d1c1a · graphite #2a2826
+            cream #fdf8ee (page canvas) · cream-2 #f3ecdf · sand #e8dfcf · stone #d9d2c5
+            smoke #6b665e (muted text on cream) · ash #9a948a (muted text on dark)
+            red #e3061b = THE ONLY ACCENT (CTA, one word per headline, active marks).
+              red-deep #b30015 (white small text on it 6.4:1) · red-lite #ff4d5a
+              (small red text on ink/night, 6:1; plain red on ink is 4:1 = large text only).
+            Context tokens (flip inside .theatre): text-fg, text-muted, border-line,
+            border-line-strong, bg-surface. Prefer these over hard-coded greys.
 
-   GRID     .container-x  = one 1240px column, gutters 20/32/40px (<640/<1024/>=1024).
-            Every heading, CTA row, carousel first card and arrow sits on it.
-            .container-narrow = 880px column for centred text blocks.
+   TYPE     display = Anton (condensed caps, weight 400 only; synthesis is off)
+              .t-display-hero  giant hero word (MARLOWE)    .t-display-xxl / -xl / -l / -m / -s
+              .t-number        giant numerals (NumberMask)  .t-wordmark  footer TAMADA MEDIA®
+            statement / headings = Inter Tight
+              .t-statement-xl / -l / -m   Mobius big sentences (600, tight tracking)
+              .t-headline-xl / -l / -m    Mobius section titles ("Pricing", "Let's talk")
+            body / UI = Inter
+              .t-body-l / .t-body / .t-small / .t-micro / .t-caption
+              .t-label   tiny caps, wide tracking (nav, eyebrows, captions, buttons)
+              .t-timecode mono tabular caps (slates, clocks, durations)
 
-   RHYTHM   (mobile / >=768 / >=1024)
-            --section-y 80/112/160   canvas section padding (a section owns ONLY its
-                                     own padding: no margin-top + padding stacking)
-            --panel-inset 12/16/18   panel margin on all sides (adjacent panels touch
-                                     at one inset because vertical margins collapse)
-            --panel-pad-y 64/88/104  panel inner vertical padding (.panel-y)
-            --gap-eyebrow 12/16      eyebrow -> heading     (mt-eyebrow)
-            --gap-sub     16/20      heading -> body        (mt-sub)
-            --gap-block   40/64      heading block -> content (mt-head)
-            --gap-cta     32/48      content -> CTA row     (mt-cta)
-            Spacing utilities generated from these: py-section, px-gutter, m-inset,
-            mt-eyebrow, mt-sub, mt-head, mt-cta, py-panel (and gap-*, etc.).
+   SECTIONS Two grounds, alternating:
+              .theatre        ink section, cream text, cream focus ring, red selection
+              .theatre-night  same on #121110 (softer black for long reads / cards)
+              .ground-cream   cream section (the page default) · .ground-cream-2
+            Put data-field="dark" on any other dark block you build by hand.
+            Hairlines, never shadows: border-line (1px), .rule (top hairline).
 
-   TYPE     Maxima caps sections (Hero, WhyCards, FeatureStack, Testimonials,
-            TutorBanner, Pricing, FinalCta, curtains):
-              .t-display-xxl (hero h1) / .t-display-l (section h2) / .t-display-m (h3)
-            Aardvark chunky sections (Courses, How, Category, WhyStickers, FAQ, Footer):
-              .t-chunky-xl (h2) / .t-chunky-list (category rows) / .t-chunky-card
-            Body: .t-body-l / .t-body ; labels .t-label ; tags .t-tag ; notes .t-hand
-            One heading family per section. Eyebrow = <Eyebrow> capsule (13px caps).
-            h1-h3 balance automatically; p/li/blockquote use text-wrap: pretty.
+   GRID     .container-x     1240px column (inner pages, app)   gutter 20/32/40
+            .container-wide  full-bleed editorial column (Mobius) edge 16/24/32/40
+            .edit-grid       12 columns, --grid-gap 16/24/32, with column helpers
+              .col-label (left label column) .col-body (right half) .col-body-wide
+            .grid-lines      visible hairline columns overlay (Marlowe), --cols (default 4);
+                             or <GridLines /> from @/components/editorial.
 
-   SHAPE    Radii: rounded-tag (12) / rounded-img (16) / rounded-card (24) /
-            rounded-card-lg (36, 24 on mobile) / rounded-panel (40/64/120) / rounded-full.
-            FLAT: no ink borders and no hard offset shadows. Soft shadows only:
-            shadow-soft (resting UI on cream), shadow-photo (photo cards), shadow-lift (hover).
+   SHAPE    Square: radius 0-4px everywhere (Tailwind rounded-sm..4xl are clamped to
+            2-4px; rounded-full stays for pills, avatars, dots). No soft shadows:
+            shadow-soft / shadow-photo = hairline ring, overlays get one faint drop.
+            Buttons are rectangles: <Button> (editorial kit) or <Button> (app kit).
 
-   MOTION   Eases: ease-expo (reveals), ease-spring (springy hovers), ease-squash
-            (button bg squash), ease-ui (UI slides). GSAP tokens live in src/lib/motion.ts.
-            Hover rules apply only to fine pointers without reduced motion: use the
-            hf: / group-hf: variants or the .hover-* classes below.
-            NEVER put Tailwind rotate-/translate-/scale- classes on an element GSAP
-            animates (they compose). Set a resting tilt via inline style or a prop.
+   MOTION   Eases ease-expo (reveals), ease-cine (curtains, wipes), ease-ui (UI).
+            GSAP tokens: src/lib/motion.ts. Transform/opacity only. Every looping CSS
+            animation lives on an element with an `animate-*` class so AnimationGate
+            pauses it offscreen. Hover rules only for fine pointers (hf: / group-hf:).
+            Reduced motion = static. NEVER put Tailwind rotate-/translate-/scale-
+            classes on an element GSAP animates (they compose).
+
+   EDITORIAL KIT  src/components/editorial (barrel index.ts): SiteHeader, WordmarkFooter,
+            LiveClock, CinematicIntro, Button/ArrowLink, Label/Eyebrow/RedWords, GridLines,
+            Photo/ParallaxPhoto, BrandMark, SplitReveal, useGround. Public pages get the shell
+            through <SiteShell> (@/components/app). CSS hooks below: .site-header[data-tone|
+            data-solid|data-hidden], .site-menu, .footer-link, .footer-wordmark(-box), .live-clock,
+            .e-btn/.e-roll/.e-arrow (in @layer components: utilities override them), .faq-plus/
+            .faq-panel, .conv-field. Grounds for the header/clock tone: any .theatre /
+            .theatre-night / .ground-cream* or [data-ground="dark|light"] block; fixed overlays
+            opt out with [data-ground-ignore].
+   HOME     src/components/home (one file per section), copy in src/lib/content/home.ts.
+            Section CSS at the end of this file (HOME): .line-mask (height-neutral mask for
+            hand-built line reveals), .hero-*, .scatter-statement, .still-row(-outline), .chip,
+            .course-letter, .number-plate/.number-short/.number-wide (photo inside numerals via
+            mix-blend lighten; keep those photos under brightness .9), .tools-row, .director-quote,
+            .round-btn, .slide-photo/.slide-quote.
+
+   LEGACY   v1 tone NAMES (sun, mint, hotpink…) survive only as data on mock records and
+            as props (type Tone, src/lib/tone.ts); components map them onto this palette in
+            code (cardVariantFor, editorialTone). There are no bg-sun / text-mint utilities.
    ============================================================================= */
 
 @custom-variant hf {
@@ -106,74 +126,75 @@
     @slot;
   }
 }
+/* Inside a dark ground (.theatre / .theatre-night / [data-field=dark]):
+   className="text-ink on-dark:text-cream" */
+@custom-variant on-dark {
+  :where(.theatre, .theatre-night, [data-field="dark"]) & {
+    @slot;
+  }
+}
 
 @theme {
-  /* ---- Colour (spec V2 §2) -------------------------------------------- */
-  --color-cream: #f5f0e3;
-  --color-paper: #fffdf8;
-  --color-ink: #161616;
+  /* ---- Colour: editorial palette ------------------------------------------ */
+  --color-ink: #0b0b0b;
+  --color-night: #121110;
+  --color-charcoal: #1d1c1a;
+  --color-graphite: #2a2826;
+  --color-cream: #fdf8ee;
+  --color-cream-2: #f3ecdf;
+  --color-sand: #e8dfcf;
+  --color-stone: #d9d2c5;
+  --color-smoke: #6b665e;
+  --color-ash: #9a948a;
+  --color-paper: #fffcf6;
+  --color-red: #e3061b;
+  --color-red-deep: #b30015;
+  --color-red-lite: #ff4d5a;
 
-  --color-sun: #ffcf3f;
-  --color-butter: #fff2b7;
-  --color-tangerine: #f9a220;
-  --color-flame: #fd4401;
-  --color-hotpink: #ff008c;
-  --color-magenta: #fd48f2;
-  --color-blush: #ffdbfd;
-  --color-bubblegum: #f780d4;
-  --color-cyan: #a3f6f6;
-  --color-aqua: #1ce8ed;
-  --color-turquoise: #2cd1d0;
-  --color-blue: #2668fd;
-  --color-green: #00b351;
-  --color-mint: #a7eb98;
-  --color-forest: #163f10;
-  --color-lilac: #9b82e0;
-  --color-purple: #3b308f;
-  --color-indigo: #4f3fb0;
-  --color-berry: #670a2e; /* TEXT ONLY (tapes, arc titles) */
-  --color-lime: #c8ff2e; /* ONE accent per screen */
-  --color-olive: #857a23;
-  --color-blue-deep: #1f56d6; /* blue for SMALL text on cream/white (5.5:1); fills stay blue */
-  --color-hotpink-deep: #d6006f; /* pink FILL behind small white text (5.1:1); big fills stay hotpink */
-  --color-flame-deep: #c43400; /* flame FILL behind small white text (5.5:1) */
+  /* ---- Fonts (next/font variables set on <html> in layout.tsx) --------------- */
+  --font-display: var(--font-anton), "Anton", "Impact", "Arial Narrow", sans-serif;
+  --font-heading: var(--font-inter-tight), "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 
-  /* Legacy aliases (kept so older classes keep compiling; do not use for new work) */
-  --color-yellow: #ffcf3f; /* = sun */
-  --color-orange: #f9a220; /* = tangerine */
-  --color-tomato: #fd4401; /* = flame */
-  --color-maroon: #5c0d14; /* DEPRECATED as a fill: no maroon panels */
-  --color-wine: #7a1620; /* DEPRECATED */
-  --color-brick: #b8321c; /* DEPRECATED */
+  /* ---- Radii: square editorial shapes (rounded-full stays round) ------------- */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+  --radius-4xl: 4px;
+  --radius-tag: 2px;
+  --radius-img: 2px;
+  --radius-card: 4px;
+  --radius-card-lg: 4px;
 
-  /* ---- Fonts ------------------------------------------------------------ */
-  --font-display: var(--font-londrina), "Anton", "Arial Narrow", sans-serif;
-  --font-heading: var(--font-bricolage), "Arial Black", sans-serif;
-  --font-hand: var(--font-caveat), cursive;
-  --font-script: var(--font-yellowtail), cursive;
-  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  /* ---- Shadows: hairlines, not soft drops ---------------------------------------- */
+  --shadow-soft: 0 0 0 1px rgb(11 11 11 / 0.1);
+  --shadow-photo: 0 0 0 1px rgb(11 11 11 / 0.08);
+  --shadow-lift: 0 0 0 1px rgb(11 11 11 / 0.22);
+  --shadow-xs: 0 0 0 1px rgb(11 11 11 / 0.08);
+  --shadow-sm: 0 0 0 1px rgb(11 11 11 / 0.1);
+  --shadow-md: 0 0 0 1px rgb(11 11 11 / 0.1), 0 12px 28px -18px rgb(11 11 11 / 0.3);
+  --shadow-lg: 0 0 0 1px rgb(11 11 11 / 0.1), 0 18px 40px -22px rgb(11 11 11 / 0.35);
+  --shadow-xl: 0 0 0 1px rgb(11 11 11 / 0.1), 0 24px 56px -28px rgb(11 11 11 / 0.4);
+  --shadow-2xl: 0 0 0 1px rgb(11 11 11 / 0.12), 0 32px 72px -32px rgb(11 11 11 / 0.45);
 
-  /* ---- Radii / shadows -------------------------------------------------- */
-  --radius-tag: 0.75rem;
-  --radius-img: 1rem;
-  --radius-card: 1.5rem;
-  --radius-card-lg: clamp(1.5rem, 1rem + 1.6vw, 2.25rem);
-
-  --shadow-soft:
-    0 1px 0 rgb(22 22 22 / 0.06), 0 8px 24px -12px rgb(22 22 22 / 0.2);
-  --shadow-photo: 0 18px 40px -20px rgb(22 22 22 / 0.38);
-  --shadow-lift: 0 26px 48px -24px rgb(22 22 22 / 0.45);
-
-  /* ---- Eases ------------------------------------------------------------ */
+  /* ---- Eases ------------------------------------------------------------------- */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.57, 0.64, 1);
-  --ease-squash: cubic-bezier(0.34, 2.27, 0.64, 1);
+  --ease-cine: cubic-bezier(0.76, 0, 0.24, 1);
   --ease-ui: cubic-bezier(0.32, 0.72, 0, 1);
-  --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* legacy springs, toned down */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-squash: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-elastic: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* ---- Animations ------------------------------------------------------- */
-  --animate-marquee: marquee 35s linear infinite;
-  --animate-marquee-rev: marquee 35s linear infinite reverse;
+  /* ---- Animations (every loop pauses offscreen: AnimationGate) ------------------ */
+  --animate-marquee-slow: marquee 70s linear infinite;
+  --animate-rec: rec-blink 1.4s steps(1, end) infinite;
+  --animate-scroll-cue: scroll-cue 2.2s var(--ease-cine) infinite;
   --animate-float: float 5s ease-in-out infinite;
   --animate-spin-slow: spin 18s linear infinite;
   --animate-wiggle: wiggle 0.55s var(--ease-spring);
@@ -186,6 +207,34 @@
       transform: translateX(-50%);
     }
   }
+  @keyframes rec-blink {
+    0%,
+    55% {
+      opacity: 1;
+    }
+    56%,
+    100% {
+      opacity: 0.15;
+    }
+  }
+  @keyframes scroll-cue {
+    0% {
+      transform: scaleY(0);
+      transform-origin: top;
+    }
+    45% {
+      transform: scaleY(1);
+      transform-origin: top;
+    }
+    55% {
+      transform: scaleY(1);
+      transform-origin: bottom;
+    }
+    100% {
+      transform: scaleY(0);
+      transform-origin: bottom;
+    }
+  }
   /* float animates the independent `translate` property so it never fights a
      resting rotation set inline or by GSAP (transform). */
   @keyframes float {
@@ -194,60 +243,68 @@
       translate: 0 0;
     }
     50% {
-      translate: 0 -10px;
+      translate: 0 -8px;
     }
   }
   @keyframes wiggle {
     0%,
     100% {
       rotate: 0deg;
-      scale: 1;
     }
-    30% {
-      rotate: -6deg;
-      scale: 1.06;
+    40% {
+      rotate: -3deg;
     }
-    60% {
-      rotate: 4deg;
-      scale: 1.04;
+    70% {
+      rotate: 2deg;
     }
   }
 }
 
-/* Responsive tokens referenced by utilities through `@theme inline`. */
+/* Responsive + context tokens referenced by utilities through `@theme inline`. */
 @theme inline {
   --spacing-gutter: var(--gutter);
+  --spacing-edge: var(--edge);
   --spacing-section: var(--section-y);
   --spacing-inset: var(--panel-inset);
   --spacing-panel: var(--panel-pad-y);
   --spacing-eyebrow: var(--gap-eyebrow);
   --spacing-sub: var(--gap-sub);
-  --spacing-head: var(
-    --gap-block
-  ); /* mt-head (NOT "block": would clobber .inline-block) */
+  --spacing-head: var(--gap-block); /* mt-head (NOT "block": would clobber .inline-block) */
   --spacing-cta: var(--gap-cta);
+  --spacing-grid: var(--grid-gap);
   --radius-panel: var(--panel-radius);
+  /* context colours: flip inside .theatre / .theatre-night */
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-surface: var(--surface);
 }
 
 :root {
   --container: 1240px;
   --container-narrow: 880px;
+  --container-wide: 1760px;
   --gutter: 20px;
-  --gutter-in-panel: 14px; /* max(14px, gutter - panel-inset) */
-  --section-y: 80px;
+  --edge: 16px;
+  --grid-gap: 16px;
+  --gutter-in-panel: 14px;
+  --section-y: 88px;
   --panel-inset: 12px;
   --panel-pad-y: 64px;
-  --panel-radius: clamp(2.5rem, 8.3vw, 7.5rem);
-  --gap-eyebrow: 12px;
+  --panel-radius: 0px;
+  --gap-eyebrow: 14px;
   --gap-sub: 16px;
   --gap-block: 40px;
   --gap-cta: 32px;
-  --scallop: 48px; /* scallop bump diameter */
-  --radius-panel: var(
-    --panel-radius
-  ); /* legacy rounded-[var(--radius-panel)] */
-  --header-offset: 96px;
-  --dot: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  --header-offset: 72px;
+
+  /* context colours (cream ground) */
+  --fg: var(--color-ink);
+  --muted: var(--color-smoke);
+  --line: rgb(11 11 11 / 0.12);
+  --line-strong: rgb(11 11 11 / 0.28);
+  --surface: var(--color-cream);
 
   /* Safe areas + phone layout contract (MOBILE_SPEC §1.8, §1.11, §1.16).
      --bottom-ui : height of the fixed bottom UI on screen (AppDock / StickyActionBar /
@@ -268,7 +325,7 @@
   :root {
     --gutter: 16px;
     --gutter-in-panel: 12px;
-    --section-y: 64px;
+    --section-y: 72px;
     --panel-inset: 8px;
     --panel-pad-y: 56px;
     --gap-block: 32px;
@@ -277,15 +334,17 @@
 @media (min-width: 640px) {
   :root {
     --gutter: 32px;
+    --edge: 24px;
+    --grid-gap: 24px;
     --gutter-in-panel: 16px;
-    --section-y: 112px;
+    --section-y: 120px;
     --panel-inset: 16px;
     --panel-pad-y: 88px;
   }
 }
 @media (min-width: 768px) {
   :root {
-    --gap-eyebrow: 16px;
+    --gap-eyebrow: 18px;
     --gap-sub: 20px;
     --gap-block: 64px;
     --gap-cta: 48px;
@@ -294,11 +353,18 @@
 @media (min-width: 1024px) {
   :root {
     --gutter: 40px;
+    --edge: 32px;
+    --grid-gap: 32px;
     --gutter-in-panel: 22px;
-    --section-y: 160px;
+    --section-y: 168px;
     --panel-inset: 18px;
     --panel-pad-y: 104px;
-    --scallop: 72px;
+    --header-offset: 88px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --edge: 40px;
   }
 }
 
@@ -310,6 +376,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Anton ships one weight: never fake bold / italic on it */
+    font-synthesis: none;
     /* Lenis stops (curtains, menus) clip overflow: keep the scrollbar gutter so
        the layout never reflows by the scrollbar width when scrolling is paused. */
     scrollbar-gutter: stable;
@@ -318,24 +386,25 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
+  /* Scrollbar colours follow the ground (SiteHeader sets html[data-scrollbar]; the learn
+     player and other theatre-only screens are dark throughout). */
+  html {
+    scrollbar-color: rgb(11 11 11 / 0.3) var(--color-cream);
+  }
+  html[data-scrollbar="dark"] {
+    scrollbar-color: rgb(253 248 238 / 0.28) var(--color-ink);
+  }
   /* A fullscreen element (the learn player) must not keep a reserved gutter strip. */
   html:has(:fullscreen) {
     scrollbar-gutter: auto;
   }
   body {
     font-family: var(--font-sans);
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    font-weight: 400;
+    letter-spacing: -0.006em;
     overflow-x: clip;
-    /* The single page canvas: cream + faint dot grid. */
+    /* The page canvas: flat cream (no dot grid any more). */
     background-color: var(--color-cream);
-    background-image: radial-gradient(
-      circle,
-      var(--dot) 1.1px,
-      transparent 1.6px
-    );
-    background-size: 24px 24px;
-    background-position: 12px 12px;
   }
   h1,
   h2,
@@ -350,23 +419,21 @@
     text-wrap: pretty;
   }
   .font-display {
-    font-weight: 900;
-  }
-  .font-heading {
-    font-variation-settings: "opsz" 96;
+    font-weight: 400;
+    letter-spacing: 0;
   }
   ::selection {
-    background: var(--color-sun);
-    color: var(--color-ink);
+    background: var(--color-red);
+    color: #fff;
   }
   :focus-visible {
-    outline: 3px solid var(--color-blue);
+    outline: 2px solid var(--color-red);
     outline-offset: 3px;
-    border-radius: 6px;
+    border-radius: 0;
   }
-  /* On blue / dark fields put data-field="dark" on the section. */
-  [data-field="dark"] :focus-visible {
-    outline-color: var(--color-sun);
+  /* Dark grounds: cream focus ring (red on ink is only 4:1 next to red CTAs). */
+  :where(.theatre, .theatre-night, [data-field="dark"]) :focus-visible {
+    outline-color: var(--color-cream);
   }
   main:focus {
     outline: none;
@@ -399,11 +466,18 @@
   margin-inline: auto;
   padding-inline: max(var(--gutter), var(--sal)) max(var(--gutter), var(--sar));
 }
-/* Canvas section padding. */
+/* Editorial full-width column (Mobius): content runs to a small page edge. */
+@utility container-wide {
+  width: 100%;
+  max-width: calc(var(--container-wide) + 2 * var(--edge));
+  margin-inline: auto;
+  padding-inline: max(var(--edge), var(--sal)) max(var(--edge), var(--sar));
+}
+/* Section padding. */
 @utility section-y {
   padding-block: var(--section-y);
 }
-/* Aardvark inset colour panel: margin on all sides, huge radius, clips blobs. */
+/* Inset block (v1 "panel"): kept for older pages, now square. */
 @utility panel {
   position: relative;
   isolation: isolate;
@@ -414,9 +488,6 @@
 @utility panel-y {
   padding-block: var(--panel-pad-y);
 }
-/* Inside a .panel the column keeps the SAME page edge as canvas sections: the
-   panel's own inset is subtracted from the gutter (x=40 at 1280, x=100 at 1440).
-   Below 640px a 14px floor keeps text off the panel's rounded edge. */
 :where(.panel) .container-x {
   padding-inline: var(--gutter-in-panel);
   max-width: calc(var(--container) + 2 * var(--gutter-in-panel));
@@ -425,223 +496,341 @@
   padding-inline: var(--gutter-in-panel);
   max-width: calc(var(--container-narrow) + 2 * var(--gutter-in-panel));
 }
-/* Maxima full-bleed colour field. */
+/* Full-bleed colour field. */
 @utility field {
   position: relative;
   isolation: isolate;
 }
-/* Large white/cream content panel inside a field (FAQ, footer). */
+/* Large content panel inside a field (legacy FAQ, footer). */
 @utility panel-content {
   position: relative;
-  border-radius: 1.5rem;
+  border-radius: 4px;
   padding: 24px;
-  background: #fff;
+  background: var(--color-paper);
   @media (min-width: 768px) {
-    border-radius: 2.25rem;
     padding: 56px;
   }
 }
 
+/* ---- Grounds ------------------------------------------------------------------ */
+/* Dark "theatre": ink, cream text, cream focus ring, red selection, hairlines flip. */
+@utility theatre {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-ink);
+  color: var(--color-cream);
+  color-scheme: dark;
+  --fg: var(--color-cream);
+  --muted: var(--color-ash);
+  --line: rgb(253 248 238 / 0.14);
+  --line-strong: rgb(253 248 238 / 0.32);
+  --surface: var(--color-ink);
+}
+@utility theatre-night {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--color-night);
+  color: var(--color-cream);
+  color-scheme: dark;
+  --fg: var(--color-cream);
+  --muted: var(--color-ash);
+  --line: rgb(253 248 238 / 0.14);
+  --line-strong: rgb(253 248 238 / 0.32);
+  --surface: var(--color-night);
+}
+/* Cream grounds (reset the context tokens when nested inside a theatre). */
+@utility ground-cream {
+  position: relative;
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  color-scheme: light;
+  --fg: var(--color-ink);
+  --muted: var(--color-smoke);
+  --line: rgb(11 11 11 / 0.12);
+  --line-strong: rgb(11 11 11 / 0.28);
+  --surface: var(--color-cream);
+}
+@utility ground-cream-2 {
+  position: relative;
+  background-color: var(--color-cream-2);
+  color: var(--color-ink);
+  color-scheme: light;
+  --fg: var(--color-ink);
+  --muted: var(--color-smoke);
+  --line: rgb(11 11 11 / 0.13);
+  --line-strong: rgb(11 11 11 / 0.3);
+  --surface: var(--color-cream-2);
+}
+:where(.theatre, .theatre-night) ::selection {
+  background: var(--color-red);
+  color: #fff;
+}
+:where(.theatre, .theatre-night) :where(input, textarea, select)::placeholder {
+  color: rgb(253 248 238 / 0.45);
+}
+
+/* ---- Editorial grid ----------------------------------------------------------- */
+@utility edit-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--grid-gap);
+}
+/* left label column (Mobius "Our Services") */
+@utility col-label {
+  grid-column: 1 / -1;
+  @media (min-width: 768px) {
+    grid-column: 1 / span 4;
+  }
+  @media (min-width: 1024px) {
+    grid-column: 1 / span 3;
+  }
+}
+/* right content half (Mobius statements start at the middle) */
+@utility col-body {
+  grid-column: 1 / -1;
+  @media (min-width: 768px) {
+    grid-column: 5 / -1;
+  }
+  @media (min-width: 1024px) {
+    grid-column: 7 / -1;
+  }
+}
+@utility col-body-wide {
+  grid-column: 1 / -1;
+  @media (min-width: 768px) {
+    grid-column: 5 / -1;
+  }
+}
+/* Visible hairline columns (Marlowe). Absolute overlay: put it inside a
+   positioned section, optionally inside .container-wide for edge alignment.
+   style={{ "--cols": 3 }} sets the column count. */
+@utility grid-lines {
+  --cols: 4;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
+  background-size: calc(100% / var(--cols)) 100%;
+  background-repeat: repeat-x;
+  border-right: 1px solid var(--line);
+}
+/* Top hairline rule. */
+@utility rule {
+  border-top: 1px solid var(--line);
+}
+@utility rule-b {
+  border-bottom: 1px solid var(--line);
+}
+
 /* ============================================================================= TYPE */
+/* ---- Display: Anton condensed caps ---------------------------------------------- */
+@utility t-display-hero {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(5.5rem, 1rem + 19vw, 24rem);
+  line-height: 0.8;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
 @utility t-display-xxl {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(3.25rem, 1.6rem + 7vw, 8.5rem);
-  line-height: 0.86;
-  letter-spacing: 0.005em;
+  font-weight: 400;
+  font-size: clamp(3.5rem, 1.2rem + 9.5vw, 11rem);
+  line-height: 0.84;
+  letter-spacing: -0.005em;
   text-transform: uppercase;
-  /* phone-s (MOBILE_SPEC §1.2) */
   @media (max-width: 359.98px) {
-    font-size: 2.75rem;
+    font-size: 3rem;
   }
+}
+@utility t-display-xl {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(3rem, 1.2rem + 6.6vw, 8rem);
+  line-height: 0.86;
+  text-transform: uppercase;
 }
 @utility t-display-l {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(2.75rem, 1.4rem + 4.6vw, 6rem);
-  line-height: 0.88;
-  letter-spacing: 0.005em;
-  text-transform: uppercase;
-  /* phone-s (MOBILE_SPEC §1.2) */
-  @media (max-width: 359.98px) {
-    font-size: 2.5rem;
-  }
-}
-@utility t-display-m {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(2rem, 1.2rem + 2.4vw, 3.75rem);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 1.25rem + 4.4vw, 5.75rem);
   line-height: 0.9;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.002em;
   text-transform: uppercase;
-  /* phone-s (MOBILE_SPEC §1.2) */
-  @media (max-width: 359.98px) {
-    font-size: 1.875rem;
-  }
-}
-@utility t-chunky-xl {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-variation-settings:
-    "opsz" 96,
-    "wdth" 100;
-  font-size: clamp(2.75rem, 1.5rem + 4.5vw, 5rem);
-  line-height: 0.86;
-  letter-spacing: -0.04em;
-  /* phone-s (MOBILE_SPEC §1.2) */
-  @media (max-width: 359.98px) {
-    font-size: 2.5rem;
-  }
-}
-@utility t-chunky-list {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-variation-settings:
-    "opsz" 96,
-    "wdth" 100;
-  font-size: clamp(2.5rem, 1.1rem + 5vw, 5.25rem);
-  line-height: 0.92;
-  letter-spacing: -0.045em;
-  /* phone-s (MOBILE_SPEC §1.2) */
   @media (max-width: 359.98px) {
     font-size: 2.25rem;
   }
 }
-@utility t-chunky-card {
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-variation-settings:
-    "opsz" 96,
-    "wdth" 100;
-  font-size: clamp(1.5rem, 1.2rem + 0.6vw, 1.875rem);
+@utility t-display-m {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.875rem, 1.1rem + 2.6vw, 3.75rem);
   line-height: 0.92;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  @media (max-width: 359.98px) {
+    font-size: 1.75rem;
+  }
 }
-@utility t-sticker {
+@utility t-display-s {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.375rem, 1.05rem + 1.1vw, 2.125rem);
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+/* Giant numerals (NumberMask, stats). */
+@utility t-number {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(9rem, 2rem + 30vw, 30rem);
+  line-height: 0.78;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums;
+}
+/* Footer wordmark TAMADA MEDIA®: fills the width (two words ~ 15.6vw). */
+@utility t-wordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15.4vw;
+  line-height: 0.8;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---- Statements + headlines: Inter Tight ------------------------------------------ */
+@utility t-statement-xl {
   font-family: var(--font-heading);
-  font-weight: 800;
-  font-variation-settings:
-    "opsz" 96,
-    "wdth" 100;
-  font-size: clamp(1.5rem, 0.8rem + 3.4vw, 4.5rem);
-  line-height: 0.88;
+  font-weight: 600;
+  font-size: clamp(2rem, 1rem + 3.4vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.038em;
+}
+@utility t-statement-l {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: clamp(1.625rem, 1.05rem + 1.9vw, 2.875rem);
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+}
+@utility t-statement-m {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+}
+@utility t-headline-xl {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: clamp(2.75rem, 1.2rem + 5.2vw, 7rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+  @media (max-width: 359.98px) {
+    font-size: 2.5rem;
+  }
+}
+@utility t-headline-l {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: clamp(2rem, 1.1rem + 3vw, 4rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+@utility t-headline-m {
+  font-family: var(--font-heading);
+  font-weight: 650;
+  font-size: clamp(1.375rem, 1.1rem + 0.9vw, 1.875rem);
+  line-height: 1.08;
   letter-spacing: -0.03em;
 }
-@utility t-service {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: clamp(1.5rem, 1.1rem + 1vw, 2.1rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
+
+/* ---- Body / UI: Inter --------------------------------------------------------------- */
 @utility t-body-l {
-  font-weight: 500;
-  font-size: clamp(1.0625rem, 0.95rem + 0.45vw, 1.25rem);
-  line-height: 1.3;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  font-size: clamp(1.0625rem, 0.97rem + 0.35vw, 1.25rem);
+  line-height: 1.45;
+  letter-spacing: -0.012em;
 }
 @utility t-body {
-  font-weight: 500;
-  font-size: clamp(1rem, 0.96rem + 0.15vw, 1.0625rem);
-  line-height: 1.5;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  font-size: clamp(0.9375rem, 0.92rem + 0.1vw, 1rem);
+  line-height: 1.55;
+  letter-spacing: -0.006em;
 }
+@utility t-small {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.003em;
+}
+@utility t-micro {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+@utility t-caption {
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+/* Tiny caps, wide tracking: nav, eyebrows, captions, button labels. */
 @utility t-label {
   font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   @media (min-width: 768px) {
-    font-size: 16px;
+    font-size: 11.5px;
   }
+}
+@utility t-timecode {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11.5px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 @utility t-tag {
   font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 12.5px;
+  font-weight: 500;
+  font-size: 12px;
   line-height: 1;
-}
-@utility t-eyebrow {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 13px;
-  line-height: 1;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-@utility t-hand {
-  font-family: var(--font-hand);
-  font-weight: 600;
-  font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.5rem);
-  line-height: 1.05;
-}
-@utility t-hand-lg {
-  font-family: var(--font-hand);
-  font-weight: 600;
-  font-size: clamp(1.5rem, 1.2rem + 0.8vw, 1.875rem);
-  line-height: 1.05;
+  letter-spacing: 0;
 }
 
 /* ============================================================================= DECOR */
-/* Scalloped cloud edge (see <ScallopEdge>): a row of circles of diameter --s. */
-@utility scallop {
-  --s: var(--scallop);
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: calc(var(--s) / 2 + 1px);
-  pointer-events: none;
-  background-repeat: repeat-x;
-  background-size: var(--s) calc(var(--s) / 2 + 1px);
-}
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
   }
 }
-@utility text-outline {
-  -webkit-text-stroke: 2px var(--color-ink);
-}
-/* DEPRECATED (Krackerz v1). Kept compiling; do not use in new work. */
-@utility shadow-hard {
-  box-shadow: 4px 4px 0 var(--color-ink);
-}
-@utility shadow-hard-sm {
-  box-shadow: 2px 3px 0 var(--color-ink);
-}
-/* DEPRECATED: the dot canvas is now on <body>; this is a no-op so old call
-   sites stop creating seams. Remove it from your section. */
-@utility bg-dots {
-  background-color: transparent;
-}
-
-/* Clouds (see <Cloud>): gentle horizontal sway, paused offscreen. */
-@keyframes cloud-sway {
-  from {
-    translate: var(--cloud-from, 3vw) 0;
-  }
-  to {
-    translate: var(--cloud-to, -3vw) 0;
-  }
-}
-.cloud-drift {
-  animation: cloud-sway var(--cloud-dur, 24s) ease-in-out infinite alternate;
-  animation-delay: var(--cloud-delay, 0s);
-}
-[data-offscreen] .cloud-drift,
-.cloud-drift[data-offscreen] {
-  animation-play-state: paused;
-}
 /* Any decorative animate-* utility pauses while off screen (AnimationGate.tsx toggles the
    attribute), and the long marquee tracks get their own GPU layer while visible. */
 [class*="animate-"][data-offscreen] {
   animation-play-state: paused !important;
 }
-.animate-marquee:not([data-offscreen]),
-.animate-marquee-rev:not([data-offscreen]) {
+.animate-marquee-slow:not([data-offscreen]) {
   will-change: transform;
+}
+/* Media frames: neutral placeholder tone while photos load (no layout shift). */
+.media-frame {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-charcoal);
+}
+/* Film grain-free dark vignette for text over photos (bottom-up). */
+.scrim-b {
+  background-image: linear-gradient(to top, rgb(11 11 11 / 0.82), rgb(11 11 11 / 0.35) 45%, transparent 75%);
 }
 
 /* ============================================================================= REVEALS (no FOUC) */
@@ -653,11 +842,8 @@ html[data-motion="ok"] [data-reveal]:not([data-revealed]),
 html[data-motion="ok"] [data-reveal-stagger]:not([data-revealed]) > * {
   opacity: 0;
 }
-html[data-motion="ok"]
-  [data-reveal]:not([data-reveal-armed]):not([data-revealed]),
-html[data-motion="ok"]
-  [data-reveal-stagger]:not([data-reveal-armed]):not([data-revealed])
-  > * {
+html[data-motion="ok"] [data-reveal]:not([data-reveal-armed]):not([data-revealed]),
+html[data-motion="ok"] [data-reveal-stagger]:not([data-reveal-armed]):not([data-revealed]) > * {
   animation: reveal-failsafe 0.6s ease 4.5s forwards;
 }
 @keyframes reveal-failsafe {
@@ -673,17 +859,12 @@ html[data-motion="ok"]
 html[data-motion="ok"] [data-enter]:not([data-entered]) {
   opacity: 0;
 }
-html[data-motion="ok"]
-  [data-enter]:not([data-enter-armed]):not([data-entered]) {
+html[data-motion="ok"] [data-enter]:not([data-enter-armed]):not([data-entered]) {
   animation: reveal-failsafe 0.6s ease 4.5s forwards;
 }
-/* SplitText line masks: room for descenders, script swashes and tilted boxes.
-   HEIGHT-NEUTRAL: sibling masks' vertical margins would COLLAPSE (-0.12/-0.14em
-   -> only -0.14em per line break), so a split heading used to grow ~0.12em per
-   line and shrink back on revert, changing the page height mid-scroll and forcing
-   a full ScrollTrigger.refresh (400-800ms long tasks). Now each mask only has a
-   bottom margin (= both paddings, nothing to collapse with) and a relative
-   -0.12em offset puts the text exactly where the unsplit line sits. */
+/* SplitText line masks: HEIGHT-NEUTRAL (each mask only has a bottom margin equal to
+   both paddings and a relative -0.12em offset), so splitting never changes the page
+   height mid-scroll (no ScrollTrigger.refresh long tasks). */
 .split-mask {
   position: relative;
   top: -0.12em;
@@ -692,276 +873,193 @@ html[data-motion="ok"]
 }
 
 /* ============================================================================= BUTTONS */
-/* <ArrowButton>: split pill = label pill + round arrow chip (spec V2 §5, hover H1/H1b). */
-.btn {
-  --btn-h: 48px;
-  --btn-bg: var(--color-hotpink);
-  --btn-fg: #fff;
-  --btn-chip-bg: var(--btn-bg);
-  --btn-chip-fg: var(--btn-fg);
-  position: relative;
-  display: inline-flex;
-  align-items: stretch;
-  gap: 4px;
-  height: var(--btn-h);
-  max-width: 100%;
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1;
-  letter-spacing: -0.01em;
-  color: var(--btn-fg);
-  white-space: nowrap;
-  border-radius: 999px;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    translate 0.3s var(--ease-spring),
-    scale 0.15s var(--ease-ui);
-}
-@media (min-width: 768px) {
-  .btn {
-    --btn-h: 52px;
-    font-size: 16px;
-  }
-}
-.btn[data-size="sm"] {
-  --btn-h: 42px;
-  font-size: 14px;
-}
-.btn[data-size="lg"] {
-  --btn-h: 56px;
-  font-size: 17px;
-}
-/* compact: label pill only (no chip), 48px at every width (mobile header CTA) */
-.btn[data-compact],
-.btn[data-compact][data-size] {
-  --btn-h: 48px;
-  font-size: 15px;
-}
-.btn[data-compact] .btn-label {
-  padding-inline: 20px;
-}
-/* narrow phones (320-374px): a tighter pill so lockup + CTA + menu fit the row */
-@media (max-width: 374.98px) {
-  .btn[data-compact] .btn-label {
-    padding-inline: 14px;
-  }
-}
-/* phone-s (320-359): 44px pill, 14px label so lockup + CTA + menu fit 320 (MOBILE_SPEC §1.6) */
-@media (max-width: 359.98px) {
-  .btn[data-compact],
-  .btn[data-compact][data-size] {
-    --btn-h: 44px;
-    font-size: 14px;
-  }
-}
-.btn-label {
+/* In @layer components so Tailwind utilities (hidden, lg:flex, w-full, px-*) can override them. */
+@layer components {
+/* Editorial <Button> (src/components/editorial/Button.tsx): a rectangle with a caps
+   label that rolls on hover. data-variant: red (default) | ink | cream | outline | ghost.
+   data-size: sm | md (default) | lg. Inside .theatre, outline/ghost flip to cream. */
+.e-btn {
+  --b-h: 48px;
+  --b-bg: var(--color-red);
+  --b-fg: #fff;
+  --b-bd: transparent;
+  --b-bg-h: var(--color-red-deep);
+  --b-fg-h: #fff;
   position: relative;
   isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
-  padding-inline: 24px;
-  border-radius: 999px;
+  gap: 14px;
+  height: var(--b-h);
+  max-width: 100%;
+  padding-inline: 26px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 11.5px;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--b-fg);
+  background: var(--b-bg);
+  border: 1px solid var(--b-bd);
+  border-radius: 0;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.35s var(--ease-ui),
+    color 0.35s var(--ease-ui),
+    border-color 0.35s var(--ease-ui),
+    scale 0.12s var(--ease-ui);
 }
-.btn[data-size="sm"] .btn-label {
-  padding-inline: 16px;
+@media (min-width: 768px) {
+  .e-btn {
+    --b-h: 52px;
+    font-size: 12px;
+  }
 }
-.btn-label::before,
-.btn-label::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  background: var(--btn-bg);
+.e-btn[data-size="sm"] {
+  --b-h: 40px;
+  padding-inline: 18px;
+  font-size: 11px;
+}
+.e-btn[data-size="lg"] {
+  --b-h: 60px;
+  padding-inline: 34px;
+  font-size: 12.5px;
+}
+.e-btn[data-full] {
+  display: flex;
+  width: 100%;
+}
+.e-btn[data-variant="ink"] {
+  --b-bg: var(--color-ink);
+  --b-fg: var(--color-cream);
+  --b-bg-h: var(--color-graphite);
+  --b-fg-h: var(--color-cream);
+}
+.e-btn[data-variant="cream"] {
+  --b-bg: var(--color-cream);
+  --b-fg: var(--color-ink);
+  --b-bg-h: #fff;
+  --b-fg-h: var(--color-ink);
+}
+.e-btn[data-variant="outline"] {
+  --b-bg: transparent;
+  --b-fg: var(--fg);
+  --b-bd: var(--line-strong);
+  --b-bg-h: var(--fg);
+  --b-fg-h: var(--surface);
+}
+.e-btn[data-variant="ghost"] {
+  --b-bg: transparent;
+  --b-fg: var(--fg);
+  --b-bd: transparent;
+  --b-bg-h: transparent;
+  --b-fg-h: var(--color-red);
+  padding-inline: 0;
+}
+.e-btn:active {
+  scale: 0.98;
+}
+.e-btn:disabled,
+.e-btn[aria-disabled="true"] {
+  opacity: 0.45;
   pointer-events: none;
 }
-.btn-label::before {
-  inset: 0;
-  border-radius: inherit;
-  transition: opacity 0.25s var(--ease-ui);
-}
-.btn-label::after {
-  /* Maxima bubble (bubble variant only) */
-  display: none;
-  left: 50%;
-  top: 50%;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  translate: -50% -50%;
-  scale: 0.5;
-  opacity: 0;
-  transition:
-    scale 0.25s var(--ease-ui),
-    opacity 0.2s var(--ease-ui);
-}
-.btn[data-bubble] .btn-label::after {
-  display: block;
-}
-.btn-roll {
+.e-roll {
   display: block;
   overflow: hidden;
-  height: 1.25em;
-  line-height: 1.25;
-  padding-inline: 0.04em;
-  margin-inline: -0.04em;
+  height: 1.3em;
+  line-height: 1.3;
 }
-.btn-roll-track {
+.e-roll > span {
   display: flex;
   flex-direction: column;
-  transition: translate 0.32s cubic-bezier(0.59, 1, 0.88, 1.01);
+  transition: translate 0.45s var(--ease-expo);
 }
-.btn-roll-track > span {
+.e-roll > span > span {
   display: block;
-  height: 1.25em;
+  height: 1.3em;
 }
-.btn-chip {
-  position: relative;
+.e-btn svg {
+  width: 14px;
+  height: 14px;
   flex: none;
-  display: grid;
-  place-items: center;
-  width: var(--btn-h);
-  border-radius: 999px;
-  background: var(--btn-chip-bg);
-  color: var(--btn-chip-fg);
-  overflow: hidden;
+  transition: translate 0.45s var(--ease-expo);
 }
-.btn-chip > svg {
-  grid-area: 1 / 1;
-  width: 40%;
-  height: 40%;
-  transition: translate 0.38s var(--ease-spring);
-}
-.btn-chip > svg + svg {
-  translate: -160% 0;
-}
-.btn[data-full] {
-  display: flex;
-  width: 100%;
-}
-.btn[data-full] .btn-label {
-  flex: 1;
-  justify-content: flex-start;
-}
-.btn:active {
-  scale: 0.96;
+@media (hover: hover) and (pointer: fine) {
+  .e-btn:hover {
+    background-color: var(--b-bg-h);
+    color: var(--b-fg-h);
+    border-color: var(--b-bg-h);
+  }
+  .e-btn[data-variant="ghost"]:hover {
+    border-color: transparent;
+  }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .btn:hover {
-    translate: 0 -2px;
-  }
-  .btn:not([data-bubble]):hover .btn-label::before {
-    animation: btn-squash 0.42s var(--ease-ui);
-  }
-  .btn:hover .btn-roll-track {
+  .e-btn:hover .e-roll > span,
+  .e-arrow:hover .e-roll > span {
     translate: 0 -50%;
   }
-  .btn:hover .btn-chip > svg:first-child {
-    translate: 160% 0;
-  }
-  .btn:hover .btn-chip > svg + svg {
-    translate: 0 0;
-  }
-  .btn[data-bubble]:hover .btn-label::before {
-    opacity: 0;
-  }
-  .btn[data-bubble]:hover .btn-label::after {
-    scale: 1;
-    opacity: 1;
-    transition:
-      scale 0.42s var(--ease-spring),
-      opacity 0.15s var(--ease-ui);
+  .e-btn:hover svg {
+    translate: 4px 0;
   }
 }
-@keyframes btn-squash {
-  0% {
-    scale: 1;
+
+/* Text arrow link (Mobius "Get started →"): <ArrowLink>. */
+.e-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: inherit;
+}
+.e-arrow svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  transition: translate 0.45s var(--ease-expo);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .e-arrow:hover svg {
+    translate: 5px 0;
   }
-  38% {
-    scale: 1.05 1.09;
-  }
-  70% {
-    scale: 0.99 0.98;
-  }
-  100% {
-    scale: 1;
-  }
 }
-/* Variants */
-.btn[data-variant="flame"] {
-  --btn-bg: var(--color-flame);
-  --btn-fg: #fff;
-}
-.btn[data-variant="blue"] {
-  --btn-bg: var(--color-blue);
-  --btn-fg: #fff;
-}
-.btn[data-variant="ink"] {
-  --btn-bg: var(--color-ink);
-  --btn-fg: var(--color-cream);
-}
-.btn[data-variant="paper"] {
-  --btn-bg: #fff;
-  --btn-fg: var(--color-ink);
-}
-.btn[data-variant="forest"] {
-  --btn-bg: var(--color-forest);
-  --btn-fg: var(--color-mint);
-}
-.btn[data-variant="sun"] {
-  --btn-bg: var(--color-sun);
-  --btn-fg: var(--color-ink);
 }
 
 /* ============================================================================= HOVER KIT */
-/* The base transition declarations live in @layer components, so a Tailwind
-   transition-* utility on the same element wins. If an element needs .tap/.hover-*
-   AND a transition-* utility, list the property in the utility, e.g.
-   transition-[color,background-color,scale]. The :hover/:active state rules stay
-   unlayered so they beat resting utilities such as shadow-photo. */
+/* Transitions are declared always (so leaving a hover animates); the moving part only
+   applies to fine pointers without reduced motion. Touch gets .tap feedback. All of
+   these use the independent translate/rotate/scale properties.
+   GSAP RULE: GSAP writes inline `translate/rotate/scale: none` on every element it
+   tweens a transform on, which cancels these classes on that element. Put hover
+   classes on a WRAPPER that GSAP never animates. */
 @layer components {
-  /* Transitions are declared always (so leaving a hover animates); the moving part
-     only applies to fine pointers without reduced motion. Touch gets .tap feedback.
-     All of these use the independent translate/rotate/scale properties, so they
-     compose with inline resting tilts (style={{transform}}) on the SAME element.
-     GSAP RULE: GSAP 3.15 writes inline `translate/rotate/scale: none` on every
-     element it tweens a transform on, which cancels these classes on that
-     element. Put hover classes on a WRAPPER that GSAP never animates, never on a
-     Parallax inner layer, a custom GSAP target or a [data-enter] target.
-     Exception: <Reveal>/data-reveal targets (rise/scale/pop/card/card-sm) clear
-     those inline props when the reveal completes, so hover classes work there
-     once revealed, provided the element has no resting Tailwind
-     rotate/translate/scale class of its own. */
-  .hover-lift,
-  .hover-tilt,
-  .hover-tilt-r,
-  .hover-pop {
+  .hover-lift {
     transition:
-      translate 0.35s var(--ease-spring),
-      rotate 0.35s var(--ease-spring),
-      scale 0.35s var(--ease-spring),
+      translate 0.45s var(--ease-expo),
+      rotate 0.45s var(--ease-expo),
+      scale 0.45s var(--ease-expo),
       box-shadow 0.35s var(--ease-ui);
   }
   .hover-zoom {
-    transition: scale 0.6s var(--ease-expo);
-  }
-  .hover-icon {
-    transition: scale 0.25s var(--ease-spring);
-  }
-  .hover-icon > svg {
-    transition: rotate 0.25s var(--ease-spring);
+    transition: scale 0.9s var(--ease-expo);
   }
   .tap {
     -webkit-tap-highlight-color: transparent;
     transition: scale 0.12s var(--ease-ui);
   }
 }
-/* State rules stay unlayered so they beat resting utilities (shadow-photo etc.). */
 .tap:active {
-  scale: 0.97;
+  scale: 0.98;
 }
-/* Underline draw (H3): grows from the left, retracts to the right. */
+/* Underline draw: grows from the left, retracts to the right (1px editorial rule). */
 .link-draw {
   position: relative;
   text-decoration: none;
@@ -971,122 +1069,44 @@ html[data-motion="ok"]
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -0.12em;
-  height: 2px;
-  border-radius: 2px;
+  bottom: -0.15em;
+  height: 1px;
   background: currentColor;
   transform: scaleX(0);
   transform-origin: right center;
-  transition: transform 0.35s var(--ease-expo);
+  transition: transform 0.45s var(--ease-expo);
 }
 @media (hover: hover) and (pointer: fine) {
   .link-draw:hover::before,
-  .link-draw:focus-visible::before {
+  .link-draw:focus-visible::before,
+  .link-draw[aria-current="page"]::before {
     transform: scaleX(1);
     transform-origin: left center;
   }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .hover-lift:hover {
-    translate: 0 -6px;
+    translate: 0 -4px;
     box-shadow: var(--shadow-lift);
-  }
-  .hover-tilt:hover {
-    translate: 0 -6px;
-    rotate: -2deg;
-  }
-  .hover-tilt-r:hover {
-    translate: 0 -6px;
-    rotate: 2deg;
-  }
-  .hover-pop:hover {
-    scale: 1.04;
-  }
-  .hover-wiggle:hover {
-    animation: wiggle 0.55s var(--ease-spring);
   }
   :where(.hover-zoom-parent):hover .hover-zoom,
   .hover-zoom:hover {
-    scale: 1.06;
-  }
-  .hover-icon:hover {
-    scale: 1.12;
-  }
-  .hover-icon:hover > svg {
-    rotate: -8deg;
-  }
-  /* Tami (H13): wink + bounce when the Mascot (interactive) or its .group is hovered */
-  .tami-hover:hover,
-  :where(.group):hover .tami-hover {
-    animation: tami-bounce 0.6s var(--ease-spring);
-  }
-  .tami-hover:hover .tami-eye-r,
-  :where(.group):hover .tami-hover .tami-eye-r {
-    animation: tami-blink 0.24s ease-in-out;
+    scale: 1.045;
   }
 }
 .tami-eye-r {
   transform-box: fill-box;
   transform-origin: center;
 }
-@keyframes tami-blink {
-  50% {
-    transform: scaleY(0.1);
-  }
-}
-@keyframes tami-bounce {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  35% {
-    translate: 0 -5px;
-  }
-}
 
 /* ============================================================================= CURSOR */
-/* Maxima-style CSS cursor (no JS follower). Text fields keep the native cursor. */
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  html {
-    cursor:
-      url("/cursor/arrow.svg") 5 3,
-      auto;
-  }
-  a[href],
-  button:not(:disabled),
-  [role="button"],
-  label[for],
-  summary,
-  select {
-    cursor:
-      url("/cursor/hand.svg") 12 3,
-      pointer;
-  }
-  /* the element-qualified selectors outrank `button:not(:disabled)` above, so drag
-     handles built as buttons still show the grab hand */
-  [data-cursor="grab"],
-  button[data-cursor="grab"]:not(:disabled),
-  a[href][data-cursor="grab"] {
-    cursor:
-      url("/cursor/grab.svg") 16 16,
-      grab;
-  }
-  [data-cursor="grab"]:active,
-  button[data-cursor="grab"]:not(:disabled):active,
-  a[href][data-cursor="grab"]:active,
-  [data-cursor="grabbing"],
-  button[data-cursor="grabbing"]:not(:disabled) {
-    cursor:
-      url("/cursor/grabbing.svg") 16 16,
-      grabbing;
-  }
-  input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not(
-      [type="button"]
-    ),
-  textarea,
-  [contenteditable="true"] {
-    cursor: text;
-  }
+/* Native cursors (the v1 cartoon cursor is retired). Drag surfaces opt in. */
+[data-cursor="grab"] {
+  cursor: grab;
+}
+[data-cursor="grab"]:active,
+[data-cursor="grabbing"] {
+  cursor: grabbing;
 }
 
 /* ============================================================================= ROUTE CURTAIN */
@@ -1103,19 +1123,14 @@ html[data-motion="ok"]
   pointer-events: auto;
   visibility: visible;
 }
-/* ONE compositor layer while active (the sheet): the page behind jumps thousands
-   of px (scroll reset / restore) and must never leave an unpainted cream frame.
-   The disc, Tami, label and clouds are painted INTO the sheet's layer (no
-   will-change of their own), so the very first covered frame (e.g. browser Back)
-   always rasterises sheet + art together instead of a bare cream sheet. */
+/* ONE compositor layer while active (the sheet): the page behind jumps thousands of
+   px (scroll reset / restore) and must never leave an unpainted frame. */
 .route-curtain[data-active] [data-curtain-sheet] {
   will-change: transform;
 }
-/* The route curtain lasts ~1s: its clouds move with the GSAP cover/reveal only.
-   No CSS sway loop (it would tick while the curtain is hidden, and a composited
-   loop would give each cloud its own layer again). */
-.route-curtain .cloud-drift {
-  animation: none;
+/* the slate's REC dot blinks only while the curtain is up */
+.route-curtain[data-active] .curtain-rec {
+  animation: rec-blink 1.4s steps(1, end) infinite;
 }
 
 /* ============================================================================= LENIS */
@@ -1146,17 +1161,18 @@ html.lenis body {
 }
 
 /* ============================================================================= APP UI */
-/* Inner app pages (dashboards, builder, admin, player). Same canvas, same palette,
-   calmer type scale. Components live in src/components/app (see its index.ts).
-   Page titles: .t-display-m (PageHeader). Card/section titles: .t-app-h2 / .t-app-h3.
-   Big numbers: .t-stat. Motion: .app-enter (fade + 8px rise, 260ms) only. */
+/* Inner app pages (dashboards, builder, admin, player). Same tokens, calmer scale.
+   Components live in src/components/app (see its index.ts).
+   Shell: ink sidebar + cream canvas (DashboardShell). Page titles: big Inter Tight
+   (PageHeader). Card/section titles: .t-app-h2 / .t-app-h3. Big numbers: .t-stat (Anton).
+   Labels: .t-label. Values / counts / dates: font-mono. Motion: .app-enter only. */
 
 /* Dashboard sidebar offset for fixed bars portalled to <body> (sticky save bars, bulk bars).
-   DashboardShell writes --app-sb on <html> (272px open, 92px collapsed) while it is mounted.
+   DashboardShell writes --app-sb on <html> (248px open, 72px collapsed) while it is mounted.
    --app-main-left = left edge of the content column: 0 below lg, the sidebar width from lg.
    e.g. style={{ left: "var(--app-main-left)", right: 0 }} */
 :root {
-  --app-sb: 272px;
+  --app-sb: 248px;
   --app-main-left: 0px;
 }
 @media (width >= 64rem) {
@@ -1166,42 +1182,28 @@ html.lenis body {
 }
 @utility t-app-h2 {
   font-family: var(--font-heading);
-  font-weight: 800;
-  font-variation-settings: "opsz" 96;
-  font-size: clamp(1.25rem, 1.12rem + 0.45vw, 1.5rem);
-  line-height: 1.05;
-  letter-spacing: -0.025em;
+  font-weight: 600;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5625rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
 @utility t-app-h3 {
   font-family: var(--font-heading);
-  font-weight: 800;
-  font-variation-settings: "opsz" 96;
+  font-weight: 600;
   font-size: 17px;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
+  line-height: 1.18;
+  letter-spacing: -0.022em;
 }
 @utility t-stat {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(2.125rem, 1.8rem + 1vw, 2.75rem);
-  line-height: 0.9;
-  letter-spacing: 0.01em;
-  /* phone-s (MOBILE_SPEC §1.2) */
+  font-weight: 400;
+  font-size: clamp(2.5rem, 1.95rem + 1.5vw, 3.75rem);
+  line-height: 0.88;
+  letter-spacing: 0.004em;
+  font-variant-numeric: lining-nums;
   @media (max-width: 359.98px) {
-    font-size: 1.875rem;
+    font-size: 2.125rem;
   }
-}
-@utility t-small {
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 1.4;
-  letter-spacing: -0.005em;
-}
-@utility t-micro {
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
 }
 @keyframes app-in {
   from {
@@ -1232,7 +1234,7 @@ html.lenis body {
   }
 }
 .skeleton {
-  background: linear-gradient(90deg, rgb(22 22 22 / 0.06) 25%, rgb(22 22 22 / 0.11) 37%, rgb(22 22 22 / 0.06) 63%);
+  background: linear-gradient(90deg, rgb(11 11 11 / 0.05) 25%, rgb(11 11 11 / 0.1) 37%, rgb(11 11 11 / 0.05) 63%);
   background-size: 400% 100%;
   animation: skeleton-sheen 1.4s ease infinite;
 }
@@ -1244,7 +1246,7 @@ html[data-session] [data-session-out] {
 /* Thin, calm scrollbars for app panels (sidebar, tables, drawers). */
 .app-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgb(22 22 22 / 0.18) transparent;
+  scrollbar-color: rgb(11 11 11 / 0.18) transparent;
 }
 /* Overflow cue for a scrolling list (sidebar nav): soft fades at whichever
    edge still has content past it. data-fade-top / data-fade-bottom are set by
@@ -1261,15 +1263,8 @@ html[data-session] [data-session-out] {
 .scroll-fade[data-fade-bottom] {
   --fade-b: 36px;
 }
-/* Small blue text on cream/white: --color-blue is 4.1:1 at 13px, so eyebrows
-   and labels coloured text-blue switch to the deeper AA-safe blue on their own. */
-.t-eyebrow.text-blue,
-.t-label.text-blue {
-  color: var(--color-blue-deep);
-}
 /* Scroll lock (Modal/Drawer): html keeps its stable scrollbar gutter, which a
-   fixed backdrop cannot paint. Dim the canvas itself to match the backdrop
-   (ink 45% over cream) so no bright strip shows at the right edge. */
+   fixed backdrop cannot paint. Dim the canvas itself to match the backdrop. */
 html {
   transition: background-color 0.2s var(--ease-ui);
 }
@@ -1299,11 +1294,10 @@ input[type="search"]::-webkit-search-results-decoration {
 [data-overflow="both"] {
   mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
 }
-/* DataTable: the pinned actions cell is opaque, so it repaints the row hover tint
-   (cream/60 over white) itself. Selected rows set an opaque butter in the component. */
+/* DataTable: the pinned actions cell is opaque, so it repaints the row hover tint itself. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .dt-row:not([data-selected]):hover > .dt-sticky {
-    background-color: #f9f6ee;
+    background-color: color-mix(in srgb, var(--surface) 97.5%, #0b0b0b);
   }
 }
 
@@ -1441,12 +1435,417 @@ html[data-kbd] [data-kbd-hide] {
   translate: 0 -100%;
 }
 .app-topbar[data-scrolled] {
-  box-shadow: 0 1px 0 rgb(22 22 22 / 0.06);
+  box-shadow: 0 1px 0 rgb(11 11 11 / 0.08);
 }
 /* Tablets (640-1023px): the DashboardShell shows a 72px icon rail; fixed bars portalled to
    <body> line up with the content column through --app-main-left (see APP UI above). */
 @media (min-width: 640px) and (max-width: 1023.98px) {
   html[data-app-shell] {
-    --app-main-left: calc(92px + var(--sal));
+    --app-main-left: calc(72px + var(--sal));
+  }
+}
+
+/* ============================================================================= EDITORIAL COMPONENTS */
+/* Small CSS hooks for src/components/editorial (layout lives in Tailwind classes). */
+/* Site header (SiteHeader.tsx): data-tone = the ground under it (useGround), data-solid =
+   scrolled (paints that ground + a hairline), data-hidden = scrolled down. */
+.site-header {
+  color: var(--color-ink);
+  border-bottom: 1px solid transparent;
+  transition:
+    translate 0.5s var(--ease-ui),
+    background-color 0.35s var(--ease-ui),
+    color 0.35s var(--ease-ui),
+    border-color 0.35s var(--ease-ui);
+}
+.site-header[data-tone="dark"] {
+  color: var(--color-cream);
+}
+.site-header[data-solid] {
+  background-color: var(--color-cream);
+  border-bottom-color: rgb(11 11 11 / 0.1);
+}
+.site-header[data-solid][data-tone="dark"] {
+  background-color: var(--color-ink);
+  border-bottom-color: rgb(253 248 238 / 0.12);
+}
+.site-header[data-hidden] {
+  translate: 0 -100%;
+}
+.site-header[data-tone="dark"] :focus-visible {
+  outline-color: var(--color-cream);
+}
+/* outline / ghost buttons inside the header follow its tone */
+.site-header {
+  --fg: var(--color-ink);
+  --surface: var(--color-cream);
+  --line-strong: rgb(11 11 11 / 0.28);
+}
+.site-header[data-tone="dark"] {
+  --fg: var(--color-cream);
+  --surface: var(--color-ink);
+  --line-strong: rgb(253 248 238 / 0.32);
+}
+/* current section: a red hairline under the nav label */
+.site-header .link-draw[aria-current="page"]::before {
+  transform: scaleX(1);
+  background: var(--color-red);
+}
+/* BrandMark tone="auto": the closest [data-tone] picks the visible logo */
+[data-tone="dark"] .brand-auto-dark,
+[data-tone="light"] .brand-auto-light {
+  opacity: 0;
+}
+/* Full-screen menu (below 1024px): drops from the top, links rise in sequence. */
+.site-menu {
+  translate: 0 -100%;
+  visibility: hidden;
+  transition:
+    translate 0.75s var(--ease-cine),
+    visibility 0s linear 0.75s;
+}
+.site-menu[data-open] {
+  translate: 0 0;
+  visibility: visible;
+  transition:
+    translate 0.75s var(--ease-cine),
+    visibility 0s;
+}
+.site-menu .menu-item {
+  opacity: 0;
+  translate: 0 48px;
+  transition:
+    opacity 0.4s var(--ease-ui),
+    translate 0.4s var(--ease-ui);
+}
+.site-menu[data-open] .menu-item {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity 0.6s var(--ease-ui) calc(0.28s + var(--i, 0) * 0.055s),
+    translate 0.9s var(--ease-expo) calc(0.28s + var(--i, 0) * 0.055s);
+}
+@media (hover: hover) and (pointer: fine) {
+  .site-menu .menu-item:hover > span:first-child {
+    color: var(--color-red);
+  }
+}
+/* Footer: big Inter Tight links (Mobius) + the full-width wordmark. */
+.footer-link {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: clamp(1.375rem, 1.05rem + 0.9vw, 1.875rem);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  transition:
+    color 0.3s var(--ease-ui),
+    translate 0.45s var(--ease-expo);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .footer-link:hover {
+    color: var(--color-red-lite);
+    translate: 6px 0;
+  }
+}
+/* "TAMADA MEDIA" + a small ® spans its container exactly: Anton caps measure 5.53em for
+   TAMADA MEDIA (-0.012em tracking) + 0.3em for the superscript ® = 5.86em. Container
+   query units, so the scrollbar never pushes it past the edge. */
+.footer-wordmark-box {
+  container-type: inline-size;
+}
+.footer-wordmark {
+  font-size: calc(100cqw / 5.76);
+}
+.footer-wordmark sup {
+  font-size: 0.3em;
+  vertical-align: top;
+  position: relative;
+  top: 0.08em;
+  margin-left: 0.04em;
+}
+/* Live clock (fixed, bottom-right): sits above content, below overlays. */
+.live-clock {
+  font-variant-numeric: tabular-nums;
+}
+/* FaqPlus: the plus turns into a cross. */
+.faq-plus {
+  transition: rotate 0.45s var(--ease-expo);
+}
+[aria-expanded="true"] > .faq-plus,
+[aria-expanded="true"] .faq-plus {
+  rotate: 45deg;
+}
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s var(--ease-expo);
+}
+.faq-panel[data-open] {
+  grid-template-rows: 1fr;
+}
+.faq-panel > div {
+  overflow: hidden;
+}
+/* Conversational form fields: underline inputs that sit inside a sentence. */
+.conv-field {
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: transparent;
+  border-radius: 0;
+  color: inherit;
+  padding: 0.1em 0.15em;
+  font: inherit;
+  letter-spacing: inherit;
+  outline: none;
+  transition: border-color 0.3s var(--ease-ui);
+}
+.conv-field::placeholder {
+  color: color-mix(in srgb, currentColor 35%, transparent);
+}
+.conv-field:focus {
+  border-bottom-color: var(--color-red);
+}
+select.conv-field {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 1.1em;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.55em) 55%,
+    calc(100% - 0.3em) 55%;
+  background-size: 0.25em 0.25em;
+  background-repeat: no-repeat;
+}
+
+/* ============================================================================= HOME (src/components/home) */
+/* Height-neutral line mask for hand-built line reveals (hero): the inner block can rise
+   from yPercent 100 without clipping Anton's caps. */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.1em;
+  margin-block: -0.1em;
+}
+/* 01 Hero */
+.hero-statement {
+  font-size: clamp(1.75rem, 0.62rem + 1.62vw, 2.45rem);
+  line-height: 0.94;
+  letter-spacing: 0.002em;
+}
+.hero-title {
+  container-type: inline-size;
+  line-height: 0.8;
+}
+.hero-title-main {
+  /* PREMIERE fills its column: Anton caps measure ~3.62em for the word */
+  font-size: calc(100cqw / 3.62);
+  line-height: 0.8;
+  letter-spacing: -0.01em;
+}
+.hero-title-top {
+  font-size: calc(100cqw / 3.62 * 0.56);
+  line-height: 0.86;
+}
+@media (min-width: 1024px) {
+  .hero-title {
+    padding-bottom: clamp(14px, 2.4vh, 30px);
+  }
+  .hero-portrait {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 20%, #000 76%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 22%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 20%, #000 76%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 22%);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+}
+.hero-vignette {
+  background:
+    radial-gradient(ellipse 70% 80% at 56% 38%, transparent 35%, rgb(11 11 11 / 0.55) 72%, rgb(11 11 11 / 0.92) 100%),
+    linear-gradient(to top, rgb(11 11 11 / 0.82), rgb(11 11 11 / 0.2) 38%, transparent 55%),
+    linear-gradient(to bottom, rgb(11 11 11 / 0.6), transparent 26%);
+}
+/* 02 Scattered statement: the first line starts on the second column (Mobius) */
+@media (min-width: 1024px) {
+  .scatter-statement {
+    text-indent: 22%;
+  }
+}
+/* text-indent inherits into inline-blocks (it would indent every travelling word) */
+.scatter-statement [data-word] {
+  text-indent: 0;
+}
+/* 03 Giant passing words */
+.still-row {
+  font-family: var(--font-display);
+  font-size: clamp(5.5rem, 2rem + 17vw, 19rem);
+  line-height: 0.8;
+  text-transform: uppercase;
+  color: var(--color-cream);
+  pointer-events: none;
+}
+.still-row-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-cream);
+}
+/* 04 Course: pill chips + the current group's letter in red */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding-inline: 14px;
+  border-radius: 999px;
+  background: var(--color-cream-2);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+.course-letter {
+  color: rgb(11 11 11 / 0.12);
+  transition: color 0.6s var(--ease-ui);
+}
+.course-group.is-current .course-letter {
+  color: var(--color-red);
+}
+/* 05 Numerals with a photo inside (mix-blend lighten over the photo) */
+.number-plate {
+  background: var(--surface);
+  color: var(--color-ink);
+  mix-blend-mode: lighten;
+  line-height: 0.8;
+  letter-spacing: -0.015em;
+  padding: 0.04em 0.02em 0.07em;
+  white-space: nowrap;
+}
+.number-short {
+  font-size: clamp(10rem, 2rem + 34vw, 32rem);
+}
+.number-wide {
+  font-size: clamp(6rem, 1rem + 25vw, 25rem);
+}
+@media (max-width: 639.98px) {
+  .number-short {
+    font-size: 60vw;
+  }
+  .number-wide {
+    font-size: 37vw;
+  }
+}
+/* 06 Tools table rows: red rule + nudge on hover */
+.tools-row {
+  position: relative;
+  transition: background-color 0.35s var(--ease-ui);
+}
+.tools-name {
+  transition: translate 0.5s var(--ease-expo), color 0.35s var(--ease-ui);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tools-row:hover {
+    background-color: rgb(253 248 238 / 0.04);
+  }
+  .tools-row:hover .tools-name {
+    color: var(--color-red-lite);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .tools-row:hover .tools-name {
+    translate: 10px 0;
+  }
+}
+/* 07 Director quote */
+.director-quote {
+  font-size: clamp(2.75rem, 1rem + 5.4vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: 0.002em;
+}
+/* 09 Reflections slider */
+.round-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  transition:
+    background-color 0.3s var(--ease-ui),
+    color 0.3s var(--ease-ui),
+    border-color 0.3s var(--ease-ui);
+}
+@media (hover: hover) and (pointer: fine) {
+  .round-btn:hover {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-cream);
+  }
+}
+.slide-photo {
+  opacity: 0;
+  scale: 1.06;
+  transition:
+    opacity 0.7s var(--ease-ui),
+    scale 1.2s var(--ease-expo);
+}
+.slide-photo[data-active] {
+  opacity: 1;
+  scale: 1;
+}
+.slide-quote {
+  opacity: 0;
+  translate: 0 18px;
+  transition:
+    opacity 0.2s var(--ease-ui),
+    translate 0.3s var(--ease-ui);
+}
+.slide-quote[data-active] {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity 0.5s var(--ease-ui) 0.24s,
+    translate 0.9s var(--ease-expo) 0.24s;
+}
+/* 13 Conversational form: selects keep to one line inside the sentence */
+.conv-sentence select.conv-field {
+  max-width: 100%;
+}
+
+/* ============================================================================= PAGES: films · about · journal · contact */
+/* Owned by src/components/{films,about,journal,contact}. Hooks only; layout is Tailwind. */
+/* /films canvas (FilmsCanvas.tsx): captions + a dim on the other stills while one is
+   hovered (fine pointers only); everything quiet while dragging. */
+.films-stage[data-dragging] {
+  cursor: grabbing;
+}
+.film-cap {
+  opacity: 0;
+  translate: 0 6px;
+  transition:
+    opacity 0.35s var(--ease-ui),
+    translate 0.5s var(--ease-expo);
+}
+.film-img {
+  transition: scale 1s var(--ease-expo);
+}
+.film-dim {
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-ui);
+}
+.film-btn:focus-visible .film-cap {
+  opacity: 1;
+  translate: 0 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .films-stage:not([data-dragging]) .film-btn:hover .film-cap {
+    opacity: 1;
+    translate: 0 0;
+  }
+  .films-stage:not([data-dragging]):has(.film-btn:hover) .film-btn:not(:hover) .film-dim {
+    opacity: 0.62;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .films-stage:not([data-dragging]) .film-btn:hover .film-img {
+    scale: 1.04;
   }
 }

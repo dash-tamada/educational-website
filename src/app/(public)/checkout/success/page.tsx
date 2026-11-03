@@ -12,7 +12,8 @@ export default async function Page({ searchParams }: PageProps<"/checkout/succes
   const cookie = await getDemoCookieValue();
   return (
     <DemoSessionSeed value={cookie}>
-      <SiteShell>
+      {/* the order page is the dark "premiere" moment: it opens flush on a dark ground */}
+      <SiteShell flush headerLight>
         <CheckoutSuccess orderId={order} />
       </SiteShell>
     </DemoSessionSeed>

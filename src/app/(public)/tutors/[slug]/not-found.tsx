@@ -12,7 +12,7 @@ export default async function NotFound() {
   const cookie = await getDemoCookieValue();
   return (
     <DemoSessionSeed value={cookie}>
-      <SiteShell>
+      <SiteShell flush headerLight>
         <Suspense>
           <TutorFallback />
         </Suspense>

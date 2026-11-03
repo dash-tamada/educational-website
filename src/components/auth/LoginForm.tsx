@@ -10,6 +10,7 @@ import {
   landingFor,
 } from "@/lib/mock/extra/auth";
 import { DEMO_USERS } from "@/lib/demo/session";
+import { SITE } from "@/lib/content/site";
 import { PasswordInput } from "./PasswordInput";
 import { GoogleGlyph, OrDivider } from "./AuthSplit";
 import { enterToNext, focusField } from "./fields";
@@ -49,7 +50,7 @@ export function LoginForm({ next }: { next: string | null }) {
     const user = !e.email ? findSeedUserByEmail(email) : null;
     if (!e.email && user?.status === "suspended")
       e.form =
-        "This account is suspended. Write to support@tamada.demo and a human will look into it.";
+        `This account is suspended. Write to ${SITE.email} and a human will look into it.`;
     setErrors(e);
     if (e.email) return focusField(emailRef.current);
     if (e.password) return focusField(pwRef.current);
@@ -92,7 +93,7 @@ export function LoginForm({ next }: { next: string | null }) {
           <p
             id="login-form-error"
             role="alert"
-            className="rounded-tag bg-flame/10 px-4 py-3 text-[14px] font-semibold text-[#a32d00]"
+            className="border-l-2 border-red bg-red/[0.06] px-4 py-3 text-[14px] leading-snug font-medium text-red-deep"
           >
             {errors.form}
           </p>
@@ -122,7 +123,7 @@ export function LoginForm({ next }: { next: string | null }) {
           labelAction={
             <Link
               href="/forgot-password"
-              className="hit rounded-full text-blue-deep underline-offset-2 hf:underline"
+              className="hit link-draw text-[12.5px] text-muted transition-colors hf:text-fg"
             >
               Forgot password?
             </Link>
@@ -158,7 +159,7 @@ export function LoginForm({ next }: { next: string | null }) {
           iconRight={busy === "email" ? undefined : "arrow-right"}
           className="mt-1"
         >
-          {busy === "email" ? "Logging you in…" : "Log me in"}
+          {busy === "email" ? "Logging you in…" : "Log in"}
         </Button>
       </form>
 
@@ -175,11 +176,12 @@ export function LoginForm({ next }: { next: string | null }) {
         {busy !== "google" && <GoogleGlyph className="size-5" />}
         Continue with Google
       </Button>
-      <p className="mt-3 text-center text-[13px] text-ink/70">
-        Demo tip: try{" "}
+      <p className="mt-4 text-[13px] leading-snug text-muted">
+        <span className="t-label mr-2 text-fg">Demo tip</span>
+        Try{" "}
         <button
           type="button"
-          className="hit font-bold text-ink underline decoration-ink/25 underline-offset-2 hf:decoration-ink"
+          className="hit link-draw font-mono text-[12.5px] text-fg"
           onClick={() => {
             setEmail("arjun.rao@tamada.demo");
             setPassword("teachmore");

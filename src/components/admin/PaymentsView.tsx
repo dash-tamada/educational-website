@@ -8,15 +8,13 @@ import {
   BarChart,
   Button,
   Card,
-  CardHeader,
   Donut,
   EmptyState,
-  Icon,
   PageHeader,
+  Section,
   Segmented,
   StatGrid,
   StatTile,
-  type IconName,
 } from "@/components/app";
 import { useDb } from "@/lib/demo/store";
 import {
@@ -33,6 +31,8 @@ import {
   type Coupon,
   type Payout,
 } from "@/lib/mock";
+import { Idx, MonoMeta } from "@/components/tutor/editorial";
+import { CodeSlate, PanelLabel, WideSection } from "./ledgerKit";
 import {
   COUPON_STATE_META,
   MoneyTabs,
@@ -44,9 +44,11 @@ import {
 } from "./shared";
 
 /* =============================================================================
-   /admin/payments: the money overview. Revenue trend, where a rupee goes,
-   what sells, which coupons work, and the state of the payout run. Orders,
-   coupons and payouts each have their own page behind the Money tabs.
+   /admin/payments (design system v2): the money overview as a Mobius ledger.
+   KPIs, then numbered sections: revenue trend, where a rupee goes, what sells,
+   best sellers (awards table), coupons at work, and the payout run (the page's
+   one ink panel). Orders, coupons and payouts each have their own page behind
+   the Money tabs.
    ============================================================================= */
 
 type Range = "7d" | "30d" | "12m";
@@ -160,10 +162,12 @@ export function PaymentsView() {
   return (
     <div className="app-enter">
       <PageHeader
-
-        eyebrow="Money"
-        eyebrowTone="purple"
-        title="Where the money goes."
+        eyebrow="Control room · Money"
+        title={
+          <>
+            Where the <em>money</em> goes.
+          </>
+        }
         description="Revenue, the split between tax, tutors and Tamada, what sells, and which codes pull their weight."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
@@ -171,35 +175,29 @@ export function PaymentsView() {
         ]}
         actions={
           <>
-            <Button
-              href="/admin/orders"
-              variant="accent"
-              iconRight="arrow-right"
-            >
-              All orders
-            </Button>
-            <Button href="/admin/coupons?new=1" variant="secondary" icon="plus">
+            <Button href="/admin/coupons?new=1" variant="outline" icon="plus">
               New coupon
+            </Button>
+            <Button href="/admin/orders" variant="red" iconRight="arrow-right">
+              All orders
             </Button>
           </>
         }
       />
       <MoneyTabs current="overview" />
 
-      <StatGrid className="mb-4 md:mb-6">
+      <StatGrid>
         <StatTile
+          index="01"
           label="Revenue · Sep"
           value={formatINR(sep, { compact: true })}
-          tone="mint"
-          icon="wallet"
           delta={stats.revenueDelta}
           hint="vs August · GST incl. · sample analytics"
         />
         <StatTile
+          index="02"
           label="Tamada keeps · Sep"
           value={formatINR(sepPlatform, { compact: true })}
-          tone="lilac"
-          icon="layers"
           hint={
             <>
               after GST and tutor shares{" "}
@@ -208,208 +206,204 @@ export function PaymentsView() {
           }
         />
         <StatTile
+          index="03"
           label="Refunds to check"
           value={stats.refundRequests}
-          tone={stats.refundRequests ? "blush" : "white"}
-          icon="refresh"
           hint={
             stats.refundRequests ? "Learners waiting on you" : "Nobody waiting"
           }
           href="/admin/orders?status=refund_requests"
         />
         <StatTile
+          index="04"
           label="Live coupons"
           value={liveCoupons}
-          tone="sun"
-          icon="ticket"
           hint={`${plural(coupons.length, "code")} in total`}
           href="/admin/coupons"
         />
       </StatGrid>
 
-      <div className="grid gap-4 md:gap-6 xl:grid-cols-3">
-        <Card
-          as="section"
-          className="xl:col-span-2"
-          aria-labelledby="rev-title"
+      <div className="mt-14 space-y-14 md:mt-20 md:space-y-20">
+        <Section
+          index="01"
+          label="Revenue"
+          note={`${formatINR(rangeTotal, { compact: true })} over the ${rangeLabel}.${monthly ? ` October so far: ${formatINR(stats.monthToDateRevenue, { compact: true })}.` : ""}`}
+          title="Sales, GST included"
+          action={
+            <Segmented
+              label="Revenue range"
+              size="sm"
+              value={range}
+              onChange={setRange}
+              options={[
+                { value: "7d", label: "7 days" },
+                { value: "30d", label: "30 days" },
+                { value: "12m", label: "12 months" },
+              ]}
+            />
+          }
         >
-          <CardHeader
-            id="rev-title"
-            title="Revenue"
-            description={`${formatINR(rangeTotal, { compact: true })} over the ${rangeLabel}.${monthly ? ` October so far: ${formatINR(stats.monthToDateRevenue, { compact: true })}.` : ""}`}
-            action={
-              <Segmented
-                label="Revenue range"
-                size="sm"
-                value={range}
-                onChange={setRange}
-                options={[
-                  { value: "7d", label: "7 days" },
-                  { value: "30d", label: "30 days" },
-                  { value: "12m", label: "12 months" },
-                ]}
-              />
-            }
-          />
           <BarChart
             data={revenue}
-            tone="green"
+            tone="ink"
             highlight={monthly ? revenue.length - 2 : revenue.length - 1}
             format={(n) => formatINR(n, { compact: true })}
             ariaLabel={`Revenue, ${rangeLabel}`}
             height={300}
           />
-        </Card>
+        </Section>
 
-        <Card as="section" aria-labelledby="split-title">
-          <CardHeader
-            id="split-title"
-            title="Where September went"
-            description={`${formatINR(sep, { compact: true })} in sales, split three ways.`}
-          />
+        <Section
+          index="02"
+          label="The split"
+          note={
+            <>
+              Prices include 18% GST. Each tutor gets their share ({shareRange})
+              of what&apos;s left, paid by the 10th. Matches the September
+              payout run.
+            </>
+          }
+          title="Where September went"
+          action={
+            <Button href="/admin/payouts" variant="arrow" size="sm">
+              See payouts
+            </Button>
+          }
+        >
           <Donut
             data={[
-              { label: "Tutors", value: sepTutors, tone: "green" },
-              { label: "Tamada", value: sepPlatform, tone: "purple" },
-              { label: "GST", value: sepGst, tone: "sun" },
+              { label: "Tutors", value: sepTutors, tone: "ink" },
+              { label: "Tamada", value: sepPlatform, tone: "hotpink" },
+              { label: "GST", value: sepGst, tone: "ink" },
             ]}
             centerLabel="sales"
             centerValue={formatINR(sep, { compact: true })}
             format={(n) => formatINR(n, { compact: true })}
             ariaLabel="September revenue split between tutors, Tamada and GST"
+            className="gap-8 md:gap-12"
           />
-          <p className="mt-4 t-small text-ink/60">
-            Prices include 18% GST. Each tutor gets their share ({shareRange}) of
-            what&apos;s left, paid by the 10th. Matches the September payout
-            run.{" "}
-            <Link
-              href="/admin/payouts"
-              className="font-bold text-ink underline-offset-2 hf:underline"
-            >
-              See payouts
-            </Link>
-          </p>
-        </Card>
-      </div>
+        </Section>
 
-      <div className="mt-4 grid gap-4 md:mt-6 md:gap-6 lg:grid-cols-2">
-        <Card as="section" aria-labelledby="cat-title">
-          <CardHeader
-            id="cat-title"
-            title="What sells, by category"
-            description={`${sepSales.label}: ${formatINR(sepSales.total.revenue, { compact: true })} from ${plural(sepSales.total.enrollments, "sale")}, the same sales as the tiles above.`}
-          />
+        <Section
+          index="03"
+          label="Categories"
+          note={`${sepSales.label}: ${formatINR(sepSales.total.revenue, { compact: true })} from ${plural(sepSales.total.enrollments, "sale")}, the same sales as the tiles above.`}
+          title="What sells, by category"
+        >
           {byCategory.length ? (
             <BarChart
               data={byCategory}
               layout="horizontal"
-              tone="blue"
+              tone="ink"
               format={(n) => formatINR(n, { compact: true })}
               ariaLabel={`Revenue by category, ${sepSales.label}`}
             />
           ) : (
             <EmptyState
               compact
-              art="buddy"
+              align="start"
+              art="none"
+              eyebrow="No sales"
               title="No sales yet."
               body="Sales show up here by category."
             />
           )}
-        </Card>
+        </Section>
 
-        <Card as="section" aria-labelledby="best-title">
-          <CardHeader
-            id="best-title"
-            title="Best sellers"
-            description="All time, by revenue (GST incl.)."
-            action={
-              <Button
-                href="/admin/courses?tab=all"
-                size="sm"
-                variant="ghost"
-                iconRight="arrow-right"
-              >
-                Courses
-              </Button>
-            }
-          />
+        <WideSection
+          index="04"
+          label="Best sellers"
+          note="All time, by revenue (GST incl.)."
+          title="The top of the bill"
+          action={
+            <Button href="/admin/courses?tab=all" variant="arrow" size="sm">
+              All courses
+            </Button>
+          }
+        >
           {topCourses.length ? (
-            <ol className="space-y-3.5">
+            <ol aria-label="Best sellers" className="border-t border-fg">
+              <li
+                aria-hidden
+                className="hidden grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_7rem_8rem] items-center gap-6 border-b border-line py-3 text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase md:grid"
+              >
+                <span>No.</span>
+                <span>Course</span>
+                <span>Share of the top</span>
+                <span className="text-right">Sales</span>
+                <span className="text-right">Revenue</span>
+              </li>
               {topCourses.map((c, i) => (
-                <li key={c.id} className="tap relative flex items-center gap-3">
-                  <span className="w-5 shrink-0 text-center font-display text-[22px] leading-none font-black text-ink/35">
-                    {i + 1}
+                <li
+                  key={c.id}
+                  className="group relative grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-line py-4 transition-colors hf:bg-cream-2/60 md:grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,14rem)_7rem_8rem] md:gap-6 md:py-5"
+                >
+                  <Idx n={i + 1} />
+                  <Link
+                    href={`/admin/courses/${c.id}`}
+                    className={clsx(
+                      "min-w-0 font-heading text-[16px] leading-snug font-semibold tracking-[-0.02em] underline-offset-[3px] hf:underline md:text-[18px]",
+                      STRETCH,
+                    )}
+                  >
+                    {c.title}
+                  </Link>
+                  <span className="font-heading text-[15px] font-semibold whitespace-nowrap tabular-nums md:hidden">
+                    {formatINR(c.revenue, { compact: true })}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <Link
-                        href={`/admin/courses/${c.id}`}
-                        className={clsx("truncate text-[15px] font-bold underline-offset-2 hf:underline", STRETCH)}
-                      >
-                        {c.title}
-                      </Link>
-                      <span className="shrink-0 text-[14px] font-bold tabular-nums">
-                        {formatINR(c.revenue)}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 flex items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/[0.07]">
-                        <div
-                          className="h-full rounded-full bg-green"
-                          style={{
-                            width: `${(c.revenue / (topCourses[0]?.revenue || 1)) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="w-[5.75rem] shrink-0 text-right text-[12.5px] font-semibold whitespace-nowrap text-ink/55">
-                        {plural(c.sales, "sale")}
-                      </span>
-                    </div>
-                  </div>
+                  <span className="col-span-2 col-start-2 flex items-center gap-3 md:col-span-1 md:col-start-auto">
+                    <span className="h-[3px] min-w-0 flex-1 bg-line">
+                      <span
+                        className={clsx("block h-full", i === 0 ? "bg-red" : "bg-fg")}
+                        style={{
+                          width: `${(c.revenue / (topCourses[0]?.revenue || 1)) * 100}%`,
+                        }}
+                      />
+                    </span>
+                    <MonoMeta as="span" className="md:hidden">
+                      {plural(c.sales, "sale")}
+                    </MonoMeta>
+                  </span>
+                  <span className="hidden text-right font-mono text-[13px] tabular-nums md:block">
+                    {formatNumber(c.sales)}
+                  </span>
+                  <span className="hidden text-right font-heading text-[17px] font-semibold tracking-[-0.02em] whitespace-nowrap tabular-nums md:block">
+                    {formatINR(c.revenue)}
+                  </span>
                 </li>
               ))}
             </ol>
           ) : (
             <EmptyState
               compact
-              art="tami"
+              align="start"
+              art="none"
+              eyebrow="Nothing sold"
               title="Nothing sold yet."
               body="The first paid order lands here."
             />
           )}
-        </Card>
-      </div>
+        </WideSection>
 
-      <div className="mt-4 grid gap-4 md:mt-6 md:gap-6 xl:grid-cols-5">
-        <Card
-          as="section"
-          padding="none"
-          className="overflow-hidden xl:col-span-3"
-          aria-labelledby="codes-title"
+        <WideSection
+          index="05"
+          label="Coupons"
+          note="Live codes first. Discount given is estimated from every redemption, all time."
+          title="Coupons at work"
+          action={
+            <Button href="/admin/coupons" variant="arrow" size="sm">
+              Manage coupons
+            </Button>
+          }
         >
-          <div className="p-5 pb-0 md:p-6 md:pb-0">
-            <CardHeader
-              id="codes-title"
-              title="Coupons at work"
-              description="Live codes first. Discount given is estimated from every redemption, all time."
-              action={
-                <Button
-                  href="/admin/coupons"
-                  size="sm"
-                  variant="ghost"
-                  iconRight="arrow-right"
-                >
-                  Manage
-                </Button>
-              }
-            />
-          </div>
           {coupons.length ? (
             <CouponPerformance rows={coupons} />
           ) : (
             <EmptyState
               compact
-              art="buddy"
+              align="start"
+              art="none"
+              eyebrow="No codes"
               title="No coupons yet."
               body="Create one for the next festival sale."
               action={
@@ -419,137 +413,115 @@ export function PaymentsView() {
               }
             />
           )}
-        </Card>
+        </WideSection>
 
-        <div className="grid min-w-0 content-start gap-4 md:grid-cols-2 md:gap-6 xl:col-span-2 xl:grid-cols-1">
-          <Card as="section" aria-labelledby="run-title">
-            <CardHeader
-              id="run-title"
-              title="Payout run"
-              description={
-                runPeriod
-                  ? `${periodLabel(runPeriod)} · ${formatINR(runNet, { compact: true })} to ${plural(run.length, "tutor")}`
-                  : "No payouts yet."
-              }
-              action={
-                <Button
-                  href="/admin/payouts"
-                  size="sm"
-                  variant="ghost"
-                  iconRight="arrow-right"
-                >
-                  Payouts
-                </Button>
-              }
-            />
-            <ul className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  {
-                    s: "processing",
-                    label: "Processing",
-                    icon: "clock",
-                    tone: "bg-butter",
-                  },
-                  {
-                    s: "paid",
-                    label: "Paid",
-                    icon: "check-circle",
-                    tone: "bg-mint",
-                  },
-                  {
-                    s: "on_hold",
-                    label: "On hold",
-                    icon: "lock",
-                    tone: "bg-[#ffe1d4]",
-                  },
-                  {
-                    s: "scheduled",
-                    label: "Scheduled",
-                    icon: "calendar",
-                    tone: "bg-cyan",
-                  },
-                ] as {
-                  s: PayoutStatus;
-                  label: string;
-                  icon: IconName;
-                  tone: string;
-                }[]
-              ).map((x) => {
-                const list = runBy(x.s);
-                return (
-                  <li
-                    key={x.s}
-                    className={clsx(
-                      "min-w-0 rounded-tag px-3 py-2.5",
-                      list.length ? x.tone : "bg-cream text-ink/50",
-                    )}
-                  >
-                    <p className="flex min-w-0 items-center gap-1.5 text-[12.5px] font-bold">
-                      <Icon name={x.icon} className="size-3.5 shrink-0" />
-                      <span className="truncate">{x.label}</span>
-                    </p>
-                    <p className="mt-1 font-display text-[24px] leading-none font-black">
-                      {list.length}
-                    </p>
-                    <p className="mt-1 truncate text-[12px] font-semibold opacity-70">
-                      {list.length
-                        ? formatINR(
-                            list.reduce((s, p) => s + p.net, 0),
-                            { compact: true },
-                          )
-                        : "none"}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-
-          <Card as="section" aria-labelledby="refunds-title">
-            <CardHeader
-              id="refunds-title"
-              as="h3"
-              title="Latest refunds"
-              action={
-                <Button
-                  href="/admin/orders?status=refunded"
-                  size="sm"
-                  variant="ghost"
-                  iconRight="arrow-right"
-                >
-                  All
-                </Button>
-              }
-            />
-            {recentRefunds.length ? (
-              <ul className="divide-y divide-ink/[0.07]">
-                {recentRefunds.map((o) => (
-                  <li
-                    key={o.id}
-                    className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-bold">
-                        {o.user?.name ?? "A learner"}
-                      </p>
-                      <p className="truncate text-[13px] font-medium text-ink/55">
-                        {o.number} · {o.refundedAt ? timeAgo(o.refundedAt) : ""}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[14px] font-bold tabular-nums">
-                      −{formatINR(o.amount)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="t-small text-ink/60">
-                No refunds yet. Happy learners.
+        <Section
+          index="06"
+          label="Payout run"
+          note={
+            runPeriod
+              ? "The last closed month. The running month keeps adding up until it closes."
+              : undefined
+          }
+          title={runPeriod ? periodLabel(runPeriod) : "No payouts yet"}
+          action={
+            <Button href="/admin/payouts" variant="arrow" size="sm">
+              Payouts
+            </Button>
+          }
+        >
+          <div className="grid gap-10 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] xl:gap-12">
+            <Card variant="ink" padding="lg" as="section" aria-label="Payout run">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-cream/70 uppercase">
+                Net to {plural(run.length, "tutor")}
               </p>
-            )}
-          </Card>
-        </div>
+              <p className="t-display-l mt-3 tabular-nums">
+                {formatINR(runNet, { compact: true })}
+              </p>
+              <ul className="mt-8 grid grid-cols-2 border-t border-l border-white/[0.14]">
+                {(
+                  [
+                    { s: "processing", label: "Processing" },
+                    { s: "paid", label: "Paid" },
+                    { s: "on_hold", label: "On hold" },
+                    { s: "scheduled", label: "Scheduled" },
+                  ] as { s: PayoutStatus; label: string }[]
+                ).map((x) => {
+                  const list = runBy(x.s);
+                  return (
+                    <li
+                      key={x.s}
+                      className="min-w-0 border-r border-b border-white/[0.14] p-3.5"
+                    >
+                      <p className="flex min-w-0 items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.14em] text-cream/70 uppercase">
+                        <span
+                          aria-hidden
+                          className={clsx(
+                            "size-[6px] shrink-0",
+                            x.s === "on_hold" && list.length
+                              ? "bg-red-lite"
+                              : list.length
+                                ? "bg-cream"
+                                : "ring-1 ring-cream/50 ring-inset",
+                          )}
+                        />
+                        <span className="truncate">{x.label}</span>
+                      </p>
+                      <p className="mt-2.5 font-display text-[30px] leading-none tabular-nums">
+                        {list.length}
+                      </p>
+                      <p className="mt-1.5 truncate font-mono text-[11px] tracking-[0.04em] text-cream/65">
+                        {list.length
+                          ? formatINR(
+                              list.reduce((s, p) => s + p.net, 0),
+                              { compact: true },
+                            )
+                          : "none"}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+
+            <section aria-labelledby="refunds-title" className="min-w-0">
+              <div className="flex items-baseline justify-between gap-3">
+                <PanelLabel as="h3" className="mb-0">
+                  <span id="refunds-title">Latest refunds</span>
+                </PanelLabel>
+                <Link
+                  href="/admin/orders?status=refunded"
+                  className="text-[13px] font-medium underline-offset-[3px] hf:underline coarse:inline-flex coarse:min-h-11 coarse:items-center"
+                >
+                  All refunds
+                </Link>
+              </div>
+              {recentRefunds.length ? (
+                <ul className="mt-3 divide-y divide-line border-y border-line border-t-fg">
+                  {recentRefunds.map((o) => (
+                    <li key={o.id} className="flex items-center gap-3 py-3.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-semibold tracking-[-0.01em]">
+                          {o.user?.name ?? "A learner"}
+                        </p>
+                        <MonoMeta className="truncate">
+                          {o.number} · {o.refundedAt ? timeAgo(o.refundedAt) : ""}
+                        </MonoMeta>
+                      </div>
+                      <span className="shrink-0 font-heading text-[15px] font-semibold tabular-nums">
+                        −{formatINR(o.amount)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="t-small mt-3 border-t border-fg pt-3 text-muted">
+                  No refunds yet. Happy learners.
+                </p>
+              )}
+            </section>
+          </div>
+        </Section>
       </div>
     </div>
   );
@@ -564,8 +536,8 @@ type CouponRow = {
 };
 
 /**
- * Coupon performance. A four-column table when its card is wide enough; below
- * 560px each code becomes a two-line row, so no number is ever cut at the edge.
+ * Coupon performance, awards-table style. A four-column table when its box is wide
+ * enough; below 560px each code becomes a two-line ruled row, so no number is ever cut.
  */
 function CouponPerformance({ rows }: { rows: CouponRow[] }) {
   const [ref, width] = useBoxWidth();
@@ -579,40 +551,28 @@ function CouponPerformance({ rows }: { rows: CouponRow[] }) {
       {COUPON_STATE_META[state].label}
     </Badge>
   );
-  const chip = (c: Coupon) => (
-    <span className="rounded-md bg-cream px-2 py-0.5 font-mono text-[13.5px] font-bold tracking-wide">
-      {c.code}
-    </span>
-  );
 
   return (
     <div ref={ref}>
       {stacked ? (
         <>
           <ul
-            className="divide-y divide-ink/[0.07] border-t border-ink/[0.07]"
+            className="divide-y divide-line border-t border-fg"
             aria-label="Coupon performance"
           >
             {rows.map(({ coupon: c, state, discount, redemptions }) => (
-              <li key={c.id} className="px-5 py-3">
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  {chip(c)}
-                  <span className="text-[13px] font-semibold text-ink/55">
-                    {off(c)}
-                  </span>
+              <li key={c.id} className="py-3.5">
+                <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <CodeSlate code={c.code} />
+                  <span className="text-[13px] text-muted">{off(c)}</span>
                   <span className="ml-auto">{badge(state)}</span>
                 </p>
-                <p className="mt-1.5 text-[13.5px] text-ink/70 tabular-nums">
-                  <span className="font-bold text-ink">
-                    {formatNumber(redemptions)}
-                  </span>{" "}
-                  / {formatNumber(c.maxRedemptions)} used ·{" "}
+                <p className="mt-2 font-mono text-[12px] tracking-[0.02em] text-muted tabular-nums">
+                  <span className="text-fg">{formatNumber(redemptions)}</span> /{" "}
+                  {formatNumber(c.maxRedemptions)} used ·{" "}
                   {discount ? (
                     <>
-                      <span className="font-bold text-ink">
-                        {formatINR(discount)}
-                      </span>{" "}
-                      given
+                      <span className="text-fg">{formatINR(discount)}</span> given
                     </>
                   ) : (
                     "no discount given yet"
@@ -621,7 +581,7 @@ function CouponPerformance({ rows }: { rows: CouponRow[] }) {
               </li>
             ))}
           </ul>
-          <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-ink/[0.07] bg-cream/60 px-5 py-3 text-[13.5px] font-bold tabular-nums">
+          <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-fg py-3 font-mono text-[12px] tracking-[0.04em] uppercase tabular-nums">
             <span>Total</span>
             <span>
               {formatNumber(totalUsed)} used · {formatINR(totalGiven)} given
@@ -633,63 +593,55 @@ function CouponPerformance({ rows }: { rows: CouponRow[] }) {
           <table className="w-full text-left text-[14px]">
             <caption className="sr-only">Coupon performance</caption>
             <thead>
-              <tr className="border-y border-ink/[0.07] bg-cream/60 text-[12px] font-bold tracking-wide text-ink/55 uppercase">
-                <th scope="col" className="px-5 py-2.5 md:pl-6">
+              <tr className="border-t border-b border-t-fg border-b-line text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase">
+                <th scope="col" className="py-3 pr-3 font-semibold">
                   Code
                 </th>
-                <th scope="col" className="px-3 py-2.5">
+                <th scope="col" className="px-3 py-3 font-semibold">
                   State
                 </th>
-                <th scope="col" className="px-3 py-2.5 text-right">
+                <th scope="col" className="px-3 py-3 text-right font-semibold">
                   Used
                 </th>
-                <th scope="col" className="px-5 py-2.5 text-right md:pr-6">
+                <th scope="col" className="py-3 pl-3 text-right font-semibold">
                   Discount given
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-ink/[0.07]">
+            <tbody className="divide-y divide-line">
               {rows.map(({ coupon: c, state, discount, redemptions }) => (
                 <tr key={c.id}>
-                  <td className="px-5 py-3 whitespace-nowrap md:pl-6">
-                    {chip(c)}
-                    <span className="ml-2 text-[13px] font-semibold text-ink/55">
-                      {off(c)}
-                    </span>
+                  <td className="py-4 pr-3 whitespace-nowrap">
+                    <CodeSlate code={c.code} />
+                    <span className="ml-3 text-[13px] text-muted">{off(c)}</span>
                   </td>
-                  <td className="px-3 py-3">{badge(state)}</td>
-                  <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums">
-                    <span className="font-bold">
-                      {formatNumber(redemptions)}
-                    </span>
-                    <span className="text-ink/45">
+                  <td className="px-3 py-4">{badge(state)}</td>
+                  <td className="px-3 py-4 text-right font-mono text-[13px] whitespace-nowrap tabular-nums">
+                    {formatNumber(redemptions)}
+                    <span className="text-muted">
                       {" "}
                       / {formatNumber(c.maxRedemptions)}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-right font-bold whitespace-nowrap tabular-nums md:pr-6">
+                  <td className="py-4 pl-3 text-right font-heading text-[15px] font-semibold whitespace-nowrap tabular-nums">
                     {discount ? (
                       formatINR(discount)
                     ) : (
-                      <span className="font-medium text-ink/40">—</span>
+                      <span className="font-normal text-muted">—</span>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-ink/[0.07] bg-cream/60 text-[13.5px] font-bold">
-                <th
-                  scope="row"
-                  colSpan={2}
-                  className="px-5 py-3 text-left md:pl-6"
-                >
+              <tr className="border-t border-fg font-mono text-[12px] tracking-[0.04em] uppercase">
+                <th scope="row" colSpan={2} className="py-3.5 pr-3 text-left font-semibold">
                   Total
                 </th>
-                <td className="px-3 py-3 text-right tabular-nums">
+                <td className="px-3 py-3.5 text-right tabular-nums">
                   {formatNumber(totalUsed)}
                 </td>
-                <td className="px-5 py-3 text-right tabular-nums md:pr-6">
+                <td className="py-3.5 pl-3 text-right font-heading text-[15px] font-semibold tracking-normal normal-case tabular-nums">
                   {formatINR(totalGiven)}
                 </td>
               </tr>

@@ -1,4 +1,4 @@
-import type { Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import { PageHeader, type Crumb } from "./PageHeader";
 import { Card } from "./Card";
 import { EmptyState } from "./Display";
@@ -27,7 +27,7 @@ export function BeingBuilt({
     <div className="app-enter">
       <PageHeader title={title} eyebrow={eyebrow} eyebrowTone={eyebrowTone} description={description} breadcrumbs={breadcrumbs} />
       <Card>
-        <EmptyState art="buddies" title="Under construction." body={note} />
+        <EmptyState art="none" eyebrow="In production" title="Under construction." body={note} />
       </Card>
     </div>
   );
@@ -40,10 +40,11 @@ export function PublicBeingBuilt({ title, eyebrow, description }: { title: strin
         <PageHeader title={title} eyebrow={eyebrow} description={description} />
         <Card>
           <EmptyState
-            art="buddies"
+            art="none"
+            eyebrow="In production"
             title="Under construction."
             body="This page is being built. Meanwhile, the first video of every course is free."
-            action={<Button href="/" variant="secondary">Back home</Button>}
+            action={<Button href="/" variant="outline">Back home</Button>}
           />
         </Card>
       </div>

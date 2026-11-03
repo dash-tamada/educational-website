@@ -16,8 +16,8 @@ import type {
   TutorApplication,
   WishlistItem,
 } from "../types";
-import { COURSES_BASE, CURRICULA, courseBySlug } from "./catalog";
-import { DEMO_ADMIN_ID, DEMO_STUDENT_ID, DEMO_TUTOR_ID, PENDING_TUTOR_IDS, STUDENTS, TUTOR_PROFILES_BASE } from "./people";
+import { COURSES_BASE, CURRICULA } from "./catalog";
+import { DEMO_ADMIN_ID, DEMO_STUDENT_ID, DEMO_TUTOR_ID, PENDING_TUTOR_IDS, STUDENTS, TUTOR_PROFILES_BASE, USERS } from "./people";
 import { COURSE_SALES, CURRENT_MONTH, LEDGER_FROM, MONTH_DAYS_SO_FAR, grossOf, monthRange } from "./sales";
 import { PLAYER_THREADS } from "./qa-player";
 import { daysAgo, rng, toIST } from "./util";
@@ -28,41 +28,52 @@ const published = COURSES_BASE.filter((c) => c.status === "published");
 const sellable = COURSES_BASE.filter((c) => c.status === "published" || c.status === "archived");
 
 const items = (courseId: string) => CURRICULA[courseId].flatMap((m) => m.items);
+/** The one public course: everything learners buy, review, ask about and finish is on it. */
+const FLAGSHIP = "crs_aifilm";
+/** Whole days between an ISO timestamp and MOCK_NOW. */
+const ageDays = (iso: string) => Math.floor((new Date("2026-10-05T10:30:00+05:30").getTime() - new Date(iso).getTime()) / 86_400_000);
 
 /* ============================================================================= coupons */
 export const COUPONS: Coupon[] = [
-  { id: "cpn_welcome", code: "WELCOME10", description: "10% off your first course", kind: "percent", value: 10, courseIds: null, firstPurchaseOnly: true, maxRedemptions: 5000, redemptions: 1284, startsAt: daysAgo(365), endsAt: daysAgo(-180), active: true, createdBy: DEMO_ADMIN_ID },
-  { id: "cpn_inbox", code: "INBOX10", description: "Newsletter readers: 10% off any course", kind: "percent", value: 10, courseIds: null, maxRedemptions: 3000, redemptions: 642, startsAt: daysAgo(420), endsAt: daysAgo(-90), active: true, createdBy: DEMO_ADMIN_ID },
-  { id: "cpn_diwali", code: "DIWALI25", description: "Festive offer: 25% off everything", kind: "percent", value: 25, courseIds: null, maxRedemptions: 2000, redemptions: 0, startsAt: daysAgo(-10), endsAt: daysAgo(-25), active: true, createdBy: DEMO_ADMIN_ID },
-  { id: "cpn_arjun", code: "ARJUN15", description: "Arjun's community code for his coding courses", kind: "percent", value: 15, courseIds: ["crs_webdev", "crs_python"], maxRedemptions: 500, redemptions: 212, startsAt: daysAgo(200), endsAt: daysAgo(-60), active: true, createdBy: DEMO_TUTOR_ID },
+  { id: "cpn_welcome", code: "WELCOME10", description: "10% off your first course", kind: "percent", value: 10, courseIds: null, firstPurchaseOnly: true, maxRedemptions: 5000, redemptions: 412, startsAt: daysAgo(330), endsAt: daysAgo(-180), active: true, createdBy: DEMO_ADMIN_ID },
+  { id: "cpn_inbox", code: "INBOX10", description: "Newsletter readers: 10% off", kind: "percent", value: 10, courseIds: null, maxRedemptions: 3000, redemptions: 216, startsAt: daysAgo(330), endsAt: daysAgo(-90), active: true, createdBy: DEMO_ADMIN_ID },
+  { id: "cpn_diwali", code: "DIWALI25", description: "Festive offer: 25% off AI Filmmaking", kind: "percent", value: 25, courseIds: null, maxRedemptions: 2000, redemptions: 0, startsAt: daysAgo(-10), endsAt: daysAgo(-25), active: true, createdBy: DEMO_ADMIN_ID },
+  { id: "cpn_arjun", code: "ARJUN15", description: "Arjun's community code: 15% off AI Filmmaking", kind: "percent", value: 15, courseIds: ["crs_aifilm"], maxRedemptions: 500, redemptions: 212, startsAt: daysAgo(200), endsAt: daysAgo(-60), active: true, createdBy: DEMO_TUTOR_ID },
   { id: "cpn_flat200", code: "FLAT200", description: "₹200 off any course of ₹999 or more", kind: "flat", value: 200, courseIds: null, minAmount: 999, maxRedemptions: 1000, redemptions: 431, startsAt: daysAgo(120), endsAt: daysAgo(-30), active: true, createdBy: DEMO_ADMIN_ID },
-  { id: "cpn_exam", code: "BOARDS20", description: "Board-exam season: 20% off exam prep", kind: "percent", value: 20, courseIds: ["crs_chem", "crs_jee"], maxRedemptions: 800, redemptions: 800, startsAt: daysAgo(240), endsAt: daysAgo(170), active: false, createdBy: DEMO_ADMIN_ID },
+  { id: "cpn_premiere", code: "PREMIERE30", description: "Launch week: 30% off AI Filmmaking", kind: "percent", value: 30, courseIds: ["crs_aifilm"], maxRedemptions: 300, redemptions: 300, startsAt: daysAgo(330), endsAt: daysAgo(323), active: false, createdBy: DEMO_ADMIN_ID },
 ];
+/** A coupon that was actually live `days` days ago (or none), for generated orders. */
+function couponOn(days: number, rr: { chance: (p: number) => boolean; pick: <T>(a: readonly T[]) => T }, p = 0.28): string | undefined {
+  if (!rr.chance(p)) return undefined;
+  const at = daysAgo(days);
+  const live = COUPONS.filter((c) => c.code !== "DIWALI25" && c.startsAt <= at && at <= c.endsAt).map((c) => c.code);
+  return live.length ? rr.pick(live) : undefined;
+}
 
 /* ============================================================================= lesson Q&A threads (data) */
 /* Declared up here so the learners who asked can be enrolled (and have progress) below. */
 type Thread = { course: string; item: string; user: string; days: number; q: string; a?: string; aDays?: number; likes?: number };
 const THREADS: Thread[] = [
-  { course: "crs_webdev", item: "wd-1-1", user: "u_s003", days: 40, q: "Is a domain name the same thing as a website? I keep mixing these up.", a: "Great question! The domain is the address (like a house number), the website is the house. You can move a site to a new address any time.", aDays: 39, likes: 12 },
-  { course: "crs_webdev", item: "wd-1-2", user: "u_s015", days: 31, q: "Live Server extension isn't opening my page in the browser. I'm on Windows 11.", a: "Right-click index.html and choose 'Open with Live Server'. If nothing happens, check that the folder (not just the file) is open in VS Code.", aDays: 31, likes: 7 },
-  { course: "crs_webdev", item: "wd-2-2", user: DEMO_STUDENT_ID, days: 33, q: "When should I use gap vs margin between flex items?", a: "Use gap almost always: it only adds space between items, never on the outer edges. Margin is for spacing an element from things outside the flex container.", aDays: 32, likes: 9 },
-  { course: "crs_webdev", item: "wd-2-3", user: "u_s021", days: 20, q: "Can grid and flexbox be used on the same page?", a: "Absolutely. Grid for the page layout, flexbox for the small rows inside it is a classic combo.", aDays: 19, likes: 15 },
-  { course: "crs_webdev", item: "wd-4-2", user: "u_s030", days: 2, q: "What's the difference between a function declaration and an arrow function? Does it matter for beginners?", likes: 3 },
-  { course: "crs_webdev", item: "wd-4-3", user: "u_s044", days: 1, q: "My for loop prints undefined at the end of the list. What am I doing wrong?", likes: 1 },
-  { course: "crs_webdev", item: "wd-5-3", user: "u_s012", days: 0, q: "How do I save the to-do list so it stays after I refresh the page?", likes: 4 },
-  { course: "crs_python", item: "py-2-2", user: "u_s009", days: 14, q: "read_csv gives me a UnicodeDecodeError on the rainfall file.", a: "Try pd.read_csv(path, encoding='latin-1'). Some government CSVs aren't saved as UTF-8.", aDays: 13, likes: 11 },
-  { course: "crs_python", item: "py-2-3", user: "u_s036", days: 3, q: "Is pivot_table just groupby with extra steps?", likes: 2 },
-  { course: "crs_money", item: "mn-3-2", user: "u_s018", days: 60, q: "Is it better to do one big SIP or split across three funds?", a: "For most beginners one or two diversified index funds is plenty. More funds often means more overlap, not more safety.", aDays: 58, likes: 19 },
-  { course: "crs_money", item: "mn-4-2", user: "u_s026", days: 22, q: "I'm a freelancer. Does the new regime still make sense for me?", a: "Often yes, but it depends on your deductions. Run both calculations with the sheet from module 1 and pick the lower tax.", aDays: 21, likes: 8 },
-  { course: "crs_guitar", item: "gt-1-3", user: "u_s040", days: 6, q: "My G chord buzzes on the high E string. Any tips?", a: "Arch your ring finger more and press right behind the fret. Buzzing is normal for the first week!", aDays: 5, likes: 6 },
-  { course: "crs_guitar", item: "gt-2-2", user: "u_s047", days: 4, q: "How fast should I be strumming before moving on?", a: "Comfortable at 70 bpm with no stops. Speed comes later.", aDays: 4, likes: 5 },
-  { course: "crs_chem", item: "ch-3-3", user: "u_s005", days: 12, q: "How do I quickly decide the limiting reagent in MCQs?", a: "Divide moles of each reactant by its coefficient. The smallest number is your limiting reagent. Takes 10 seconds.", aDays: 12, likes: 24 },
-  { course: "crs_chem", item: "ch-5-2", user: "u_s028", days: 5, q: "Why doesn't adding water change the pH of a buffer much?", likes: 3 },
-  { course: "crs_photo", item: "ph-2-3", user: "u_s016", days: 18, q: "North-facing or east-facing window for portraits?", a: "North-facing gives soft, even light all day. East is gorgeous in the morning only.", aDays: 17, likes: 10 },
-  { course: "crs_excel", item: "xl-2-2", user: "u_s034", days: 9, q: "XLOOKUP isn't available in my office's Excel 2016. Alternative?", a: "INDEX + MATCH does the same job in older versions. I've added a bonus video on it to this module.", aDays: 8, likes: 13 },
-  { course: "crs_english", item: "en-4-1", user: "u_s020", days: 7, q: "How long should my 'tell me about yourself' answer be?", a: "Aim for 60 to 90 seconds. Practise with a timer.", aDays: 7, likes: 9 },
-  { course: "crs_kitchen", item: "sk-2-2", user: "u_s038", days: 11, q: "Batter didn't rise in Shimla winters even after 18 hours. Help!", a: "Keep it in the oven with only the light on, and add a pinch of methi seeds while grinding. Should work within 12 hours.", aDays: 10, likes: 7 },
-  { course: "crs_jee", item: "jp-2-2", user: "u_s042", days: 3, q: "When friction is static, how do I know its direction?", likes: 2 },
+  { course: FLAGSHIP, item: "af-1-1", user: "u_s003", days: 40, q: "Can I really make a whole film without shooting a single frame?", a: "Yes. Everything in the capstone is generated: stills, motion, voices, music. What you bring is the direction: the story, the shot choices and the cut. That's what this course is really about.", aDays: 39, likes: 12 },
+  { course: FLAGSHIP, item: "af-1-3", user: "u_s015", days: 31, q: "Roughly how much did the short in lesson 1 cost in credits?", a: "About ₹1,600 across image, video and voice tools, plus a lot of free-tier testing. The credit planner in this module shows the shot-by-shot split.", aDays: 31, likes: 7 },
+  { course: FLAGSHIP, item: "af-2-2", user: "u_s021", days: 27, q: "Can I write the script in Malayalam and still prompt in English?", a: "Absolutely. Write the story in the language you think in, then translate only the shot list into prompts. Dialogue can stay Malayalam right through to the voice module.", aDays: 26, likes: 15 },
+  { course: FLAGSHIP, item: "af-4-2", user: DEMO_STUDENT_ID, days: 10, q: "When should the camera move, and when should it stay locked off?", a: "Move when something changes for the character, or when the audience needs to discover something. Stay locked off when you want them to sit with a moment. If you can't say why it moves, lock it off.", aDays: 9, likes: 9 },
+  { course: FLAGSHIP, item: "af-5-3", user: "u_s030", days: 2, q: "The motion brush moves the whole background along with my character. How do I keep the background still?", likes: 3 },
+  { course: FLAGSHIP, item: "af-6-2", user: "u_s044", days: 1, q: "Can I use a photo of myself as the reference for my lead character?", likes: 1 },
+  { course: FLAGSHIP, item: "af-7-3", user: "u_s012", days: 0, q: "Is there a way to lip-sync a song rather than dialogue, for a music-video style shot?", likes: 4 },
+  { course: FLAGSHIP, item: "af-3-2", user: "u_s009", days: 14, q: "Midjourney or Flux for style frames? My results look very different.", a: "Different strengths. I reach for Midjourney when I want mood and texture, Flux when I need precise composition or readable text. Pick one per film so the look stays consistent.", aDays: 13, likes: 11 },
+  { course: FLAGSHIP, item: "af-5-4", user: "u_s036", days: 3, q: "My character's hands keep melting in the close-up. Reroll or cut around it?", likes: 2 },
+  { course: FLAGSHIP, item: "af-2-3", user: "u_s018", days: 60, q: "Should every line of the shot list already be a full prompt, or just notes?", a: "Notes first: shot size, action, mood. Turn them into full prompts only once the look is locked in module 3, otherwise you rewrite everything twice.", aDays: 58, likes: 19 },
+  { course: FLAGSHIP, item: "af-4-3", user: "u_s026", days: 22, q: "How do I get a neon-noir look without it looking like every other AI video?", a: "Ground it in a real place and a real light source: a sodium streetlight, a shop sign, rain on a window. Then hold back on saturation in the grade. Restraint is what makes it feel filmed.", aDays: 21, likes: 8 },
+  { course: FLAGSHIP, item: "af-5-2", user: "u_s040", days: 6, q: "In your comparison, which model handled faces best?", a: "For close-ups that day, Veo held faces most steadily and Kling gave the best physical motion. It changes with every update, which is why the lesson teaches you how to compare, not who wins.", aDays: 5, likes: 6 },
+  { course: FLAGSHIP, item: "af-6-1", user: "u_s047", days: 4, q: "How many reference images should a character sheet have?", a: "Three to six: front, three-quarter, profile and a couple of expressions. Any more and the model starts averaging them into someone else.", aDays: 4, likes: 5 },
+  { course: FLAGSHIP, item: "af-7-1", user: "u_s005", days: 12, q: "Can I clone my own voice and use it in Hindi if I recorded the sample in English?", a: "Many tools can, with an accent. For the most natural Hindi, record a minute of Hindi too. And it's your own voice, so consent is easy.", aDays: 12, likes: 24 },
+  { course: FLAGSHIP, item: "af-8-2", user: "u_s028", days: 5, q: "Any good free source for ambience if I don't want to generate it?", a: "The pack in this module has 200 room tones and effects, royalty-free. Freesound is great too, just check each clip's licence.", aDays: 5, likes: 3 },
+  { course: FLAGSHIP, item: "af-9-2", user: "u_s016", days: 18, q: "My 60-second cut runs 1:40. How do I decide what goes?", a: "Watch it without sound: any shot you don't miss, cut. Then listen without picture and cut any line that repeats what the image already says.", aDays: 17, likes: 10 },
+  { course: FLAGSHIP, item: "af-9-3", user: "u_s034", days: 9, q: "Do I need the paid Studio version of Resolve for this module?", a: "No. The free version covers everything here. Studio only matters for some noise reduction and exports above 4K.", aDays: 8, likes: 13 },
+  { course: FLAGSHIP, item: "af-10-3", user: "u_s020", days: 7, q: "Do I need to disclose AI if only the music was generated?", a: "Platform labels focus on realistic visuals, but I credit the tools in the description anyway. It costs nothing and your audience trusts you more for it.", aDays: 7, likes: 9 },
+  { course: FLAGSHIP, item: "af-10-2", user: "u_s038", days: 11, q: "What export settings do you use for Instagram Reels?", a: "1080x1920, H.264, around 16 Mbps, AAC audio at 320 kbps. The release checklist has presets for every platform.", aDays: 10, likes: 7 },
+  { course: FLAGSHIP, item: "af-11-1", user: "u_s050", days: 3, q: "For the capstone, do titles and credits count inside the 60 seconds?", a: "Keep them outside: the story gets the full minute. Add up to ten seconds of credits at the end.", aDays: 2, likes: 2 },
 ];
 
 /* ============================================================================= orders + enrollments */
@@ -136,40 +147,36 @@ function addOrder(o: {
   return order;
 }
 
-/* Priya's purchases (the demo student). */
-const priyaWeb = addOrder({ userId: DEMO_STUDENT_ID, courseId: "crs_webdev", days: 46, method: "UPI", coupon: "ARJUN15" });
-const priyaColour = addOrder({ userId: DEMO_STUDENT_ID, courseId: "crs_colour", days: 162, method: "Card" });
-const priyaMoney = addOrder({ userId: DEMO_STUDENT_ID, courseId: "crs_money", days: 205, method: "UPI", coupon: "WELCOME10" });
-const priyaGuitar = addOrder({ userId: DEMO_STUDENT_ID, courseId: "crs_guitar", days: 12, method: "UPI" });
-addOrder({ userId: DEMO_STUDENT_ID, courseId: "crs_python", days: 5, grant: true });
-void priyaWeb;
-void priyaGuitar;
+/* Priya's purchase (the demo student): her card was declined, a few minutes later UPI went through,
+   both with Arjun's community code. */
+const priyaFailed = addOrder({ userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, days: 46, status: "failed", method: "Card", coupon: "ARJUN15" });
+const priyaFilm = addOrder({ userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, days: 46, method: "UPI", coupon: "ARJUN15" });
+priyaFailed.createdAt = toIST(new Date(new Date(priyaFilm.createdAt).getTime() - 7 * 60_000));
 
-/* ~120 orders spread over 12 months, growing towards the present. */
+/* ~70 sample orders since launch, growing towards the present (none before the publish date:
+   anything that would land earlier joins the launch-week rush instead). */
 const weightByCourse = sellable.map((c) => (c.status === "archived" ? 2 : Math.max(3, Math.round(c.learners / 400))));
-for (let i = 0; i < 116; i++) {
+for (let i = 0; i < 70; i++) {
   // month 0 (Oct) .. 11 (Nov last year); more recent months are busier
   const month = r.weighted([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [6, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4]);
-  const days = month === 0 ? r.int(0, 4) : month * 30 + r.int(-12, 12) - 5;
-  let course = r.weighted(sellable, weightByCourse);
-  const pub = course.publishedAt ? Math.round((new Date("2026-10-05").getTime() - new Date(course.publishedAt).getTime()) / 86_400_000) : 0;
-  if (course.status === "archived" && days < 50) course = r.pick(published);
-  if (pub && days > pub) course = courseBySlug("excel-for-work");
+  let days = month === 0 ? r.int(0, 4) : month * 30 + r.int(-12, 12) - 5;
+  const course = r.weighted(sellable, weightByCourse);
+  const pub = course.publishedAt ? ageDays(course.publishedAt) : 0;
+  if (pub && days > pub - 1) days = pub - 1 - r.int(0, 6);
   const roll = r.next();
   const status: Order["status"] = roll < 0.05 ? "refunded" : roll < 0.08 ? "failed" : roll < 0.1 && days < 6 ? "pending" : "paid";
-  const coupon = r.chance(0.28) ? r.pick(["WELCOME10", "FLAT200", "ARJUN15", "BOARDS20"]) : undefined;
   addOrder({
     userId: r.pick(others).id,
     courseId: course.id,
     days: Math.max(0, days),
     status,
-    coupon,
-    refundReason: r.pick(["Bought the wrong course", "Duplicate payment", "Course level too advanced", "Accidental purchase by family member"]),
+    coupon: couponOn(Math.max(0, days), r),
+    refundReason: r.pick(["Not enough time to start right now", "Expected live classes", "Accidental purchase by a family member", "Tool credits cost more than I can spend right now"]),
   });
 }
-/* A couple of admin grants (scholarships / support). */
-addOrder({ userId: "u_s007", courseId: "crs_chem", days: 33, grant: true });
-addOrder({ userId: "u_s023", courseId: "crs_english", days: 71, grant: true });
+/* Two admin grants (a scholarship and a support goodwill gesture). */
+addOrder({ userId: "u_s007", courseId: FLAGSHIP, days: 33, grant: true });
+addOrder({ userId: "u_s023", courseId: FLAGSHIP, days: 71, grant: true });
 /* Nobody buys a course they already own: a random pick that landed on an existing owner goes to
    another learner who had joined by then (separate rng, so the rest of the seed doesn't shift). */
 {
@@ -204,27 +211,15 @@ const ASKERS = new Set<string>();
     if (ENROLLMENTS.some((e) => e.userId === t.user && e.courseId === t.course && !e.revokedAt)) continue;
     const course = COURSES_BASE.find((c) => c.id === t.course)!;
     const pubDays = course.publishedAt ? Math.floor((new Date("2026-10-05").getTime() - new Date(course.publishedAt).getTime()) / 86_400_000) : 365;
-    addOrder({ userId: t.user, courseId: t.course, days: Math.min(Math.max(t.days + 2, pubDays - 1), t.days + rq.int(9, 30)), coupon: rq.chance(0.25) ? "WELCOME10" : undefined }, rq);
+    const days = Math.min(Math.max(t.days + 2, pubDays - 1), t.days + rq.int(9, 30));
+    addOrder({ userId: t.user, courseId: t.course, days, coupon: couponOn(days, rq, 0.25) }, rq);
   }
 }
 ORDERS.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 /* Human order numbers follow time (oldest = lowest). */
 ORDERS.forEach((o, i) => (o.number = `TM-${24610 + (ORDERS.length - i) * 7 + (i % 5)}`));
-/* Two open refund requests for the admin queue. */
-{
-  const chem = ORDERS.find((o) => o.courseId === "crs_chem" && o.status === "paid" && o.provider !== "admin" && !ASKERS.has(`${o.userId}|${o.courseId}`));
-  if (chem) chem.refundRequest = { reason: "Already covered in my coaching classes, bought by mistake.", requestedAt: daysAgo(1, 14, 50) };
-  const other = ORDERS.find((o) => o.status === "paid" && o.provider !== "admin" && o.courseId !== "crs_chem" && o.userId !== DEMO_STUDENT_ID && !ASKERS.has(`${o.userId}|${o.courseId}`));
-  // the reason is written at the end of the seed, once this learner's final orders are known
-  if (other) other.refundRequest = { reason: "", requestedAt: daysAgo(0, 9, 10) };
-}
-
-/* Completion for Priya's finished courses. */
-for (const e of ENROLLMENTS) {
-  if (e.userId !== DEMO_STUDENT_ID) continue;
-  if (e.orderId === priyaColour.id) e.completedAt = daysAgo(112, 22, 10);
-  if (e.orderId === priyaMoney.id) e.completedAt = daysAgo(151, 21, 30);
-}
+/* The two open refund requests for the admin queue are picked once the demo tutor's ledger is complete
+   (see "refund requests" near the end): every recent flagship sale only exists from then on. */
 
 /* ============================================================================= progress, attempts, notes */
 export const LESSON_PROGRESS: LessonProgress[] = [];
@@ -267,235 +262,76 @@ function attempt(courseId: string, itemId: string, days: number, score: number, 
   });
 }
 
-/* Web Dev From Zero: modules 1-3 done, module 4 halfway (current lesson wd-4-2 at 7:40). */
+/* AI Filmmaking: modules 1-4 done (every video, resource and quiz), module 5's first lesson done,
+   and the current lesson af-5-2 resumes at 7:40. The last five days are a streak (days 0-4, nothing on day 5). */
 {
-  const course = "crs_webdev";
-  const all = items(course);
-  let d = 44;
-  for (const it of all) {
+  const course = FLAGSHIP;
+  // spread the early lessons from day 44 (two days after buying) to day 12
+  const early = items(course).filter((it) => {
     const [, m, i] = it.id.split("-").map(Number);
-    if (m > 4 || (m === 4 && i >= 2)) break;
-    if (it.type === "quiz") continue;
-    complete(course, it.id, Math.max(2, d), it.type === "video" ? it.lesson.durationSec : 0);
-    d -= 3;
-  }
-  // the last few sessions were recent: a 5-day streak (days 0-4, guitar on day 3)
-  for (const [itemId, days] of [["wd-3-3", 4], ["wd-3-4", 2], ["wd-4-1", 1]] as const) {
-    const p = LESSON_PROGRESS.find((x) => x.itemId === itemId);
-    if (p) p.completedAt = p.updatedAt = daysAgo(days, 21, 20);
-  }
-  attempt(course, "wd-1-5", 38, 50, 70, [0, 1]);
-  attempt(course, "wd-1-5", 37, 75, 70, [0, 1, 3]);
-  attempt(course, "wd-2-4", 24, 100, 60);
+    return it.type !== "quiz" && (m < 4 || (m === 4 && i === 1));
+  });
+  early.forEach((it, k) => {
+    complete(course, it.id, 44 - Math.round((k * 32) / Math.max(1, early.length - 1)), it.type === "video" ? it.lesson.durationSec : 0);
+  });
+  const dur = (id: string) => {
+    const it = items(course).find((x) => x.id === id);
+    return it?.type === "video" ? it.lesson.durationSec : 0;
+  };
+  complete(course, "af-4-2", 10, dur("af-4-2"));
+  complete(course, "af-4-3", 4, dur("af-4-3"));
+  complete(course, "af-4-4", 3, 0);
+  complete(course, "af-5-1", 1, dur("af-5-1"));
+  attempt(course, "af-1-5", 36, 50, 70, [0, 1]);
+  attempt(course, "af-1-5", 35, 75, 70, [0, 1, 3]);
+  attempt(course, "af-2-5", 24, 100, 60);
+  attempt(course, "af-4-5", 2, 80, 70, [0, 1, 2, 3]);
   LESSON_PROGRESS.push({
-    id: `lp_wd-4-2_${DEMO_STUDENT_ID}`,
+    id: `lp_af-5-2_${DEMO_STUDENT_ID}`,
     userId: DEMO_STUDENT_ID,
     courseId: course,
-    itemId: "wd-4-2",
+    itemId: "af-5-2",
     lastPositionSec: 460,
     completed: false,
     updatedAt: daysAgo(0, 8, 40),
   });
 }
-/* Guitar: two videos done, third in progress. */
-complete("crs_guitar", "gt-1-1", 10, 470);
-complete("crs_guitar", "gt-1-2", 9, 550);
-LESSON_PROGRESS.push({ id: `lp_gt-1-3_${DEMO_STUDENT_ID}`, userId: DEMO_STUDENT_ID, courseId: "crs_guitar", itemId: "gt-1-3", lastPositionSec: 250, completed: false, updatedAt: daysAgo(3, 20, 5) });
-/* Colour + Money: everything finished, every quiz passed. */
-for (const [course, start] of [["crs_colour", 158], ["crs_money", 200]] as const) {
-  let d = start;
-  for (const it of items(course)) {
-    if (it.type === "quiz") attempt(course, it.id, d, 100, it.quiz.passPercentage);
-    else complete(course, it.id, d, it.type === "video" ? it.lesson.durationSec : 0);
-    d -= course === "crs_colour" ? 3 : 3;
-  }
-}
 
 export const NOTES: Note[] = [
-  { id: "note_1", userId: DEMO_STUDENT_ID, courseId: "crs_webdev", itemId: "wd-2-1", atSec: 312, text: "Padding is INSIDE the border, margin is outside. Draw the box if confused.", createdAt: daysAgo(36, 21, 40) },
-  { id: "note_2", userId: DEMO_STUDENT_ID, courseId: "crs_webdev", itemId: "wd-2-2", atSec: 645, text: "justify-content = main axis, align-items = cross axis. flex-direction flips them!", createdAt: daysAgo(33, 22, 5) },
-  { id: "note_3", userId: DEMO_STUDENT_ID, courseId: "crs_webdev", itemId: "wd-3-2", atSec: 420, text: "clamp(min, preferred, max) for font sizes. Try clamp(1rem, 2.5vw, 1.5rem).", createdAt: daysAgo(19, 21, 0) },
-  { id: "note_4", userId: DEMO_STUDENT_ID, courseId: "crs_webdev", itemId: "wd-4-2", atSec: 380, text: "Functions should do ONE thing. Name them with a verb: getTotal, showMenu.", createdAt: daysAgo(0, 8, 35) },
-  { id: "note_5", userId: DEMO_STUDENT_ID, courseId: "crs_money", itemId: "mn-3-2", atSec: 505, text: "Starting at 24 vs 34 with ₹2,000/month: almost 2.5x the corpus at 60. Start the SIP now.", createdAt: daysAgo(180, 22, 30) },
+  { id: "note_1", userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, itemId: "af-2-2", atSec: 312, text: "60s beat sheet: hook 0-5s, want 5-20s, obstacle 20-45s, turn 45-60s.", createdAt: daysAgo(31, 21, 40) },
+  { id: "note_2", userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, itemId: "af-3-2", atSec: 645, text: "Name the craft, not the vibe: lens + film stock + light source + era. Drop 'cinematic, 8K'.", createdAt: daysAgo(20, 22, 5) },
+  { id: "note_3", userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, itemId: "af-4-1", atSec: 420, text: "Wide = context, 35mm = honest, 85mm = intimate. Pick the lens for the feeling.", createdAt: daysAgo(12, 21, 0) },
+  { id: "note_4", userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, itemId: "af-4-2", atSec: 380, text: "Move the camera only when something changes. Slow push-in = a realisation landing.", createdAt: daysAgo(10, 21, 5) },
+  { id: "note_5", userId: DEMO_STUDENT_ID, courseId: FLAGSHIP, itemId: "af-5-2", atSec: 410, text: "Kling for physical motion, Veo for faces. Test the hero shot on both before spending credits.", createdAt: daysAgo(0, 8, 35) },
 ];
 
 /* ============================================================================= reviews */
 /* Ratings, reviewers, dates and helpful votes come from the shared rng `r` (keep its call order: every section
    below draws from the same stream). The words are assigned afterwards, without `r`, so each course reads like
    its own learners wrote it:
-   - comments come from that course's own pool (web vs Python, chemistry vs JEE physics never share lines),
+   - comments come from that course's own pool (each course reads like its own learners wrote it),
      topped up with general lines that fit any course; nothing repeats inside one tutor's courses;
    - 3 stars and below get honest, critical comments; about half the 4-star reviews get a mild "good, but";
      5-star reviews never carry a complaint;
    - titles come from the rating bucket, and a tutor reply always matches the review it answers. */
 const COURSE_LINES: Record<string, string[]> = {
-  crs_webdev: [
-    "I shipped my first portfolio site. Recruiters actually opened it!",
-    "Finally understand Flexbox. The diagrams are gold.",
-    "The to-do list project tied everything together nicely.",
-    "Debugging tips in the JavaScript module saved me hours.",
-    "The way JavaScript is introduced, one tiny program at a time, is perfect.",
-    "Mobile-first finally makes sense. My site looks right on my phone now.",
-    "Deployed my site for free in module 6 and sent the link to my whole family.",
-    "The box model lesson explained why my layouts kept jumping.",
-    "Arjun answers like a senior dev who actually wants you to get it.",
-    "The checkpoint tests caught every gap in my understanding. Annoying, but right.",
-    "Clear explanations of the boring setup stuff everyone else skips.",
-    "Grid for real layouts was the lesson I didn't know I needed.",
-    "I had given up on two bootcamp trials. This one I finished.",
-    "Git in 15 minutes sounded impossible. It took me 20, and I get it now.",
-  ],
-  crs_python: [
-    "pandas finally makes sense. I cleaned our office sales sheet in ten minutes.",
-    "The IPL project was the first time data felt fun.",
-    "Cleaning messy CSVs is half my job now, and this lesson nailed it.",
-    "Group by and pivot explained with cricket data. Perfect for my brain.",
-    "Went from copy-pasting code to understanding what each line does.",
-    "The choosing-the-right-chart lesson made my reports so much clearer.",
-    "Loved that every lesson ends with a notebook you can run yourself.",
-    "No stats degree needed, exactly as promised.",
-    "Seaborn in one lesson. My manager thinks I took a month-long course.",
-    "The practice datasets (UPI, rainfall, IPL) are such a good touch.",
-  ],
-  crs_colour: [
-    "I now explain my colour choices to clients instead of guessing.",
-    "The chai stall rebrand case study was brilliant.",
-    "The contrast module should be mandatory for every designer.",
-    "My client decks look calmer and more expensive now.",
-    "The palette exercises are addictive. I do one every morning.",
-    "The 60-30-10 rule fixed my posters overnight.",
-    "Loved the lesson on colour in Indian design traditions. Examples that finally feel like home.",
-    "I redid my portfolio colours after module 2. Got two replies the next week.",
-    "The 50 ready palettes file lives pinned in my Figma now.",
-    "Designing for colour blindness opened my eyes, literally.",
-  ],
-  crs_guitar: [
-    "Played my first full song on day 19. My family was shocked.",
-    "The chord switching drill is magic. Fingers finally listen.",
-    "Kabir is strict in the best way. The practice tracker kept me going.",
-    "The D DU UDU pattern unlocked half the songs I wanted to play.",
-    "My fingertips hurt and I am still smiling.",
-    "The F chord cheat saved my motivation in week three.",
-    "Short daily drills that fit between college and tuition.",
-  ],
-  crs_money: [
-    "Started my first SIP after module 3. No more money anxiety.",
-    "The tax slab lesson explained more than my CA did.",
-    "Shared the budget sheet with my whole family WhatsApp group.",
-    "Explained insurance without trying to sell me anything. Rare.",
-    "My parents watched the tax lessons with me. Big family win.",
-    "The emergency fund lesson alone was worth the price.",
-    "I track every rupee now and it does not feel like a chore.",
-    "Index funds vs active funds, finally explained without jargon.",
-    "The 50-30-20 budget, Indian edition, actually works on a fresher's salary.",
-    "Got my first credit card after the credit score lesson, and I pay it in full every month.",
-    "The compounding lesson made me start investing at 23 instead of 'someday'.",
-    "Nisha never makes you feel silly for not knowing this stuff.",
-  ],
-  crs_photo: [
-    "My Instagram grid looks intentional now. Friends keep asking for edits.",
-    "The window light portraits lesson changed how I see my own home.",
-    "Sana's presets are lovely, but learning to edit myself was the real win.",
-    "My food photos finally look like the food tastes.",
-    "The composition drills made my travel photos so much better.",
-    "Learnt more about light in a week than in two years of scrolling.",
-    "Editing lessons are calm and clear. No preset upselling.",
-    "Harsh noon sun used to ruin my photos. Not any more.",
-    "Leading lines in old city streets: I spent a whole Sunday in Chandni Chowk practising.",
-    "The five-slider edit is now my default. Takes a minute per photo.",
-    "Shooting people without making it weird was surprisingly helpful.",
-    "Made a twelve-frame photo essay of my nani's kitchen. Proudest thing I've made.",
-  ],
-  crs_chem: [
-    "Mole concept finally makes sense. Scored 92 in my unit test.",
-    "The visual explanations are perfect for board revision.",
-    "The previous-year JEE questions at the end were excellent practice.",
-    "Vikram sir explains the why, not just the formula.",
-    "IUPAC naming finally feels logical instead of memorised.",
-    "The tests after each topic feel exactly like exam questions.",
-    "My coaching notes make more sense after these visuals.",
-    "Equilibrium chapter in one evening. Did not think that was possible.",
-    "Doubts under each lesson get answered properly, with diagrams.",
-    "VSEPR with clay balls! I'll never forget those shapes now.",
-    "Atomic structure as a stadium is the best analogy I've ever heard.",
-    "Limiting reagent problems take me 30 seconds now.",
-    "Enthalpy as a bank account. Thermodynamics stopped scaring me.",
-    "Great for droppers who need a fresh way to see old topics.",
-    "pH and buffers finally clicked thanks to the seesaw picture.",
-  ],
-  crs_jee: [
-    "Projectile motion was my weakest chapter. Not any more.",
-    "The animations make Newton's laws feel obvious.",
-    "Short videos are perfect for revision between mock tests.",
-    "Free-body diagram drills improved my accuracy a lot.",
-    "Scored my best ever in the last mock. This course helped.",
-    "Friction problems that trap toppers trapped me too, until this lesson.",
-    "Reading motion graphs in seconds is not an exaggeration.",
-    "Rolling motion explained so cleanly. My coaching notes never managed that.",
-    "The relative motion tricks save me minutes in every mock.",
-    "The previous-year problems with full solutions are gold.",
-    "Moment of inertia without tears. Accurate title.",
-  ],
-  crs_podcast: [
-    "Recorded my first episode in a cupboard. It sounds great!",
-    "Launched with three episodes, just like Rhea suggested.",
-    "The mic placement trick alone fixed my echo.",
-    "Practical tips on editing fast, so you actually publish every week.",
-    "The cover art and show notes lessons were a nice surprise.",
-    "Got my first 100 listeners in five weeks with the launch plan.",
-  ],
-  crs_excel: [
-    "XLOOKUP and pivots save me an hour every Monday.",
-    "My manager now asks me to build the team dashboards.",
-    "Best Excel course for office work, full stop.",
-    "Finally understand pivot tables well enough to teach my team.",
-    "The keyboard shortcuts sheet is taped to my monitor.",
-    "SUMIFS finally makes sense. Month-end reports take half the time.",
-    "Real office examples, not textbook nonsense.",
-    "Built a sales dashboard my boss now opens every Monday.",
-    "Short, focused lessons I could watch at lunch.",
-    "Absolute vs relative references: the dollar signs make sense at last.",
-    "Slicers made our weekly sales review so much quicker.",
-    "Went from 'kind of good at Excel' to the actual Excel person in my office.",
-    "Charts your manager will actually read: accurate. Mine reads them now.",
-    "The practice workbook is full of realistic, messy data. Loved it.",
-    "IF, AND, OR with real reports instead of toy examples. Big difference.",
-  ],
-  crs_tally: [
-    "Our month-end closing is faster because of the GST lessons.",
-    "Set up my dad's shop in TallyPrime over one weekend.",
-    "Voucher entries finally make sense. The practice set is excellent.",
-    "GSTR-1 basics explained better than my accountant's office ever did.",
-    "Ledgers and groups explained simply. Very easy to follow.",
-    "HSN codes used to confuse me completely. Not any more.",
-    "Short and practical. Exactly what a small business owner needs.",
-  ],
-  crs_english: [
-    "I stopped translating in my head. Interviews feel so much easier.",
-    "The 2-minute daily habit is simple and it works.",
-    "I spoke up in a meeting for the first time in months.",
-    "The mirror practice sounded silly but it works.",
-    "My interview answers feel natural now, not memorised.",
-    "Gentle teaching. I never felt judged for my mistakes.",
-    "'Tell me about yourself' used to freeze me. I cracked my campus interview.",
-    "The disagreeing politely lesson is gold for client calls.",
-    "Small talk that doesn't feel small: I actually enjoy team lunches now.",
-    "Stress and pauses made my presentations so much clearer.",
-    "Tara's 30-day prompts kept me speaking every single day.",
-    "Phone calls used to make me sweat. Now I volunteer for them.",
-    "The pronunciation lessons are about being understood, not faking an accent. Loved that.",
-  ],
-  crs_kitchen: [
-    "My dosas are finally crispy. Amma approved!",
-    "The cold-weather fermentation tips worked in a Delhi winter.",
-    "My sambar tastes like my grandmother's now. Almost.",
-    "Saved my weeknights in the hostel. One batter, five dinners.",
-    "Clear measurements, no 'add as required' confusion.",
-    "My flatmates now request the coconut chutney every Sunday.",
-    "Tempering done right changed every dal I make.",
-    "Rasam in 20 minutes is now a weekly ritual in our house.",
-    "Made gunpowder podi in my Bengaluru flat. My Tamil neighbour asked for the recipe.",
-    "Lakshmi teaches like family. Patient and precise.",
+  crs_aifilm: [
+    "Made my first 60-second short in the capstone. My family thought I'd hired a crew.",
+    "The camera-language module changed how I prompt. My shots finally look directed, not generated.",
+    "Lens, movement, light: once Arjun explained the why, the models started listening.",
+    "The Veo vs Kling vs Runway lesson alone saved me thousands in wasted credits.",
+    "Style frames before video credits. Obvious once you hear it, and my budget thanks me.",
+    "Character sheets fixed my biggest problem: my lead finally looks like the same person in every shot.",
+    "The lip-sync lesson is gold. My Malayalam dialogue scene actually holds up in close-up.",
+    "I never thought about sound. Module 8 made my short feel twice as expensive.",
+    "Cutting AI footage in Resolve with J and L cuts hides every seam. Brilliant module.",
+    "The grading lesson tied shots from three different models into one film.",
+    "Arjun teaches like a director, not a tool demo. That's the difference.",
+    "The credit planner sheet keeps my generations on budget. Every shot has a job now.",
+    "My first brand client came from the capstone short I posted on Reels.",
+    "The rights and disclosure lesson made me confident pitching AI work to clients.",
+    "Loglines that survive the edit: my scripts are tighter and my films are shorter, in a good way.",
+    "Watched the free pipeline lesson twice and bought the course that night. No regrets.",
   ],
 };
 /** General praise that fits any course. */
@@ -532,7 +368,7 @@ const WORK_LINES = [
   "Did it after office hours, one lesson a night. Very doable.",
   "My team lead noticed the difference within a month.",
 ];
-const WORK_CATEGORIES = new Set(["cat_coding", "cat_business", "cat_languages", "cat_design", "cat_life"]);
+const WORK_CATEGORIES = new Set(["cat_film", "cat_ads"]);
 type Critique = { text: string; reply: string };
 /** "Good, but" lines for some 4-star reviews, each with the reply a tutor would actually write. */
 const MILD_LINES: Critique[] = [
@@ -548,19 +384,10 @@ const MILD_LINES: Critique[] = [
 ];
 /** 3 stars and below: course-specific complaints first, then general ones. */
 const COURSE_CRITIQUES: Record<string, Critique[]> = {
-  crs_excel: [
-    { text: "Good for beginners, but I wanted Power Query and macros too. Felt too basic for me.", reply: "Thanks for the honest review. An advanced course with Power Query is in the works." },
-    { text: "I'm on Excel 2016 at the office, so the XLOOKUP lessons were not much use to me.", reply: "Sorry about that! There's now a bonus video on INDEX + MATCH for older versions in module 2." },
-    { text: "The dashboard module is great, but the first two modules move very slowly.", reply: "Fair point. I've added chapter markers so you can skip ahead through the basics." },
-  ],
-  crs_photo: [
-    { text: "Nice lessons, but almost everything assumes an iPhone. The Android steps were thin.", reply: "Fair point. I've added Android walkthroughs to the settings and editing lessons." },
-  ],
-  crs_colour: [
-    { text: "Lovely theory, but I wanted more hands-on critique of my own palettes.", reply: "Thank you for this. Monthly palette critiques in the Q&A start next month." },
-  ],
-  crs_python: [
-    { text: "Good intro, but the jump from loops to pandas felt sudden for a complete beginner.", reply: "Thanks for telling me. I've added a bridge lesson on lists and dicts before pandas." },
+  crs_aifilm: [
+    { text: "Great teaching, but the tool credits add up fast. Budget more than you think for the capstone.", reply: "Fair point. I've added a free-tier-only route through the capstone to the credit planner." },
+    { text: "A couple of interface walkthroughs are already out of date because the tools update so often.", reply: "Thanks for flagging it. The image-to-video lessons were re-recorded this month, and I note the tool version on every walkthrough now." },
+    { text: "I wanted more on anime and stylised looks. The course leans towards live-action realism.", reply: "Good note. A stylised-looks lesson is going into module 3 in the next update." },
   ],
 };
 const CRITIQUES: Critique[] = [
@@ -577,12 +404,12 @@ const REVIEW_TITLES = {
   low: ["Good, not perfect", "Decent, could be tighter", "Mixed feelings"],
 } as const;
 const THANKS_REPLIES = [
-  "Thank you so much! Post your progress in the Q&A, I'd love to see it.",
-  "This made my day. Keep practising, the next module gets even more fun.",
+  "Thank you so much! Post your short in the Q&A, I'd love to see it.",
+  "This made my day. Keep shooting, the next module gets even more fun.",
   "So glad it helped. A part two is in the works!",
   "Love hearing this. Thank you for taking the time to write it.",
   "That's exactly why I made this course. Proud of you!",
-  "Thanks! Don't skip the practice files, that's where it really sticks.",
+  "Thanks! Don't skip the capstone, that's where it all comes together.",
   "Reading this with my morning chai. Thank you, truly.",
 ];
 
@@ -663,18 +490,14 @@ for (const c of COURSES_BASE.filter((x) => x.learners > 0)) {
     if (rev.reply) rev.reply.body = critique?.reply ?? THANKS_REPLIES[(tick(`${tutorId}:thanks`, THANKS_REPLIES.length) + [...tutorId].reduce((s, ch) => s + ch.charCodeAt(0), 0)) % THANKS_REPLIES.length];
   }
 }
-REVIEWS.push(
-  { id: "rev_priya_colour", userId: DEMO_STUDENT_ID, courseId: "crs_colour", rating: 5, title: "Changed how I see colour", comment: "I'm learning to code, but this made my side projects look ten times better. The contrast module is excellent.", createdAt: daysAgo(110, 22), helpful: 14, reply: { body: "Priya, this is lovely. Code + colour is a superpower combination!", createdAt: daysAgo(109, 11) } },
-  { id: "rev_priya_money", userId: DEMO_STUDENT_ID, courseId: "crs_money", rating: 5, title: "Money anxiety: gone", comment: "Set up my emergency fund and first SIP while doing the course. Nisha explains things so calmly.", createdAt: daysAgo(150, 21), helpful: 22 },
-);
-/* A review posted on the wrong course (it describes South Indian Kitchen): the target of report rpt_1. */
+/* A review about a product rather than the course (someone reviewed their gear order here): the target of report rpt_1. */
 REVIEWS.push({
-  id: "rev_photo_offtopic",
+  id: "rev_offtopic_1",
   userId: "u_s037",
-  courseId: "crs_photo",
+  courseId: FLAGSHIP,
   rating: 4,
-  title: "Tasty stuff",
-  comment: "My sambar finally tastes like amma's, and the overnight dosa batter tip saved my Sunday. The tadka module alone is worth it.",
+  title: "Good kit",
+  comment: "The ring light and tripod clamp arrived well packed and work great. Delivery took a week though.",
   createdAt: daysAgo(2, 20, 40),
   helpful: 0,
 });
@@ -711,7 +534,7 @@ REVIEWS.push({
     return Math.min(max, min + rv.int(1, 40));
   };
   const buy = (rev: Review, userId: string, days: number) => {
-    addOrder({ userId, courseId: rev.courseId, days, coupon: rv.chance(0.25) ? rv.pick(["WELCOME10", "FLAT200"]) : undefined }, rv);
+    addOrder({ userId, courseId: rev.courseId, days, coupon: couponOn(days, rv, 0.25) }, rv);
   };
   for (const rev of [...REVIEWS].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))) {
     if (rev.userId === DEMO_STUDENT_ID || ownsBefore(rev.userId, rev.courseId, rev.createdAt)) continue;
@@ -762,42 +585,50 @@ REVIEWS.push({
 REVIEWS.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
 /* ============================================================================= wishlist */
-export const WISHLIST: WishlistItem[] = [
-  ...["crs_photo", "crs_chem", "crs_podcast", "crs_english"].map((courseId, i) => ({
-    id: `wl_priya_${i + 1}`,
-    userId: DEMO_STUDENT_ID,
-    courseId,
-    createdAt: daysAgo(3 + i * 6, 23, 10),
-  })),
-  ...Array.from({ length: 40 }, (_, i) => ({
-    id: `wl_${i + 1}`,
-    userId: r.pick(others).id,
-    courseId: r.pick(published).id,
-    createdAt: daysAgo(r.int(1, 120)),
-  })),
-];
+/* Filled at the very end of the seed (once every buyer is known): only learners who never bought a
+   course wishlist it. */
+export const WISHLIST: WishlistItem[] = [];
 
 /* ============================================================================= certificates */
 const ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const code = () => `TM-${Array.from({ length: 4 }, () => ALPHA[r.int(0, ALPHA.length - 1)]).join("")}-${Array.from({ length: 4 }, () => ALPHA[r.int(0, ALPHA.length - 1)]).join("")}`;
 const hours = (courseId: string) =>
   Math.max(1, Math.round(items(courseId).reduce((s, it) => s + (it.type === "video" ? it.lesson.durationSec : 0), 0) / 3600));
+/** Public pages (certificate check, terms, contact form) link to these two codes: they must keep resolving. */
+const PUBLIC_SAMPLE_CODES = ["TM-7QK4-M2XD", "TM-3HNP-8RVA"];
 
-export const CERTIFICATES: Certificate[] = [
-  { id: "cert_priya_colour", code: "TM-7QK4-M2XD", userId: DEMO_STUDENT_ID, courseId: "crs_colour", issuedAt: daysAgo(112, 22, 12), hours: hours("crs_colour") },
-  { id: "cert_priya_money", code: "TM-3HNP-8RVA", userId: DEMO_STUDENT_ID, courseId: "crs_money", issuedAt: daysAgo(151, 21, 32), hours: hours("crs_money") },
-  ...Array.from({ length: 14 }, (_, i) => {
-    const e = ENROLLMENTS.filter((x) => x.userId !== DEMO_STUDENT_ID && !x.revokedAt)[i * 3 + 1];
+/* 14 graduates (Priya is still in module 5): learners who bought at least 75 days ago, never asked a
+   question that is still their in-progress lesson, and aren't asking for a refund. Each finished
+   25-60 days after buying. */
+export const CERTIFICATES: Certificate[] = (() => {
+  const orderOf = new Map(ORDERS.map((o) => [o.id, o]));
+  const seen = new Set<string>();
+  const pool = ENROLLMENTS.filter((e) => {
+    const key = `${e.userId}|${e.courseId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return (
+      e.userId !== DEMO_STUDENT_ID &&
+      !e.revokedAt &&
+      e.courseId === FLAGSHIP &&
+      ageDays(e.createdAt) >= 75 &&
+      !ASKERS.has(key) &&
+      !(e.orderId && orderOf.get(e.orderId)?.refundRequest)
+    );
+  }).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  const n = Math.min(14, pool.length);
+  return Array.from({ length: n }, (_, i) => {
+    const e = pool[Math.floor((i * pool.length) / n)];
     return {
       id: `cert_${i + 1}`,
-      code: code(),
+      code: PUBLIC_SAMPLE_CODES[i] ?? code(),
       userId: e.userId,
       courseId: e.courseId,
-      issuedAt: daysAgo(Math.max(1, Math.round((new Date("2026-10-05").getTime() - new Date(e.createdAt).getTime()) / 86_400_000) - r.int(5, 20)), 20),
+      issuedAt: daysAgo(Math.max(1, ageDays(e.createdAt) - r.int(25, 60)), 20),
       hours: hours(e.courseId),
     };
-  }),
-];
+  });
+})();
 
 /* ============================================================================= other learners' progress */
 /*
@@ -937,10 +768,10 @@ export const COMMENTS: LessonComment[] = THREADS.flatMap((t, i) => {
 /* A spam reply under the free-preview Q&A (anyone can comment there): the target of report rpt_2. */
 COMMENTS.push({
   id: "cmt_spam_1",
-  courseId: "crs_webdev",
-  itemId: "wd-1-1",
+  courseId: FLAGSHIP,
+  itemId: "af-1-1",
   userId: "u_s049",
-  body: "Get every course 90% off at cheap-courses dot xyz!! DM me on Telegram for the link, limited slots.",
+  body: "Free unlimited Veo and Kling credits!! DM me on Telegram for the generator link, limited slots.",
   createdAt: daysAgo(0, 8, 5),
   parentId: "cmt_1",
   likes: 0,
@@ -986,45 +817,42 @@ COMMENTS.push({
 
 /* ============================================================================= tutor applications */
 const APPS: Omit<TutorApplication, "id" | "name" | "email" | "city">[] = [
-  { userId: PENDING_TUTOR_IDS[0], subject: "Kathak for beginners", categoryId: "cat_music", experience: "Trained Kathak dancer for 14 years, teach weekend batches of 20 kids and adults in Kolkata.", sampleUrl: "https://example.com/samples/kathak-tatkar-intro", why: "Most online dance classes skip the basics. I want to teach footwork and expressions properly, step by step.", plannedCourse: "Kathak Foundations: Tatkar to Your First Piece", status: "pending", submittedAt: daysAgo(1, 19, 20) },
-  { userId: PENDING_TUTOR_IDS[1], subject: "Data structures for interviews", categoryId: "cat_coding", experience: "SDE-2 at a fintech, have taken 150+ interviews and mentor juniors on DSA.", sampleUrl: "https://example.com/samples/dsa-patterns-notes", why: "Interview prep content is either too theoretical or just memorised answers. I teach patterns.", plannedCourse: "DSA Patterns for Placements", status: "pending", submittedAt: daysAgo(2, 22, 5) },
-  { userId: PENDING_TUTOR_IDS[2], subject: "Watercolour landscapes", categoryId: "cat_design", experience: "Freelance illustrator, run watercolour workshops at cafés in Lucknow.", sampleUrl: "https://example.com/samples/watercolour-sky-wash-lesson", why: "Watercolour feels scary to most people. I can make it relaxing and doable with cheap supplies.", plannedCourse: "Watercolour Weekends", status: "pending", submittedAt: daysAgo(3, 11, 40), history: [{ submittedAt: daysAgo(13, 10, 5), status: "changes_requested", decidedAt: daysAgo(10, 16, 30), decidedBy: DEMO_ADMIN_ID, decisionNote: "Your paintings are gorgeous, but a portfolio doesn't show us how you teach. Could you add a 3-minute lesson video, say a simple sky wash, and a rough outline?" }] },
-  { userId: PENDING_TUTOR_IDS[3], subject: "Spoken Tamil", categoryId: "cat_languages", experience: "School teacher for 9 years, teach Tamil to colleagues who moved to Chennai.", sampleUrl: "https://example.com/samples/everyday-tamil-lesson", why: "Lots of people move to Chennai for work and struggle with everyday Tamil. I want to help them feel at home.", plannedCourse: "Everyday Tamil in 21 Days", status: "pending", submittedAt: daysAgo(4, 16, 15) },
-  { userId: PENDING_TUTOR_IDS[4], subject: "Home workouts", categoryId: "cat_life", experience: "ACE-certified trainer, 6 years coaching working professionals online.", sampleUrl: "https://example.com/samples/home-strength-intro", why: "People quit gyms. Twenty-minute routines at home are what actually stick.", plannedCourse: "20-Minute Home Strength", status: "pending", submittedAt: daysAgo(5, 8, 50) },
-  { userId: PENDING_TUTOR_IDS[5], subject: "UPSC essay writing", categoryId: "cat_exam", experience: "Cleared UPSC Mains twice, mentor aspirants on essay and ethics papers.", sampleUrl: "https://example.com/samples/upsc-essay-structure", why: "Essay is the most underrated paper. Structure and practice can add 20+ marks.", plannedCourse: "UPSC Essay: Structure That Scores", status: "pending", submittedAt: daysAgo(6, 21, 0) },
-  { userId: "u_lakshmi", subject: "South Indian home cooking", categoryId: "cat_cooking", experience: "Recipe developer for two food brands, cooking for 20+ years.", sampleUrl: "https://example.com/samples/lakshmi-kitchen", why: "I want young people living alone to cook food that tastes like home.", plannedCourse: "South Indian Kitchen", status: "approved", submittedAt: daysAgo(305), decidedAt: daysAgo(301), decidedBy: DEMO_ADMIN_ID, decisionNote: "Lovely sample, clear plan. Welcome aboard!" },
-  { userId: "u_rhea", subject: "Podcasting", categoryId: "cat_creator", experience: "Producer of three podcasts with 200+ episodes.", sampleUrl: "https://example.com/samples/podcast-reel", why: "Everyone has a show in them. I can make starting painless.", plannedCourse: "Start a Podcast", status: "approved", submittedAt: daysAgo(334), decidedAt: daysAgo(331), decidedBy: "u_ops_karan", decisionNote: "Strong portfolio. Approved." },
-  { userId: "u_s052", subject: "Crypto trading signals", categoryId: "cat_business", experience: "Trading crypto for 2 years.", sampleUrl: "https://example.com/samples/crypto-signals", why: "I want to share my winning trades.", plannedCourse: "10x Crypto Signals", status: "rejected", submittedAt: daysAgo(40), decidedAt: daysAgo(37), decidedBy: DEMO_ADMIN_ID, decisionNote: "We don't host trading-signal or guaranteed-returns content. Thanks for applying." },
-  { userId: "u_s058", subject: "Mehndi design", categoryId: "cat_design", experience: "Bridal mehndi artist for 5 years in Indore.", sampleUrl: "https://example.com/samples/mehndi-photos", why: "Mehndi is a real skill and a real income for many women.", plannedCourse: "Mehndi from Basics to Bridal", status: "changes_requested", submittedAt: daysAgo(15), decidedAt: daysAgo(12), decidedBy: DEMO_ADMIN_ID, decisionNote: "Love the idea! Please share a 3-minute sample lesson video (not just photos) so we can see your teaching style." },
+  { userId: PENDING_TUTOR_IDS[0], subject: "Sound design and AI scoring", categoryId: "cat_film", experience: "Sound designer on Hindi web series for 8 years. Scores indie shorts with AI music tools and real stems.", sampleUrl: "https://example.com/samples/sound-design-breakdown", why: "Most AI shorts sound like a stock library. I can teach learners to design sound that makes generated footage feel shot.", plannedCourse: "Sound for AI Films: Foley, Ambience and Score", status: "pending", submittedAt: daysAgo(1, 19, 20) },
+  { userId: PENDING_TUTOR_IDS[1], subject: "Anime and stylised AI shorts", categoryId: "cat_film", experience: "2D animator turned AI artist. Makes anime-style shorts followed by 400k people across Instagram and YouTube.", sampleUrl: "https://example.com/samples/anime-short-breakdown", why: "Learners keep asking for stylised looks. I can teach consistent anime characters and motion without the uncanny feel.", plannedCourse: "Anime-Style Shorts with AI", status: "pending", submittedAt: daysAgo(2, 22, 5) },
+  { userId: PENDING_TUTOR_IDS[2], subject: "Colour grading for AI footage", categoryId: "cat_film", experience: "Freelance colourist in Lucknow. Grades music videos and ads in DaVinci Resolve.", sampleUrl: "https://example.com/samples/grading-lesson-shot-matching", why: "Footage from different models never matches. Grading is how it becomes one film, and most creators skip it.", plannedCourse: "Grade It Like Cinema: Resolve for AI Footage", status: "pending", submittedAt: daysAgo(3, 11, 40), history: [{ submittedAt: daysAgo(13, 10, 5), status: "changes_requested", decidedAt: daysAgo(10, 16, 30), decidedBy: DEMO_ADMIN_ID, decisionNote: "Your reel is gorgeous, but a reel doesn't show us how you teach. Could you add a 3-minute lesson video, say matching two shots from different models, and a rough outline?" }] },
+  { userId: PENDING_TUTOR_IDS[3], subject: "Tamil and Telugu dialogue and lip-sync", categoryId: "cat_film", experience: "Dubbing director for Tamil and Telugu films for 9 years.", sampleUrl: "https://example.com/samples/regional-lip-sync-lesson", why: "Regional-language dialogue is where AI lip-sync struggles most. I can show learners how to cast, direct and sync voices in Tamil and Telugu.", plannedCourse: "Regional Voices: Tamil and Telugu Dialogue for AI Films", status: "pending", submittedAt: daysAgo(4, 16, 15) },
+  { userId: PENDING_TUTOR_IDS[4], subject: "AI product films and ads", categoryId: "cat_ads", experience: "Creative producer at a Bengaluru D2C agency. Ships 20+ AI product spots a month.", sampleUrl: "https://example.com/samples/product-film-breakdown", why: "Brands want AI ads now, and creators need to keep a product exactly on-brand in every frame. I do it every day.", plannedCourse: "AI Product Films That Clients Approve", status: "pending", submittedAt: daysAgo(5, 8, 50) },
+  { userId: PENDING_TUTOR_IDS[5], subject: "AI music videos for indie artists", categoryId: "cat_musicvideo", experience: "Directed 30+ music videos for indie artists in Mumbai, the last ten made almost entirely with AI.", sampleUrl: "https://example.com/samples/indie-music-video", why: "Indie musicians can't afford shoots. I can teach creators to make music videos that artists actually release.", plannedCourse: "Music Videos on an Indie Budget", status: "pending", submittedAt: daysAgo(6, 21, 0) },
+  { userId: DEMO_TUTOR_ID, subject: "AI filmmaking (lead director)", categoryId: "cat_film", experience: "Directed ads, music videos and short films for a decade. Has made AI shorts since the first image-to-video models.", sampleUrl: "https://example.com/samples/arjun-rao-showreel", why: "I want to teach the director's half of AI filmmaking: story, shots and the cut, not just the buttons.", plannedCourse: "AI Filmmaking: Prompt to Premiere", status: "approved", submittedAt: daysAgo(638), decidedAt: daysAgo(635), decidedBy: DEMO_ADMIN_ID, decisionNote: "Outstanding reel and a clear plan. Welcome aboard: this becomes the flagship." },
+  { userId: "u_s052", subject: "Celebrity face-swap ads", categoryId: "cat_ads", experience: "Makes viral face-swap videos of film stars for brand pages.", sampleUrl: "https://example.com/samples/faceswap-reel", why: "Celebrity face-swap ads get huge views and brands pay well for them.", plannedCourse: "Celebrity Face-Swap Ads", status: "rejected", submittedAt: daysAgo(40), decidedAt: daysAgo(37), decidedBy: DEMO_ADMIN_ID, decisionNote: "We don't teach content that uses real people's faces or voices without their consent. Thanks for applying." },
+  { userId: "u_s058", subject: "AI moments for wedding films", categoryId: "cat_film", experience: "Wedding filmmaker in Indore for 5 years. Adds AI title sequences and dream shots to her films.", sampleUrl: "https://example.com/samples/wedding-film-stills", why: "Wedding films are a huge market in India, and AI scenes are what couples now ask for.", plannedCourse: "AI Moments for Wedding Films", status: "changes_requested", submittedAt: daysAgo(15), decidedAt: daysAgo(12), decidedBy: DEMO_ADMIN_ID, decisionNote: "Love the idea! Please share a 3-minute sample lesson video (not just stills) so we can see your teaching style." },
 ];
 /* The course outline each applicant sketched (TutorApplication.courseOutline), by applicant. */
 const APP_OUTLINES: Record<string, string[]> = {
-  [PENDING_TUTOR_IDS[0]]: ["Posture, tatkar and counting the 16-beat teentaal", "Hastaks and basic chakkars without getting dizzy", "Your first tukda, slowly then at speed", "Expressions (abhinaya) for a short bhajan", "Putting it together: a 3-minute piece to perform"],
-  [PENDING_TUTOR_IDS[1]]: ["How interviewers think: patterns over problems", "Two pointers and sliding window", "Hashing, prefix sums and the classic traps", "Trees and graphs: BFS, DFS and when to use which", "Dynamic programming from recursion up", "Mock interview walkthroughs with real questions"],
-  [PENDING_TUTOR_IDS[2]]: ["A ₹600 starter kit and how to use it", "Washes, gradients and controlling water", "Skies and clouds in one sitting", "Trees, hills and simple reflections", "Your first full landscape, step by step"],
-  [PENDING_TUTOR_IDS[3]]: ["Sounds and script basics, just enough to read signboards", "Greetings, auto rides and asking for directions", "Shopping, bargaining and numbers", "Office small talk and phone calls", "Ordering food and making friends with neighbours"],
-  [PENDING_TUTOR_IDS[4]]: ["Warm-up and mobility you can do in a 1BHK", "Lower body: squats, lunges, glute bridges", "Upper body with a backpack and a chair", "Core that doesn't wreck your back", "A 4-week plan with progress checks"],
-  [PENDING_TUTOR_IDS[5]]: ["What examiners actually reward", "Choosing a topic in 5 minutes", "Building a structure: intro, dimensions, way forward", "Using examples, data and quotes without stuffing", "Timed practice with model answers"],
-  u_s058: ["Cones, paste consistency and clean lines", "Basic motifs: leaves, florals, paisley", "Arabic style for hands and feet", "Full bridal layout and portraits", "Pricing your work and getting first clients"],
+  [PENDING_TUTOR_IDS[0]]: ["Listening like a sound designer: what each shot needs", "Ambience and room tone that glue AI shots together", "Foley for generated footage: footsteps, cloth, props", "Briefing AI music tools and editing the stems", "Mixing for phones, YouTube and festival screens"],
+  [PENDING_TUTOR_IDS[1]]: ["An anime character sheet the models can follow", "Style frames: cel shading, line weight and palettes", "Motion that reads as animation, not video", "Lip-sync and expressions for stylised faces", "A 30-second anime opening, start to finish"],
+  [PENDING_TUTOR_IDS[2]]: ["Why AI shots never match out of the box", "Balancing: exposure, white balance and contrast", "Shot matching across Veo, Kling and Runway clips", "Building a look from a style bible", "Skin tones, LUTs and delivering for Reels and YouTube"],
+  [PENDING_TUTOR_IDS[3]]: ["Casting voices for Tamil and Telugu characters", "Writing dialogue that syncs: syllables and mouth shapes", "Directing AI voice performances in regional languages", "Lip-sync passes and fixing the frames that slip", "Subtitles and dubbing for pan-India releases"],
+  [PENDING_TUTOR_IDS[4]]: ["Reading a brand brief and a brand book", "Product consistency: packs, labels and logos", "Macro, splash and turntable hero shots", "Cut-downs for every placement", "Pricing and rights for AI ad work"],
+  [PENDING_TUTOR_IDS[5]]: ["Turning a track into a treatment", "Beat maps and shot timing", "Performance shots and vocal lip-sync", "Lyric moments and dream sequences", "Releasing with the artist: cuts, covers and credits"],
+  u_s058: ["What couples ask for: AI title sequences and dream shots", "Matching AI shots to real wedding footage", "Consent and likeness when you use couples' photos", "Story-led highlight edits", "Pricing AI add-ons in your packages"],
 };
 /* The rest of each applicant's wizard answers (years, languages, website, payout), by applicant. */
 const APP_EXTRAS: Record<string, Pick<TutorApplication, "years" | "languages" | "website" | "payout">> = {
-  [PENDING_TUTOR_IDS[0]]: { years: "7+", languages: ["Hindi", "Bengali", "English"], website: "https://example.com/kathak-with-ishaan", payout: { country: "IN", method: "UPI", gst: "no" } },
-  [PENDING_TUTOR_IDS[1]]: { years: "3-7", languages: ["English", "Hindi"], website: "https://example.com/arnav-codes", payout: { country: "IN", method: "Bank transfer (NEFT/IMPS)", gst: "unsure" } },
-  [PENDING_TUTOR_IDS[2]]: { years: "1-3", languages: ["English", "Hindi"], website: "https://example.com/pranav-paints", payout: { country: "IN", method: "UPI", gst: "no" } },
-  [PENDING_TUTOR_IDS[3]]: { years: "7+", languages: ["Tamil", "English"], payout: { country: "IN", method: "Bank transfer (NEFT/IMPS)", gst: "no" } },
-  [PENDING_TUTOR_IDS[4]]: { years: "3-7", languages: ["English", "Hindi", "Kannada"], website: "https://example.com/20-min-strength", payout: { country: "AE", method: "Bank transfer" } },
-  [PENDING_TUTOR_IDS[5]]: { years: "1-3", languages: ["English", "Hindi"], payout: { country: "IN", method: "UPI", gst: "yes", gstin: "07AAPFU0939F1ZV" } },
-  u_lakshmi: { years: "7+", languages: ["Tamil", "English"], website: "https://example.com/lakshmis-kitchen", payout: { country: "IN", method: "Bank transfer (NEFT/IMPS)", gst: "yes", gstin: "33AAKCS2291M1Z4" } },
-  u_rhea: { years: "3-7", languages: ["English", "Hindi"], website: "https://example.com/rhea-kapoor-audio", payout: { country: "IN", method: "UPI", gst: "yes", gstin: "27AAJCR4417K1ZQ" } },
+  [PENDING_TUTOR_IDS[0]]: { years: "7+", languages: ["Hindi", "English"], website: "https://example.com/ishaan-sound", payout: { country: "IN", method: "UPI", gst: "no" } },
+  [PENDING_TUTOR_IDS[1]]: { years: "3-7", languages: ["English", "Hindi"], website: "https://example.com/arnav-animates", payout: { country: "IN", method: "Bank transfer (NEFT/IMPS)", gst: "unsure" } },
+  [PENDING_TUTOR_IDS[2]]: { years: "1-3", languages: ["English", "Hindi"], website: "https://example.com/pranav-grades", payout: { country: "IN", method: "UPI", gst: "no" } },
+  [PENDING_TUTOR_IDS[3]]: { years: "7+", languages: ["Tamil", "Telugu", "English"], payout: { country: "IN", method: "Bank transfer (NEFT/IMPS)", gst: "no" } },
+  [PENDING_TUTOR_IDS[4]]: { years: "3-7", languages: ["English", "Hindi", "Kannada"], website: "https://example.com/dev-makes-ads", payout: { country: "AE", method: "Bank transfer" } },
+  [PENDING_TUTOR_IDS[5]]: { years: "1-3", languages: ["English", "Hindi"], payout: { country: "IN", method: "UPI", gst: "yes", gstin: "27AAPFU0939F1ZV" } },
+  [DEMO_TUTOR_ID]: { years: "7+", languages: ["English", "Hindi", "Kannada"], website: "https://example.com/arjun-rao-films", payout: { country: "IN", method: "Bank transfer (NEFT/IMPS)", gst: "yes", gstin: "29AAKCA2291M1Z4" } },
   u_s052: { years: "1-3", languages: ["English"], payout: { country: "IN", method: "UPI", gst: "no" } },
-  u_s058: { years: "3-7", languages: ["Hindi"], website: "https://example.com/trisha-mehndi", payout: { country: "IN", method: "UPI", gst: "unsure" } },
+  u_s058: { years: "3-7", languages: ["Hindi"], website: "https://example.com/trisha-weddings", payout: { country: "IN", method: "UPI", gst: "unsure" } },
 };
 export const TUTOR_APPLICATIONS: TutorApplication[] = APPS.map((a, i) => {
-  const p = STUDENTS.find((s) => s.id === a.userId);
-  const fallback = { name: a.userId === "u_lakshmi" ? "Lakshmi Raman" : "Rhea Kapoor", email: a.userId === "u_lakshmi" ? "lakshmi.raman@tamada.demo" : "rhea.kapoor@tamada.demo", city: a.userId === "u_lakshmi" ? "Madurai" : "Mumbai" };
+  const p = USERS.find((x) => x.id === a.userId);
   const courseOutline = APP_OUTLINES[a.userId];
-  return { id: `app_${i + 1}`, name: p?.name ?? fallback.name, email: p?.email ?? fallback.email, city: p?.city ?? fallback.city, ...a, ...APP_EXTRAS[a.userId], ...(courseOutline ? { courseOutline } : {}) };
+  return { id: `app_${i + 1}`, name: p?.name ?? "Applicant", email: p?.email ?? "", city: p?.city ?? "", ...a, ...APP_EXTRAS[a.userId], ...(courseOutline ? { courseOutline } : {}) };
 });
 
 /* ============================================================================= payouts */
@@ -1034,7 +862,7 @@ export const TUTOR_APPLICATIONS: TutorApplication[] = APPS.map((a, i) => {
      gross = units x price x COUPON_FACTOR / 1.18 (ex-GST), net = gross x revenueShare.
    One row per month since the tutor's first sale. October (the open month) is
    "scheduled" and holds the FULL-MONTH projection (month-to-date x 31/5; screens
-   prorate it back with x 5/31). September is "processing" (Farhan's is on hold).
+   prorate it back with x 5/31). September is "processing".
    Older months are "paid" on the 10th of the following month, which is the rule
    the tutor earnings page states. */
 export const PAYOUTS: Payout[] = [];
@@ -1054,7 +882,7 @@ export const PAYOUTS: Payout[] = [];
       if (!units && !open) continue;
       const gross = Math.round(open ? project(grossMtd) : grossMtd);
       const net = Math.round(gross * shareOf(tutorId));
-      const status: Payout["status"] = open ? "scheduled" : period === "2026-09" ? (tutorId === "u_farhan" ? "on_hold" : "processing") : "paid";
+      const status: Payout["status"] = open ? "scheduled" : period === "2026-09" ? "processing" : "paid";
       const [y, m] = period.split("-").map(Number);
       const payDay = m === 12 ? `${y + 1}-01-10` : `${y}-${String(m + 1).padStart(2, "0")}-10`;
       PAYOUTS.push({
@@ -1094,27 +922,27 @@ const arjunOpenWhere = (() => {
 const arjunReview = REVIEWS.find((x) => x.rating === 5 && TUTOR_OF[x.courseId] === DEMO_TUTOR_ID && x.userId !== DEMO_STUDENT_ID);
 
 export const NOTIFICATIONS: Notification[] = [
-  { id: "ntf_p1", userId: DEMO_STUDENT_ID, kind: "question", title: "Arjun answered your question", body: "\"Use gap almost always: it only adds space between items…\"", href: "/learn/web-dev-from-zero/wd-2-2", createdAt: daysAgo(32, 11), read: true },
-  { id: "ntf_p2", userId: DEMO_STUDENT_ID, kind: "course", title: "New lesson in Guitar in 30 Days", body: "Kabir added \"Record yourself and improve\" to module 5.", href: "/courses/guitar-in-30-days", createdAt: daysAgo(1, 18), read: false },
-  { id: "ntf_p3", userId: DEMO_STUDENT_ID, kind: "order", title: "You've got Python for Data", body: "The Tamada team granted you access. Happy learning!", href: "/learn/python-for-data", createdAt: daysAgo(5, 12), read: false },
-  { id: "ntf_p4", userId: DEMO_STUDENT_ID, kind: "quiz", title: "Checkpoint ahead", body: "Pass the JavaScript checkpoint to unlock module 5 of Web Dev From Zero.", href: "/learn/web-dev-from-zero/wd-4-4", createdAt: daysAgo(0, 8), read: false },
-  { id: "ntf_p5", userId: DEMO_STUDENT_ID, kind: "system", title: "Diwali offer starts soon", body: "DIWALI25 gives 25% off every course from 15 October.", href: "/courses", createdAt: daysAgo(2, 10), read: true },
+  { id: "ntf_p1", userId: DEMO_STUDENT_ID, kind: "question", title: "Arjun answered your question", body: "\"Move when something changes for the character…\"", href: "/learn/ai-filmmaking/af-4-2", createdAt: daysAgo(9, 11), read: true },
+  { id: "ntf_p2", userId: DEMO_STUDENT_ID, kind: "course", title: "Fresh lesson in AI Filmmaking", body: "Arjun re-recorded \"Veo, Kling and Runway, side by side\" in module 5 with the latest model versions.", href: "/learn/ai-filmmaking/af-5-2", createdAt: daysAgo(1, 18), read: false },
+  { id: "ntf_p3", userId: DEMO_STUDENT_ID, kind: "order", title: "You're in: AI Filmmaking", body: "Payment received. Your first lesson is waiting, and so is your 60-second short.", href: "/learn/ai-filmmaking", createdAt: priyaFilm.createdAt, read: true },
+  { id: "ntf_p4", userId: DEMO_STUDENT_ID, kind: "quiz", title: "Checkpoint ahead", body: "Pass the image-to-video checkpoint to unlock module 6 of AI Filmmaking.", href: "/learn/ai-filmmaking/af-5-5", createdAt: daysAgo(0, 8), read: false },
+  { id: "ntf_p5", userId: DEMO_STUDENT_ID, kind: "system", title: "Diwali offer starts soon", body: "DIWALI25 gives 25% off from 15 October. Tell a friend who keeps asking how you make your films.", href: "/courses/ai-filmmaking", createdAt: daysAgo(2, 10), read: true },
   { id: "ntf_a1", userId: DEMO_TUTOR_ID, kind: "question", title: `${arjunOpen.length} unanswered question${arjunOpen.length === 1 ? "" : "s"}`, body: `Learners are waiting on ${arjunOpenWhere}.`, href: "/tutor/questions", createdAt: daysAgo(0, 9), read: false },
-  { id: "ntf_a2", userId: DEMO_TUTOR_ID, kind: "course", title: "Git Without Fear is in review", body: "Our team usually replies within 3 working days.", href: "/tutor/courses", createdAt: daysAgo(2, 18, 25), read: false },
-  { id: "ntf_a3", userId: DEMO_TUTOR_ID, kind: "review", title: "New 5-star review", body: `"${arjunReview?.comment ?? "I shipped my first portfolio site. Recruiters actually opened it!"}"`, href: "/tutor/analytics", createdAt: arjunReview?.createdAt ?? daysAgo(1, 21), read: true },
+  { id: "ntf_a2", userId: DEMO_TUTOR_ID, kind: "course", title: "AI Ads & Brand Films (bonus) is in review", body: "Our team usually replies within 3 working days.", href: "/tutor/courses", createdAt: daysAgo(2, 18, 25), read: false },
+  { id: "ntf_a3", userId: DEMO_TUTOR_ID, kind: "review", title: "New 5-star review", body: `"${arjunReview?.comment ?? "Made my first 60-second short in the capstone. My family thought I'd hired a crew."}"`, href: "/tutor/analytics", createdAt: arjunReview?.createdAt ?? daysAgo(1, 21), read: true },
   { id: "ntf_a4", userId: DEMO_TUTOR_ID, kind: "payout", title: "September payout is processing", body: "Expected in your bank account by 10 October.", href: "/tutor/earnings", createdAt: daysAgo(4, 10), read: true },
   { id: "ntf_ad1", userId: DEMO_ADMIN_ID, kind: "application", title: "6 tutor applications waiting", body: "Oldest one was submitted 6 days ago.", href: "/admin/tutors", createdAt: daysAgo(0, 9, 30), read: false },
-  { id: "ntf_ad2", userId: DEMO_ADMIN_ID, kind: "course", title: "2 courses awaiting review", body: "Git Without Fear and UI Design in Figma.", href: "/admin/courses", createdAt: daysAgo(2, 18, 30), read: false },
+  { id: "ntf_ad2", userId: DEMO_ADMIN_ID, kind: "course", title: "1 course awaiting review", body: "AI Ads & Brand Films (bonus).", href: "/admin/courses", createdAt: daysAgo(2, 18, 30), read: false },
   // + one "Refund requested" per open request, added at the end of the seed (refund story)
   { id: "ntf_ad4", userId: DEMO_ADMIN_ID, kind: "system", title: "DIWALI25 goes live in 10 days", body: "Check the coupon settings before it starts.", href: "/admin/coupons", createdAt: daysAgo(3, 12), read: true },
 ];
 
 /* ============================================================================= reports (moderation) */
 export const REPORTS: Report[] = [
-  { id: "rpt_1", kind: "review", targetId: "rev_photo_offtopic", courseId: "crs_photo", reporterId: "u_s010", reason: "Review mentions a different course", status: "open", createdAt: daysAgo(1, 13) },
-  { id: "rpt_2", kind: "comment", targetId: "cmt_spam_1", courseId: "crs_webdev", reporterId: "u_s002", reason: "Spam link in reply", status: "open", createdAt: daysAgo(0, 9) },
-  { id: "rpt_3", kind: "course", targetId: "crs_reels", courseId: "crs_reels", reporterId: "u_s031", reason: "Uses copyrighted film audio", status: "resolved", createdAt: daysAgo(17, 16) },
-  { id: "rpt_4", kind: "comment", targetId: "cmt_10", courseId: "crs_money", reporterId: "u_s045", reason: "Financial advice concern", status: "dismissed", createdAt: daysAgo(55, 10) },
+  { id: "rpt_1", kind: "review", targetId: "rev_offtopic_1", courseId: FLAGSHIP, reporterId: "u_s010", reason: "Review is about a gear order, not the course", status: "open", createdAt: daysAgo(1, 13) },
+  { id: "rpt_2", kind: "comment", targetId: "cmt_spam_1", courseId: FLAGSHIP, reporterId: "u_s002", reason: "Spam link in reply", status: "open", createdAt: daysAgo(0, 9) },
+  { id: "rpt_3", kind: "course", targetId: FLAGSHIP, courseId: FLAGSHIP, reporterId: "u_s031", reason: "Thinks a lesson's example short uses copyrighted film music", status: "resolved", createdAt: daysAgo(17, 16) },
+  { id: "rpt_4", kind: "comment", targetId: "cmt_10", courseId: FLAGSHIP, reporterId: "u_s045", reason: "Looks like an ad for a prompt pack", status: "dismissed", createdAt: daysAgo(55, 10) },
 ];
 
 /* ============================================================================= the demo tutor's complete recent ledger */
@@ -1218,6 +1046,40 @@ export const LEDGER_BUYERS: Profile[] = [];
   ORDERS.forEach((o, i) => (o.number = `TM-${24610 + (ORDERS.length - i) * 7 + (i % 5)}`));
 }
 
+/* ============================================================================= refund requests */
+/* Two open refund requests, both on the flagship and both from recent buyers who bought 2 to 6 days
+   before asking (inside the refund window) and never pressed play (their reasons say so). */
+{
+  const asked = [daysAgo(1, 14, 50), daysAgo(0, 9, 10)];
+  const fits = (o: Order, at: string) => {
+    const gap = (new Date(at).getTime() - new Date(o.createdAt).getTime()) / 86_400_000;
+    return gap >= 2 && gap <= 6;
+  };
+  const started = (o: Order) => LESSON_PROGRESS.some((p) => p.userId === o.userId && p.courseId === o.courseId) || QUIZ_ATTEMPTS.some((a) => a.userId === o.userId && a.courseId === o.courseId);
+  const candidates = ORDERS.filter(
+    (o) =>
+      o.courseId === FLAGSHIP &&
+      o.status === "paid" &&
+      o.provider !== "admin" &&
+      o.amount > 0 &&
+      o.userId !== DEMO_STUDENT_ID &&
+      !ASKERS.has(`${o.userId}|${o.courseId}`) &&
+      !CERTIFICATES.some((c) => c.userId === o.userId && c.courseId === o.courseId),
+  );
+  const pick = (at: string, not?: Order) =>
+    candidates.find((o) => o !== not && o.userId !== not?.userId && fits(o, at) && !started(o)) ?? candidates.find((o) => o !== not && o.userId !== not?.userId && fits(o, at));
+  const first = pick(asked[0]);
+  if (first) first.refundRequest = { reason: "My agency just enrolled the whole team in an in-house AI video workshop, so I won't need this. Haven't started it.", requestedAt: asked[0] };
+  // the reason is written by the refund story below, from this learner's own orders
+  const second = pick(asked[1], first);
+  if (second) second.refundRequest = { reason: "", requestedAt: asked[1] };
+  // anyone who asks hasn't really started: drop the odd early-progress row the ledger pass gave them
+  for (const o of [first, second]) {
+    if (!o) continue;
+    for (let i = LESSON_PROGRESS.length - 1; i >= 0; i--) if (LESSON_PROGRESS[i].userId === o.userId && LESSON_PROGRESS[i].courseId === o.courseId) LESSON_PROGRESS.splice(i, 1);
+  }
+}
+
 /* ============================================================================= coupon coherence */
 /* WELCOME10 is first-purchase only (Coupon.firstPurchaseOnly). The generators above hand it out at
    random, so a returning buyer's WELCOME10 order is relabelled INBOX10: the same 10% site-wide, so the
@@ -1268,4 +1130,20 @@ export const LEDGER_BUYERS: Profile[] = [];
       read: false,
     });
   });
+}
+
+/* ============================================================================= wishlist (filled last) */
+/* Learners who never bought (or were refunded from) a published course, saving it for later. Runs after
+   the ledger and refund passes, so nobody wishlists a course they own. Separate rng: nothing else shifts. */
+{
+  const rw = rng(9091);
+  const touched = new Set([...ENROLLMENTS.map((e) => `${e.userId}|${e.courseId}`), ...ORDERS.filter((o) => o.status === "pending").map((o) => `${o.userId}|${o.courseId}`)]);
+  for (const c of published) {
+    const pubAge = c.publishedAt ? ageDays(c.publishedAt) - 1 : 120;
+    const fans = rw.shuffle(STUDENTS.filter((u) => u.id !== DEMO_STUDENT_ID && u.status === "active" && !touched.has(`${u.id}|${c.id}`))).slice(0, 24);
+    fans.forEach((u) => {
+      WISHLIST.push({ id: `wl_${WISHLIST.length + 1}`, userId: u.id, courseId: c.id, createdAt: daysAgo(rw.int(1, Math.min(120, pubAge)), rw.int(9, 23), rw.int(0, 59)) });
+    });
+  }
+  WISHLIST.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

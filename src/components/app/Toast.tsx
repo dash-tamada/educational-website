@@ -7,7 +7,8 @@ import { Icon, type IconName } from "./icons";
 import { subscribeLayers, topLayer } from "./layers";
 
 /* =============================================================================
-   Toasts. <Toaster /> is mounted once in the root layout; call toast() anywhere
+   Toasts (design system v2: a square ink bar, a red marker on the left edge, a mono
+   tone slate). <Toaster /> is mounted once in the root layout; call toast() anywhere
    on the client (no provider/hook needed):
      toast("Saved just now")
      toast.success("Course sent to the review queue.", { description: "We'll let you know what happens next." })
@@ -72,11 +73,11 @@ export const toast: ToastFn = Object.assign((t: ToastInput | string) => push(typ
   dismiss,
 });
 
-const TONE: Record<ToastTone, { icon: IconName; chip: string }> = {
-  success: { icon: "check", chip: "bg-green text-white" },
-  error: { icon: "alert", chip: "bg-flame text-white" },
-  info: { icon: "info", chip: "bg-blue text-white" },
-  neutral: { icon: "sparkles", chip: "bg-sun text-ink" },
+const TONE: Record<ToastTone, { icon: IconName; label: string; bar: string; tag: string }> = {
+  success: { icon: "check", label: "Done", bar: "bg-red", tag: "text-cream/60" },
+  error: { icon: "alert", label: "Error", bar: "bg-red", tag: "text-red-lite" },
+  info: { icon: "info", label: "Note", bar: "bg-ash", tag: "text-cream/60" },
+  neutral: { icon: "spark", label: "Update", bar: "bg-red", tag: "text-cream/60" },
 };
 
 /** Touch: swipe a toast sideways (> 72px or a flick) to dismiss it. */
@@ -147,13 +148,19 @@ function ToastView({ t }: { t: ToastItem }) {
   const swipe = useSwipeDismiss(t.id);
   const tone = TONE[t.tone ?? "neutral"];
   return (
-    <li ref={swipe} className="app-enter pointer-events-auto flex w-full touch-pan-y items-start gap-3 rounded-[20px] bg-ink p-3 pr-2 text-cream shadow-lift sm:w-[380px]">
-      <span className={clsx("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full", tone.chip)} aria-hidden>
-        <Icon name={tone.icon} className="size-4" strokeWidth={2.6} />
-      </span>
-      <div className="min-w-0 flex-1 py-1">
-        <p className="text-[14.5px] leading-snug font-bold">{t.title}</p>
-        {t.description && <p className="mt-0.5 text-[13px] leading-snug text-cream/70">{t.description}</p>}
+    <li
+      ref={swipe}
+      data-field="dark"
+      className="app-enter pointer-events-auto relative flex w-full touch-pan-y items-start gap-3 overflow-hidden rounded-none bg-ink py-3.5 pr-2 pl-5 text-cream shadow-2xl sm:w-[380px]"
+    >
+      <span aria-hidden className={clsx("absolute inset-y-0 left-0 w-[3px]", tone.bar)} />
+      <div className="min-w-0 flex-1 py-0.5">
+        <p className={clsx("mb-1.5 flex items-center gap-1.5 font-mono text-[10.5px] font-medium tracking-[0.1em] uppercase", tone.tag)} aria-hidden>
+          <Icon name={tone.icon} className="size-3" strokeWidth={2.2} />
+          {tone.label}
+        </p>
+        <p className="text-[14.5px] leading-snug font-medium tracking-[-0.01em]">{t.title}</p>
+        {t.description && <p className="mt-1 text-[13px] leading-snug text-cream/65">{t.description}</p>}
       </div>
       {t.action && (
         <button
@@ -162,13 +169,13 @@ function ToastView({ t }: { t: ToastItem }) {
             t.action!.onClick();
             dismiss(t.id);
           }}
-          className="hit mt-0.5 h-8 shrink-0 rounded-full bg-white/12 px-3 text-[13px] font-bold hf:bg-white/20"
+          className="hit mt-1 h-8 shrink-0 rounded-none px-3 text-[11px] font-semibold tracking-[0.14em] uppercase ring-1 ring-white/30 ring-inset hf:bg-cream hf:text-ink"
         >
           {t.action.label}
         </button>
       )}
-      <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss notification" className="hit grid size-8 shrink-0 place-items-center rounded-full text-cream/60 hf:bg-white/10 hf:text-cream">
-        <Icon name="x" className="size-4" />
+      <button type="button" onClick={() => dismiss(t.id)} aria-label="Dismiss notification" className="hit mt-0.5 grid size-8 shrink-0 place-items-center text-cream/55 hf:text-cream">
+        <Icon name="x" className="size-4" strokeWidth={1.7} />
       </button>
     </li>
   );

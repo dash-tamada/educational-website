@@ -11,11 +11,15 @@ import { StickyActionBar } from "./StickyActionBar";
 import { Button } from "./Button";
 import { Pagination } from "./Navigation";
 import { EmptyState, Skeleton } from "./Display";
+import { INK_SURFACE } from "./surfaces";
 
 /* =============================================================================
-   DataTable: dense-but-calm table with client-side search, sort, pagination,
-   selection + bulk actions, row action menus, loading and empty states. Scrolls
-   horizontally on small screens (never the page).
+   DataTable (design system v2: the Mobius awards table). No box: a strong ink rule on
+   top, tiny-caps column heads, tall rows split by hairlines, a faint cream-2 hover,
+   mono pagination. Client-side search, sort, pagination, selection + bulk actions
+   (an ink bar), row action menus, loading and empty states. Scrolls horizontally on
+   small screens (never the page). It sits on any ground: sticky cells paint
+   var(--surface), so inside a paper <Card> they match the card.
 
    <DataTable
      caption="Orders"
@@ -55,8 +59,8 @@ import { EmptyState, Skeleton } from "./Display";
      bulkActions={(ids, clear, { noteId }) =>
        <Button disabled={!payable(ids)} aria-describedby={payable(ids) ? undefined : noteId}>Pay</Button>}
 
-   PHONES (< 640px, MOBILE_SPEC §1.9): no sideways scrolling. The table renders as an
-   inset grouped list: one white card, 64px+ rows, [leading] [title + meta] [trailing]
+   PHONES (< 640px, MOBILE_SPEC §1.9): no sideways scrolling. The table renders as a
+   ruled list: ink top rule, hairline rows 64px+, [leading] [title + meta] [trailing]
    [… actions]. Column roles (`mobile`) decide where each cell goes:
      mobile: "title" | "meta" | "trailing" | "badge" | "leading" | "hidden"
    When omitted: the first column is the title, the first right-aligned column is
@@ -325,7 +329,7 @@ export function DataTable<T>({
       ro?.disconnect();
     };
   }, []);
-  const stickyCls = clsx("dt-sticky sticky right-0 z-[1]", edges.end && "shadow-[-10px_0_12px_-10px_rgb(22_22_22/0.22)]");
+  const stickyCls = clsx("dt-sticky sticky right-0 z-[1]", edges.end && "shadow-[-1px_0_0_var(--line)]");
 
   const clickable = !!(onRowClick || rowHref);
   const onRow = (e: React.MouseEvent, row: T) => {
@@ -334,12 +338,12 @@ export function DataTable<T>({
     else if (rowHref) router.push(rowHref(row));
   };
 
-  const cellPad = dense ? "px-3 py-2.5" : "px-4 py-3.5";
+  const cellPad = dense ? "px-3 py-2.5" : "px-4 py-[18px]";
   const sortIcon = (active: boolean) => (
     <Icon
       name={active ? (activeSort!.dir === "asc" ? "arrow-up" : "arrow-down") : "sort"}
-      className={clsx("size-3.5 shrink-0", !active && "opacity-40")}
-      strokeWidth={2.6}
+      className={clsx("size-3 shrink-0", active ? "text-red" : "opacity-35")}
+      strokeWidth={2}
     />
   );
   const showToolbar = search || filters || toolbar;
@@ -388,15 +392,15 @@ export function DataTable<T>({
     else if (rowHref) router.push(rowHref(row));
   };
   const phoneList = cards ? (
-    <div className="rounded-card bg-white shadow-soft sm:hidden">
-      <ul aria-label={caption} className="divide-y divide-ink/[0.06]">
+    <div className="border-t border-fg sm:hidden">
+      <ul aria-label={caption} className="divide-y divide-line border-b border-line">
         {loading &&
           Array.from({ length: Math.min(pageSize || 6, 6) }, (_, i) => (
             <li key={`sk${i}`} className="flex min-h-16 items-center gap-3 px-4 py-3.5">
               <Skeleton variant="circle" className="size-10" />
               <div className="flex-1">
-                <Skeleton className="h-3.5 w-[60%] rounded-full" />
-                <Skeleton className="mt-2 h-3 w-[40%] rounded-full" />
+                <Skeleton className="h-3 w-[60%]" />
+                <Skeleton className="mt-2 h-2.5 w-[40%]" />
               </div>
             </li>
           ))}
@@ -417,10 +421,10 @@ export function DataTable<T>({
                 data-selected={isSel || undefined}
                 onClick={tappable ? (e) => onCard(e, row, id, isSel) : undefined}
                 className={clsx(
-                  "relative flex min-h-16 items-center gap-3 py-3 pl-4",
-                  rowActions && !inSelect ? "pr-1.5" : "pr-4",
-                  isSel && "bg-butter/60",
-                  tappable && "tap cursor-pointer active:bg-cream/70",
+                  "relative flex min-h-16 items-center gap-3 py-3.5 pl-1",
+                  rowActions && !inSelect ? "pr-0" : "pr-1",
+                  isSel && "bg-cream-2 shadow-[inset_2px_0_0_var(--color-red)]",
+                  tappable && "tap cursor-pointer active:bg-cream-2",
                 )}
               >
                 {inSelect && (
@@ -440,13 +444,13 @@ export function DataTable<T>({
                   <>
                     {leading.length > 0 && <div className="flex shrink-0 items-center">{leading}</div>}
                     <div className="min-w-0 flex-1">
-                      <div className="min-w-0 text-[15px] leading-snug font-bold [overflow-wrap:anywhere]">{title}</div>
+                      <div className="min-w-0 text-[15px] leading-snug font-medium tracking-[-0.01em] [overflow-wrap:anywhere]">{title}</div>
                       {meta.length > 0 && (
-                        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] leading-snug font-medium text-ink/65">
+                        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] leading-snug text-muted">
                           {meta.map((m, i) => (
                             <span key={i} className="inline-flex min-w-0 items-center gap-1.5">
                               {i > 0 && (
-                                <span aria-hidden className="text-ink/35">
+                                <span aria-hidden className="text-fg/30">
                                   ·
                                 </span>
                               )}
@@ -457,7 +461,7 @@ export function DataTable<T>({
                       )}
                     </div>
                     {(trailing.length > 0 || badge.length > 0) && (
-                      <div className="flex shrink-0 flex-col items-end gap-1 text-right text-[15px] font-bold tabular-nums">
+                      <div className="flex shrink-0 flex-col items-end gap-1 text-right text-[14px] font-medium tabular-nums">
                         {trailing}
                         {badge.length > 0 && <div className="flex flex-col items-end gap-1 text-[13px] font-semibold">{badge}</div>}
                       </div>
@@ -469,7 +473,7 @@ export function DataTable<T>({
                     label={name ? `Actions for ${name}` : "Row actions"}
                     trigger={<Icon name="more" className="size-5" />}
                     items={rowActions(row)}
-                    triggerClassName="tap grid size-11 shrink-0 place-items-center rounded-full text-ink/70 active:bg-ink/[0.06]"
+                    triggerClassName="tap grid size-11 shrink-0 place-items-center text-fg/70 active:bg-fg/[0.06]"
                   />
                 )}
               </li>
@@ -492,7 +496,7 @@ export function DataTable<T>({
   return (
     <div className={clsx("min-w-0", className)}>
       {showToolbar && (
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
           {search && (
             <div className="w-full lg:max-w-[320px]">
               <SearchInput value={q} onChange={(e) => setQ(e.target.value)} onClear={() => setQ("")} placeholder={typeof search === "object" ? search.placeholder : "Search"} />
@@ -592,16 +596,18 @@ export function DataTable<T>({
       )}
 
       {selectable && selected.length > 0 && (bulkActions || bulkNote != null) && (
-        <div className={clsx("app-fade mb-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[24px] bg-ink py-1.5 pr-1.5 pl-4 text-cream", cards && "max-sm:hidden")}>
-          <span className="text-[14px] font-bold">{selected.length} selected</span>
-          <button type="button" onClick={() => setSelected([])} className="text-[13px] font-semibold text-cream/70 underline-offset-2 hf:underline">
+        <div data-field="dark" className={clsx("app-fade mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-none py-1.5 pr-1.5 pl-4", INK_SURFACE, cards && "max-sm:hidden")}>
+          <span className="font-mono text-[12px] font-medium tracking-[0.08em] uppercase tabular-nums">
+            <span className="text-red-lite">{String(selected.length).padStart(2, "0")}</span> selected
+          </span>
+          <button type="button" onClick={() => setSelected([])} className="text-[11px] font-semibold tracking-[0.14em] text-cream/60 uppercase hf:text-cream">
             Clear
           </button>
           <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-y-1.5">
             {/* always mounted so screen readers hear the note when it appears */}
             <span id={bulkNoteId} aria-live="polite" className="flex min-w-0 items-center">
               {bulkNoteNode != null && bulkNoteNode !== false && bulkNoteNode !== "" && (
-                <span className="mr-1.5 flex min-w-0 items-center gap-1.5 px-1 text-[13px] leading-tight font-semibold text-cream/75">
+                <span className="mr-1.5 flex min-w-0 items-center gap-1.5 px-1 text-[13px] leading-tight text-cream/70">
                   <Icon name="info" className="size-4 shrink-0" />
                   <span className="min-w-0">{bulkNoteNode}</span>
                 </span>
@@ -617,14 +623,14 @@ export function DataTable<T>({
       )}
 
       {phoneList}
-      <div ref={box} className={clsx("relative rounded-card bg-white shadow-soft", cards && "max-sm:hidden")}>
-      {edges.start && <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-8 rounded-l-card bg-gradient-to-r from-white to-transparent" />}
-      {edges.end && !rowActions && <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-[2] w-8 rounded-r-card bg-gradient-to-l from-white to-transparent" />}
-      <div ref={scroller} className="app-scroll relative overflow-x-auto rounded-card" data-lenis-prevent="">
-        <table className="w-full border-collapse text-left" style={{ minWidth }}>
+      <div ref={box} className={clsx("relative border-t border-fg", cards && "max-sm:hidden")}>
+      {edges.start && <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-8 bg-gradient-to-r from-surface to-transparent" />}
+      {edges.end && !rowActions && <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-[2] w-8 bg-gradient-to-l from-surface to-transparent" />}
+      <div ref={scroller} className="app-scroll relative overflow-x-auto" data-lenis-prevent="">
+        <table className="w-full border-collapse border-b border-line text-left" style={{ minWidth }}>
           <caption className="sr-only">{caption}</caption>
           <thead className={clsx(stickyHeader && "sticky top-0 z-[1]")}>
-            <tr className="bg-cream/70">
+            <tr className={clsx(stickyHeader && "bg-surface")}>
               {selectable && (
                 <th scope="col" className="w-12 py-3 pl-4">
                   <label className="-m-[3px] inline-grid size-6 cursor-pointer place-items-center align-middle">
@@ -649,7 +655,14 @@ export function DataTable<T>({
                     scope="col"
                     style={c.width ? { width: c.width } : undefined}
                     aria-sort={active ? (activeSort!.dir === "asc" ? "ascending" : "descending") : c.sortValue ? "none" : undefined}
-                    className={clsx(cellPad, "t-micro font-bold whitespace-nowrap text-ink/70 uppercase", ALIGN[c.align ?? "left"], c.hideBelow && HIDE[c.hideBelow], c.className, c.headerClassName)}
+                    className={clsx(
+                      dense ? "px-3 py-3" : "px-4 py-3.5",
+                      "text-[10.5px] leading-none font-semibold tracking-[0.15em] whitespace-nowrap text-muted uppercase",
+                      ALIGN[c.align ?? "left"],
+                      c.hideBelow && HIDE[c.hideBelow],
+                      c.className,
+                      c.headerClassName,
+                    )}
                   >
                     {c.sortValue ? (
                       /* Block-level flex (w-fit + auto margins for alignment), not inline-flex: an
@@ -659,8 +672,8 @@ export function DataTable<T>({
                         type="button"
                         onClick={() => toggleSort(c.key)}
                         className={clsx(
-                          "-my-1 flex min-h-6 w-fit items-center gap-1 rounded-md uppercase hf:text-ink",
-                          active && "text-ink",
+                          "-my-1 flex min-h-6 w-fit items-center gap-1.5 tracking-[inherit] uppercase transition-colors hf:text-fg",
+                          active && "text-fg",
                           c.align === "right" && "ml-auto",
                           c.align === "center" && "mx-auto",
                         )}
@@ -676,7 +689,7 @@ export function DataTable<T>({
                 );
               })}
               {rowActions && (
-                <th scope="col" className={clsx("w-14 bg-[#f8f5eb]", stickyCls)}>
+                <th scope="col" className={clsx("w-14 bg-surface", stickyCls)}>
                   <span className="sr-only">Actions</span>
                 </th>
               )}
@@ -685,14 +698,14 @@ export function DataTable<T>({
           <tbody>
             {loading &&
               Array.from({ length: Math.min(pageSize || 6, 6) }, (_, i) => (
-                <tr key={`sk${i}`} className="border-t border-ink/[0.06]">
+                <tr key={`sk${i}`} className="border-t border-line">
                   {selectable && <td className="py-3 pl-4" />}
                   {columns.map((c) => (
                     <td key={c.key} className={clsx(cellPad, c.hideBelow && HIDE[c.hideBelow], c.className)}>
-                      <Skeleton className="h-3.5 w-[70%] rounded-full" />
+                      <Skeleton className="h-3 w-[70%]" />
                     </td>
                   ))}
-                  {rowActions && <td className={clsx("bg-white", stickyCls)} />}
+                  {rowActions && <td className={clsx("bg-surface", stickyCls)} />}
                 </tr>
               ))}
             {!loading &&
@@ -706,8 +719,8 @@ export function DataTable<T>({
                     data-selected={isSel || undefined}
                     onClick={clickable ? (e) => onRow(e, row) : undefined}
                     className={clsx(
-                      "dt-row border-t border-ink/[0.06] align-middle transition-colors duration-100",
-                      isSel ? "bg-butter/60" : "hf:bg-cream/60",
+                      "dt-row group/row border-t border-line align-middle transition-colors duration-150",
+                      isSel ? "bg-cream-2 shadow-[inset_2px_0_0_var(--color-red)]" : "hf:bg-ink/[0.025]",
                       clickable && "cursor-pointer",
                     )}
                   >
@@ -725,12 +738,12 @@ export function DataTable<T>({
                       </td>
                     )}
                     {columns.map((c) => (
-                      <td key={c.key} className={clsx(cellPad, "text-[14px] font-medium", ALIGN[c.align ?? "left"], c.hideBelow && HIDE[c.hideBelow], c.className, c.cellClassName)}>
+                      <td key={c.key} className={clsx(cellPad, "text-[14px]", ALIGN[c.align ?? "left"], c.hideBelow && HIDE[c.hideBelow], c.className, c.cellClassName)}>
                         {c.cell(row)}
                       </td>
                     ))}
                     {rowActions && (
-                      <td className={clsx("pr-3 pl-1 text-right transition-colors duration-100", isSel ? "bg-[#fff7d4]" : "bg-white", stickyCls)}>
+                      <td className={clsx("pr-2 pl-1 text-right transition-colors duration-150", isSel ? "bg-cream-2" : "bg-surface", stickyCls)}>
                         <DropdownMenu label={name ? `Actions for ${name}` : "Row actions"} trigger={<Icon name="more" className="size-5" />} items={rowActions(row)} />
                       </td>
                     )}
@@ -753,7 +766,7 @@ export function DataTable<T>({
       </div>
 
       {pageSize > 0 && !loading && sorted.length > 0 && (
-        <Pagination className="mt-4" page={cur} pageCount={pageCount} onChange={setPage} total={sorted.length} pageSize={pageSize} />
+        <Pagination className="mt-5" page={cur} pageCount={pageCount} onChange={setPage} total={sorted.length} pageSize={pageSize} />
       )}
     </div>
   );

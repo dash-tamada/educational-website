@@ -6,8 +6,8 @@
      doesn't exist yet, so the player maps every lesson to one of a few public,
      openly licensed sample clips (Blender open movies, W3C/Video.js test media).
      The player labels it "Sample footage" so nobody mistakes it for the lesson.
-   - Posters: coding courses rotate a few laptop/code photos; others use the
-     course thumbnail.
+   - Posters: every lesson uses its module's cinematic poster from the image
+     registry (lessonPoster in "@/lib/media"; module 11 = the capstone).
    - The older sample Q&A threads (ids "xcmt_*") now live in the seed
      (src/lib/mock/seed/qa-player.ts), so the player reads db.comments only.
    ============================================================================= */
@@ -17,7 +17,7 @@ import type {
   ModuleItem,
   Resource,
 } from "@/lib/mock/types";
-import { u } from "@/lib/mock/seed/util";
+import { lessonPoster } from "@/lib/media";
 
 /* ----------------------------------------------------------------------------- sample footage */
 export interface SampleVideo {
@@ -76,8 +76,8 @@ const BACKUP: SampleVideo = {
 export function sampleVideoFor(item: ModuleItem): SampleVideo {
   if (item.type !== "video") return SHORT[0];
   const pool = item.lesson.durationSec >= 15 * 60 ? LONG : SHORT;
-  // the demo learner's resume lesson (wd-4-2, 7:40 in) always gets the fast, long clip
-  if (item.id === "wd-4-2") return LONG[0];
+  // the demo learner's resume lesson (af-5-2, 7:40 in) always gets the fast, long clip
+  if (item.id === "af-5-2") return LONG[0];
   return pool[hash(item.id) % pool.length];
 }
 
@@ -96,39 +96,25 @@ export function sampleSourcesFor(item: ModuleItem): string[] {
 }
 
 /* ----------------------------------------------------------------------------- posters */
-const CODE_POSTERS = [
-  u("photo-1461749280684-dccba630e2f6"),
-  u("photo-1498050108023-c5249f4df085"),
-  u("photo-1517694712202-14dd9538aa97"),
-  u("photo-1555066931-4365d14bab8c"),
-  u("photo-1504639725590-34d0984388bd"),
-  u("photo-1515879218367-8466d910aaa4"),
-  u("photo-1587620962725-abab7fe55159"),
-];
-const CODE_COURSES = new Set([
-  "crs_webdev",
-  "crs_python",
-  "crs_react",
-  "crs_git",
-]);
+/** 1-based module number of an item: from its module id ("mod_af_5"), else its item id ("af-5-2"). */
+function moduleNumberOf(item: ModuleItem): number {
+  const fromModule = Number(item.moduleId.match(/_(\d+)$/)?.[1]);
+  if (fromModule > 0) return fromModule;
+  const fromItem = Number(item.id.split("-")[1]);
+  return fromItem > 0 ? fromItem : 1;
+}
 
-/** Unsplash poster for a lesson (no tm-ar hint: the caller crops it). */
+/** Unsplash poster for a lesson (no tm-ar hint: the caller crops it). Every course uses the
+ *  module's cinematic poster; the course thumbnail is the last resort. */
 export function posterFor(course: Course, item: ModuleItem): string {
-  if (CODE_COURSES.has(course.id)) {
-    const [, m = "1", p = "1"] = item.id.split("-");
-    return (
-      CODE_POSTERS[(Number(m) * 3 + Number(p)) % CODE_POSTERS.length] ??
-      course.thumbnail
-    );
-  }
-  return course.thumbnail;
+  return lessonPoster(moduleNumberOf(item)).src || course.thumbnail;
 }
 
 /* ----------------------------------------------------------------------------- resource file preview */
 /**
  * Three "what's inside" lines for a download, picked from what the file is
  * (its type, and words in its title like poster / worksheet / checklist), so a
- * guitar chord poster never promises copy-paste code snippets.
+ * prompt library never promises worksheet exercises.
  */
 export function resourceBullets(
   r: Pick<Resource, "title" | "fileType">,
@@ -146,6 +132,12 @@ export function resourceBullets(
       "Short tracks, ready to drop into your edits",
       "Royalty-free for your own projects",
       "A readme with the licence in plain words",
+    ];
+  if (has("prompt library", "prompt pack"))
+    return [
+      "Tested prompts grouped by look, ready to copy",
+      "A note on what each prompt controls: lens, light, era, grain",
+      "Example frames so you know what to expect before you spend credits",
     ];
   if (has("preset"))
     return [

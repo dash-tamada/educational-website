@@ -5,12 +5,30 @@ import clsx from "clsx";
 import { formatDuration, type ModuleItem, type Question, type QuestionType, type Quiz, type QuizItem, type Resource, type ResourceItem, type ResourceFileType, type VideoItem } from "@/lib/mock";
 import { SAMPLE_FILES, SAMPLE_VIDEOS } from "@/lib/mock/extra/tutor";
 import { Badge, Button, Checkbox, DropdownMenu, Drawer, Field, Icon, Input, ProgressBar, Segmented, Select, Switch, Textarea, toast } from "@/components/app";
+import { LineIcon, RuleNote } from "../editorial";
 import { answerKey, itemLabel, newQuestion, omitKey, parseDuration, questionFieldIssues, quizProblems, stripUndefined, titleFromFileName } from "./utils";
 
 /* =============================================================================
-   Item editors in a drawer: video lesson (mock upload + duration detection),
-   test (questions of four types) and resource (mock file / link).
+   Item editors in the inspector drawer (design system v2): video lesson (mock
+   upload + duration detection), test (questions of four types) and resource
+   (mock file / link). Flat kit fields, ruled groups, square slates; the drawer
+   carries a mono eyebrow ("Module 03 · Video 02").
    ============================================================================= */
+
+/** Inline error line (the kit Field's look) for controls that live outside a Field. */
+function ErrorLine({ id, children }: { id?: string; children: React.ReactNode }) {
+  return (
+    <p id={id} role="alert" className="mt-2 flex items-start gap-2 text-[12.5px] leading-snug font-medium text-red-deep">
+      <span aria-hidden className="mt-[5px] size-[6px] shrink-0 bg-current" />
+      <span className="min-w-0">{children}</span>
+    </p>
+  );
+}
+
+/** Tiny caps group label (matches the kit Field label). */
+function GroupLabel({ children, as: As = "p" }: { children: React.ReactNode; as?: "p" | "legend" }) {
+  return <As className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] text-fg uppercase">{children}</As>;
+}
 
 /** "Use a sample clip" turn counter for this session: each pick takes the next clip. */
 let sampleTurn = 0;
@@ -22,11 +40,14 @@ export function ItemEditorDrawer({
   isFirstVideo,
   onClose,
   onSave,
+  eyebrow,
 }: {
   open: boolean;
   item: ModuleItem | null;
   isNew: boolean;
   isFirstVideo: boolean;
+  /** mono line above the title ("Module 03 · Video 02") */
+  eyebrow?: string;
   onClose: () => void;
   onSave: (item: ModuleItem) => void;
 }) {
@@ -70,19 +91,20 @@ export function ItemEditorDrawer({
       open={open}
       onClose={requestClose}
       width={item.type === "quiz" ? 760 : 560}
+      eyebrow={eyebrow}
       title={isNew ? `Add a ${kind === "test" ? "test" : kind === "lesson" ? "video lesson" : "resource"}` : `Edit ${kind}`}
       description={
         item.type === "video"
           ? "Upload the video, name it and decide whether it's a free preview."
           : item.type === "quiz"
-            ? "A tiny test between lessons. Learners see their score and your explanations after they submit."
+            ? "A short checkpoint test between lessons. Learners see their score and your explanations after they submit."
             : "A file or link learners can download next to the lessons."
       }
       footer={
         confirming ? (
           <div className="flex w-full flex-wrap items-center justify-end gap-2" role="alert" aria-live="assertive">
-            <span className="mr-auto text-[14px] font-bold">Discard your changes?</span>
-            <Button ref={keepRef} variant="secondary" onClick={keepEditing}>
+            <span className="mr-auto font-heading text-[15px] font-semibold tracking-[-0.015em]">Discard your changes?</span>
+            <Button ref={keepRef} variant="outline" onClick={keepEditing}>
               Keep editing
             </Button>
             <Button variant="danger" onClick={discard}>
@@ -91,7 +113,7 @@ export function ItemEditorDrawer({
           </div>
         ) : (
           <>
-            <Button variant="secondary" onClick={requestClose}>
+            <Button variant="outline" onClick={requestClose}>
               Cancel
             </Button>
             <Button type="submit" form={formId} icon="check">
@@ -205,14 +227,12 @@ function UploadStatus({ u, onCancel, verb = "Uploading" }: { u: Upload; onCancel
   const sent = (u.sizeMb * u.progress) / 100;
   const left = Math.max(0, Math.round(((100 - u.progress) / 100) * (u.sizeMb > 1 ? 4 : 1)));
   return (
-    <div className="rounded-[20px] bg-cream p-4" aria-live="polite">
+    <div className="border border-line bg-cream-2/60 p-4" aria-live="polite">
       <div className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white">
-          <Icon name={u.phase === "processing" ? "refresh" : "upload"} className={clsx("size-[18px]", u.phase === "processing" && "animate-spin")} />
-        </span>
+        <Icon name={u.phase === "processing" ? "refresh" : "upload"} strokeWidth={1.5} className={clsx("size-5 shrink-0", u.phase === "processing" && "animate-spin")} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-bold">{u.name}</p>
-          <p className="text-[12.5px] font-semibold text-ink/60">
+          <p className="truncate font-heading text-[15px] font-semibold tracking-[-0.015em]">{u.name}</p>
+          <p className="mt-0.5 font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase tabular-nums">
             {u.phase === "processing" ? "Processing: checking the file and reading its length…" : `${verb} ${sent < 1 ? sent.toFixed(1) : Math.round(sent)} of ${u.sizeMb < 1 ? u.sizeMb.toFixed(1) : u.sizeMb} MB · about ${left}s left`}
           </p>
         </div>
@@ -222,7 +242,7 @@ function UploadStatus({ u, onCancel, verb = "Uploading" }: { u: Upload; onCancel
           </Button>
         )}
       </div>
-      <ProgressBar value={u.progress} size="lg" tone={u.phase === "processing" ? "sun" : "blue"} className="mt-3" label="Upload progress" />
+      <ProgressBar value={u.progress} size="md" tone={u.phase === "processing" ? "ink" : undefined} className="mt-4" label="Upload progress" />
     </div>
   );
 }
@@ -303,19 +323,20 @@ function VideoForm({ formId, item, isFirstVideo, onDirty, onSave }: { formId: st
   return (
     <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-5 pt-1">
       <div>
-        <p className="mb-1.5 text-[14px] font-bold">Video file</p>
+        <GroupLabel>Video file</GroupLabel>
         {upload.phase === "uploading" || upload.phase === "processing" ? (
           <UploadStatus u={upload} onCancel={cancel} />
         ) : fileName ? (
-          <div className="flex items-center gap-3 rounded-[20px] bg-mint/50 p-4">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-green">
-              <Icon name="check" className="size-[18px]" strokeWidth={2.6} />
-            </span>
+          <div className="flex items-center gap-3 border-l-2 border-fg bg-cream-2/70 py-3.5 pr-3 pl-4">
+            <LineIcon name="video" className="size-5" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-bold">{fileName}</p>
-              <p className="text-[12.5px] font-semibold text-forest/75">Ready{l.durationSec ? ` · ${formatDuration(l.durationSec, "clock")}` : ""} · HD transcode done</p>
+              <p className="truncate font-heading text-[15px] font-semibold tracking-[-0.015em]">{fileName}</p>
+              <p className="mt-0.5 flex items-center gap-2 font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase tabular-nums">
+                <span aria-hidden className="size-[6px] bg-fg" />
+                Ready{l.durationSec ? ` · ${formatDuration(l.durationSec, "clock")}` : ""} · HD transcode done
+              </p>
             </div>
-            <Button size="sm" variant="secondary" icon="refresh" onClick={() => fileInput.current?.click()}>
+            <Button size="sm" variant="outline" icon="refresh" onClick={() => fileInput.current?.click()}>
               Replace
             </Button>
           </div>
@@ -332,18 +353,16 @@ function VideoForm({ formId, item, isFirstVideo, onDirty, onSave }: { formId: st
               const f = e.dataTransfer.files?.[0];
               if (f) takeFile(f);
             }}
-            className={clsx("flex flex-col items-center rounded-[20px] border-2 border-dashed px-4 py-7 text-center transition-colors", dragOver ? "border-blue bg-[#dfe8ff]" : "border-ink/15 bg-cream/60")}
+            className={clsx("flex flex-col items-start border px-5 py-6 transition-colors", dragOver ? "border-fg bg-cream-2" : "border-line-strong bg-cream-2/40")}
           >
-            <span className="grid size-12 place-items-center rounded-full bg-white shadow-soft">
-              <Icon name="video" className="size-5" />
-            </span>
-            <p className="mt-3 text-[15px] font-bold">Drop a video here</p>
-            <p className="mt-1 text-[13px] font-medium text-ink/60">MP4 or MOV, up to 4 GB. We read the length for you.</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <p className="font-mono text-[10.5px] tracking-[0.1em] text-red-deep uppercase">00:00:00:00</p>
+            <p className="mt-3 font-heading text-[19px] leading-tight font-semibold tracking-[-0.025em]">Drop a video here</p>
+            <p className="mt-1 text-[13px] text-muted">MP4 or MOV, up to 4 GB. We read the length for you.</p>
+            <div className="mt-5 flex flex-wrap gap-2">
               <Button size="sm" icon="upload" onClick={() => fileInput.current?.click()}>
                 Choose a file
               </Button>
-              <Button size="sm" variant="secondary" icon="sparkles" onClick={useSample}>
+              <Button size="sm" variant="outline" icon="sparkles" onClick={useSample}>
                 Use a sample clip
               </Button>
             </div>
@@ -362,12 +381,8 @@ function VideoForm({ formId, item, isFirstVideo, onDirty, onSave }: { formId: st
             e.target.value = "";
           }}
         />
-        {errors.video && (
-          <p role="alert" className="mt-1.5 flex items-center gap-1 text-[13px] font-semibold text-[#c13500]">
-            <Icon name="alert" className="size-3.5" strokeWidth={2.4} /> {errors.video}
-          </p>
-        )}
-        <p className="mt-1.5 text-[12.5px] font-medium text-ink/50">Demo: files never leave your browser. The upload is simulated.</p>
+        {errors.video && <ErrorLine>{errors.video}</ErrorLine>}
+        <p className="mt-2 text-[12.5px] text-muted">Demo: files never leave your browser. The upload is simulated.</p>
       </div>
 
       <Field label="Lesson name" required error={errors.title}>
@@ -388,7 +403,7 @@ function VideoForm({ formId, item, isFirstVideo, onDirty, onSave }: { formId: st
           className="max-w-[180px]"
         />
       </Field>
-      <div className="flex flex-col gap-4 rounded-[20px] bg-cream/70 p-4">
+      <div className="flex flex-col divide-y divide-line border-y border-line [&>*]:py-4">
         <Switch
           label="Free preview"
           description={isFirstVideo ? "This is the first video, so it's always free. You can open more previews when it helps learners decide." : "Anyone can watch this lesson before buying the course."}
@@ -459,7 +474,7 @@ function QuizForm({ formId, item, onDirty, onSave }: { formId: string; item: Qui
   const introHint: React.ReactNode = isAutoIntro(q.description) ? (
     "Written from your settings. It updates itself when you save, so it always matches the pass mark."
   ) : introPcts.length && !introPcts.includes(effectivePass) ? (
-    <span className="font-bold text-[#b02f00]">
+    <span className="font-medium text-red-deep">
       This intro mentions {introPcts[0]}%, but the pass mark is {effectivePass}%. Update one of them so learners aren&apos;t confused.
     </span>
   ) : (
@@ -536,7 +551,7 @@ function QuizForm({ formId, item, onDirty, onSave }: { formId: string; item: Qui
             min={10}
             max={100}
             step={5}
-            suffix={<span className="pr-2 text-[14px] font-bold text-ink/55">%</span>}
+            suffix={<span className="pr-2 font-mono text-[13px] text-muted">%</span>}
             value={passDraft}
             onChange={(e) => {
               const v = e.target.value;
@@ -579,7 +594,7 @@ function QuizForm({ formId, item, onDirty, onSave }: { formId: string; item: Qui
           />
         </Field>
       </div>
-      <div className="rounded-[20px] bg-[#e7e0fb]/60 p-4">
+      <div className="border-y border-line py-4">
         <Switch
           label="Gate next lesson"
           description="Everything after this test stays locked until the learner passes it. Great for checkpoints before a harder module."
@@ -589,30 +604,37 @@ function QuizForm({ formId, item, onDirty, onSave }: { formId: string; item: Qui
       </div>
 
       <div>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="t-app-h3">
-            Questions <span className="text-ink/45">({q.questions.length})</span>
+        <div className="mb-4 flex items-end justify-between gap-3 border-t border-fg pt-4">
+          <h3 className="flex items-baseline gap-3">
+            <span className="t-label">Questions</span>
+            <span className="font-mono text-[11px] text-muted tabular-nums">{String(q.questions.length).padStart(2, "0")}</span>
           </h3>
           {showErrors && problems.broken > 0 && <Badge tone="flame" dot>{problems.broken} to fix</Badge>}
         </div>
         {q.questions.length === 0 &&
           (confirmEmpty ? (
-            <div id="quiz-empty-confirm" tabIndex={-1} role="alert" className="rounded-[18px] bg-[#ffe1d4] p-4 text-[#8a2600] focus:outline-none">
-              <p className="text-[14.5px] font-bold">This test has no questions yet.</p>
-              <p className="mt-1 text-[13.5px] font-medium">Learners would open an empty test, and it can&apos;t go to review like this. Save it as a placeholder anyway?</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" icon="plus" onClick={() => addQuestion("single")}>
-                  Add a question
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => save(true)}>
-                  Save without questions
-                </Button>
-              </div>
+            <div id="quiz-empty-confirm" tabIndex={-1} role="alert" className="focus:outline-none">
+              <RuleNote
+                tone="red"
+                label="This test has no questions yet."
+                action={
+                  <>
+                    <Button size="sm" icon="plus" onClick={() => addQuestion("single")}>
+                      Add a question
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => save(true)}>
+                      Save without questions
+                    </Button>
+                  </>
+                }
+              >
+                Learners would open an empty test, and it can&apos;t go to review like this. Save it as a placeholder anyway?
+              </RuleNote>
             </div>
           ) : (
-            <p className="rounded-[18px] bg-cream p-4 text-[14px] font-semibold text-ink/60">No questions yet. Add one below; three to five is the sweet spot.</p>
+            <RuleNote tone="quiet">No questions yet. Add one below; three to five is the sweet spot.</RuleNote>
           ))}
-        <ol className="flex flex-col gap-3">
+        <ol className="flex flex-col gap-8">
           {q.questions.map((qq, i) => (
             <QuestionCard
               key={qq.id}
@@ -633,9 +655,9 @@ function QuizForm({ formId, item, onDirty, onSave }: { formId: string; item: Qui
             />
           ))}
         </ol>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
           {QTYPES.map((t) => (
-            <Button key={t.value} size="sm" variant="secondary" icon="plus" onClick={() => addQuestion(t.value)}>
+            <Button key={t.value} size="sm" variant="outline" icon="plus" onClick={() => addQuestion(t.value)}>
               {t.label}
             </Button>
           ))}
@@ -697,14 +719,14 @@ function QuestionCard({
   };
 
   return (
-    <li className={clsx("rounded-[22px] bg-white p-4 ring-1", hasIssues ? "ring-2 ring-flame/60" : "ring-ink/[0.09]")} {...(hasIssues ? { "data-q-error": "" } : {})}>
+    <li className={clsx("border-t border-line-strong pt-4", hasIssues && "border-l-2 border-l-red pl-4")} {...(hasIssues ? { "data-q-error": "" } : {})}>
       {/* Phones: number + move/more on row 1, the type picker gets its own full-width row 2. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5">
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-[12.5px] font-bold text-cream" aria-hidden>
-          {index + 1}
+        <span className="shrink-0 font-mono text-[11px] tracking-[0.08em] text-red-deep uppercase tabular-nums" aria-hidden>
+          Q{String(index + 1).padStart(2, "0")}
         </span>
-        <span className="text-[13px] font-bold text-ink/55 max-[359px]:hidden sm:hidden">
-          Question {index + 1} of {count}
+        <span className="font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase max-[359px]:hidden sm:hidden">
+          of {String(count).padStart(2, "0")}
         </span>
         <div className="order-last w-full sm:order-none sm:w-[200px]">
           <Select selectSize="sm" aria-label={`Question ${index + 1} type`} value={q.type} onChange={(e) => setType(e.target.value as QuestionType)} options={QTYPES} />
@@ -714,7 +736,8 @@ function QuestionCard({
           <Button size="sm" variant="ghost" iconOnly icon="arrow-down" aria-label="Move question down" disabled={index === count - 1} onClick={() => onMove(1)} />
           <DropdownMenu
             label={`More actions for question ${index + 1}`}
-            trigger={<Icon name="more" className="size-5" />}
+            trigger={<Icon name="more" className="size-5" strokeWidth={1.6} />}
+            triggerClassName="grid size-9 place-items-center text-muted transition-colors hf:bg-cream-2 hf:text-fg coarse:size-11"
             items={[
               { label: "Duplicate", icon: "copy", onSelect: onDuplicate },
               { label: "Delete question", icon: "trash", danger: true, onSelect: onRemove },
@@ -751,10 +774,10 @@ function QuestionCard({
           {(q.acceptedAnswers ?? []).length > 0 && (
             <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Accepted answers">
               {(q.acceptedAnswers ?? []).map((a) => (
-                <li key={a} className="inline-flex h-8 items-center gap-1 rounded-full bg-mint pr-1 pl-3 text-[13px] font-bold text-forest">
+                <li key={a} className="inline-flex h-8 items-center gap-1 bg-ink pr-1 pl-3 text-[13px] font-medium text-cream">
                   {a}
-                  <button type="button" onClick={() => onChange({ acceptedAnswers: (q.acceptedAnswers ?? []).filter((x) => x !== a) })} className="grid size-6 place-items-center rounded-full hf:bg-white/60" aria-label={`Remove answer ${a}`}>
-                    <Icon name="x" className="size-3.5" />
+                  <button type="button" onClick={() => onChange({ acceptedAnswers: (q.acceptedAnswers ?? []).filter((x) => x !== a) })} className="grid size-6 place-items-center transition-colors hf:bg-white/15 coarse:size-8" aria-label={`Remove answer ${a}`}>
+                    <Icon name="x" className="size-3.5" strokeWidth={1.8} />
                   </button>
                 </li>
               ))}
@@ -763,8 +786,8 @@ function QuestionCard({
         </div>
       ) : (
         <fieldset className="mt-3" aria-invalid={fi.options ? true : undefined} aria-describedby={fi.options ? errId("options") : undefined}>
-          <legend className="mb-1.5 text-[14px] font-bold">
-            Options <span className="font-medium text-ink/50">({q.type === "multiple" ? "tick every correct answer" : "pick the correct one"})</span>
+          <legend className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] text-fg uppercase">
+            Options <span className="font-normal tracking-normal text-muted normal-case">({q.type === "multiple" ? "tick every correct answer" : "pick the correct one"})</span>
           </legend>
           <ul className="flex flex-col gap-2">
             {q.options.map((o, oi) => (
@@ -787,11 +810,14 @@ function QuestionCard({
                     aria-label={`Option ${oi + 1} is the correct answer`}
                     aria-invalid={fi.options && !q.options.some((x) => x.isCorrect) ? true : undefined}
                     aria-describedby={fi.options ? errId("options") : undefined}
-                    className="size-6 shrink-0 cursor-pointer accent-green"
+                    className="size-5 shrink-0 cursor-pointer accent-ink"
                   />
                 )}
                 {q.type === "true_false" ? (
-                  <span className={clsx("flex h-11 flex-1 items-center rounded-tag px-3.5 text-[15px] font-semibold", o.isCorrect ? "bg-mint text-forest" : "bg-cream")}>{o.text}</span>
+                  <span className={clsx("flex h-11 flex-1 items-center justify-between gap-3 px-3.5 text-[15px] font-medium", o.isCorrect ? "bg-ink text-cream" : "bg-cream-2")}>
+                    {o.text}
+                    {o.isCorrect && <span className="font-mono text-[10.5px] tracking-[0.1em] uppercase">Correct</span>}
+                  </span>
                 ) : (
                   <Input
                     value={o.text}
@@ -801,7 +827,7 @@ function QuestionCard({
                     aria-invalid={fi.options && !o.text.trim() ? true : undefined}
                     aria-describedby={fi.options ? errId("options") : undefined}
                     maxLength={160}
-                    className={clsx(o.isCorrect && "ring-2 ring-green/60")}
+                    className={clsx(o.isCorrect && "!border-b-2 !border-fg")}
                   />
                 )}
                 {q.type !== "true_false" && (
@@ -827,11 +853,7 @@ function QuestionCard({
               Add option
             </Button>
           )}
-          {fi.options && (
-            <p id={errId("options")} role="alert" className="mt-1.5 flex items-start gap-1 text-[13px] font-semibold leading-snug text-[#c13500]">
-              <Icon name="alert" className="mt-px size-3.5 shrink-0" strokeWidth={2.4} /> {fi.options}
-            </p>
-          )}
+          {fi.options && <ErrorLine id={errId("options")}>{fi.options}</ErrorLine>}
         </fieldset>
       )}
 
@@ -929,33 +951,34 @@ function ResourceForm({ formId, item, onDirty, onSave }: { formId: string; item:
         </Field>
       ) : (
         <div>
-          <p className="mb-1.5 text-[14px] font-bold">File</p>
+          <GroupLabel>File</GroupLabel>
           {upload.phase === "uploading" || upload.phase === "processing" ? (
             <UploadStatus u={upload} onCancel={cancel} />
           ) : fileName ? (
-            <div className="flex items-center gap-3 rounded-[20px] bg-mint/50 p-4">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-green">
-                <Icon name="file" className="size-[18px]" />
-              </span>
+            <div className="flex items-center gap-3 border-l-2 border-fg bg-cream-2/70 py-3.5 pr-3 pl-4">
+              <LineIcon name="file" className="size-5" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-bold">{fileName}</p>
-                <p className="text-[12.5px] font-semibold text-forest/75">{r.sizeKb ? (r.sizeKb > 1024 ? `${(r.sizeKb / 1024).toFixed(1)} MB` : `${r.sizeKb} KB`) : "Uploaded"}</p>
+                <p className="truncate font-heading text-[15px] font-semibold tracking-[-0.015em]">{fileName}</p>
+                <p className="mt-0.5 flex items-center gap-2 font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase tabular-nums">
+                  <span aria-hidden className="size-[6px] bg-fg" />
+                  {r.sizeKb ? (r.sizeKb > 1024 ? `${(r.sizeKb / 1024).toFixed(1)} MB` : `${r.sizeKb} KB`) : "Uploaded"}
+                </p>
               </div>
-              <Button size="sm" variant="secondary" icon="refresh" onClick={() => fileInput.current?.click()}>
+              <Button size="sm" variant="outline" icon="refresh" onClick={() => fileInput.current?.click()}>
                 Replace
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col items-center rounded-[20px] border-2 border-dashed border-ink/15 bg-cream/60 px-4 py-6 text-center">
-              <Icon name="upload" className="size-6 text-ink/60" />
-              <p className="mt-2 text-[14px] font-bold">PDF, ZIP, spreadsheet or audio, up to 200 MB</p>
-              <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <div className="flex flex-col items-start border border-line-strong bg-cream-2/40 px-5 py-6">
+              <LineIcon name="upload" className="size-5" tone="muted" />
+              <p className="mt-3 font-heading text-[17px] leading-tight font-semibold tracking-[-0.02em]">PDF, ZIP, spreadsheet or audio, up to 200 MB</p>
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" icon="upload" onClick={() => fileInput.current?.click()}>
                   Choose a file
                 </Button>
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="outline"
                   icon="sparkles"
                   onClick={() => {
                     const s = SAMPLE_FILES[0]; // the button promises a PDF, so it's always the PDF sample
@@ -981,11 +1004,7 @@ function ResourceForm({ formId, item, onDirty, onSave }: { formId: string; item:
               e.target.value = "";
             }}
           />
-          {errors.file && (
-            <p role="alert" className="mt-1.5 flex items-center gap-1 text-[13px] font-semibold text-[#c13500]">
-              <Icon name="alert" className="size-3.5" strokeWidth={2.4} /> {errors.file}
-            </p>
-          )}
+          {errors.file && <ErrorLine>{errors.file}</ErrorLine>}
           <Field label="File type" className="mt-4">
             <Select value={r.fileType} onChange={(e) => change({ fileType: e.target.value as ResourceFileType })} options={FILE_TYPES.filter((t) => t.value !== "link")} />
           </Field>

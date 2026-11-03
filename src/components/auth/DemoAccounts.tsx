@@ -2,51 +2,29 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { BlockBuddy } from "@/components/decor/BlockBuddy";
-import { Button, DemoPill, Icon, toast } from "@/components/app";
+import { Button, toast } from "@/components/app";
+import { ArrowIcon } from "@/components/editorial";
 import { useDemoAuth, useDemoUser } from "@/lib/demo/session-client";
 import { DEMO_ACCOUNT_CARDS, landingFor } from "@/lib/mock/extra/auth";
-import { toneBg } from "@/lib/landing-data";
 import type { Role } from "@/lib/mock/types";
+
+/* =============================================================================
+   Demo logins for the auth pages, as ruled editorial lists (no cards, no
+   colour chips): ROLE · Name · "Use →". One click sets the demo session cookie
+   through useDemoAuth().loginAs, then routes to the role's home (or to a ?next=
+   inside that role's area).
+   ============================================================================= */
 
 function Spinner({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className={clsx("animate-spin", className)}
-      aria-hidden
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="none"
-        stroke="currentColor"
-        strokeOpacity=".3"
-        strokeWidth="3"
-      />
-      <path
-        d="M21 12a9 9 0 0 0-9-9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 24 24" className={clsx("animate-spin", className)} aria-hidden>
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="2" />
+      <path d="M21 12a9 9 0 0 0-9-9" fill="none" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }
 
-/**
- * Compact "Just looking?" row for phones and tablets, shown above the login
- * form so the demo accounts are one tap away without scrolling past the form.
- */
-export function DemoQuickStrip({
-  next,
-  className,
-}: {
-  next?: string | null;
-  className?: string;
-}) {
+function useDemoGo(next?: string | null) {
   const { loginAs } = useDemoAuth();
   const [pending, setPending] = useState<Role | null>(null);
   const go = (role: Role, name: string) => {
@@ -56,45 +34,56 @@ export function DemoQuickStrip({
       description: "Demo session: everything you change stays in this browser.",
     });
   };
+  return { pending, go };
+}
+
+/** "Use →" / spinner, the right-hand cell of a demo row. */
+function UseCell({ busy }: { busy: boolean }) {
   return (
-    <section
-      aria-labelledby="demo-strip-title"
-      className={clsx("app-enter rounded-card bg-butter p-3 sm:p-4", className)}
-    >
-      <div className="flex items-center justify-between gap-3 px-1">
-        <h2
-          id="demo-strip-title"
-          className="text-[15px] font-bold [text-wrap:pretty]"
-        >
-          Just looking?{" "}
-          <span className="font-semibold text-ink/65">
-            Try a demo, no password.
-          </span>
+    <span className="t-label inline-flex items-center gap-2 text-fg transition-colors group-hf:text-red" aria-hidden>
+      {busy ? (
+        <>
+          Opening <Spinner className="size-3.5" />
+        </>
+      ) : (
+        <>
+          Use <ArrowIcon className="size-3.5 transition-[translate] duration-500 ease-expo group-hf:translate-x-1" />
+        </>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Phones and tablets: a compact three-cell ruled row above the login form, so a
+ * demo account is one tap away without scrolling past the form.
+ */
+export function DemoQuickStrip({ next, className }: { next?: string | null; className?: string }) {
+  const { pending, go } = useDemoGo(next);
+  return (
+    <section aria-labelledby="demo-strip-title" className={clsx("app-enter", className)}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="demo-strip-title" className="t-label">
+          Just looking?
         </h2>
+        <p className="t-small text-muted">Try a demo, no password.</p>
       </div>
-      <ul className="mt-2.5 grid grid-cols-3 gap-2">
-        {DEMO_ACCOUNT_CARDS.map((a) => (
-          <li key={a.role}>
+      <ul className="mt-3 grid grid-cols-3 border-y border-line">
+        {DEMO_ACCOUNT_CARDS.map((a, i) => (
+          <li key={a.role} className={clsx(i > 0 && "border-l border-line")}>
             <button
               type="button"
               onClick={() => go(a.role, a.name)}
               disabled={pending !== null}
               aria-busy={pending === a.role || undefined}
               aria-label={`Continue as ${a.name} (${a.label.toLowerCase()} demo)`}
-              className="tap flex h-11 w-full items-center justify-center gap-1.5 rounded-full bg-white px-2 text-[14px] font-bold shadow-soft transition-shadow disabled:cursor-wait disabled:opacity-70 hf:shadow-lift"
+              className="group flex min-h-16 w-full flex-col items-start justify-center gap-1.5 px-3 py-3 text-left transition-colors disabled:cursor-wait disabled:opacity-60 hf:bg-cream-2"
             >
-              {pending === a.role ? (
-                <Spinner className="size-4" />
-              ) : (
-                <span
-                  className={clsx(
-                    "size-2.5 shrink-0 rounded-full",
-                    toneBg[a.tone],
-                  )}
-                  aria-hidden
-                />
-              )}
-              {a.label}
+              <span className="t-label text-muted">{a.label}</span>
+              <span className="flex items-center gap-2 font-heading text-[15px] leading-none font-semibold tracking-[-0.02em] transition-colors group-hf:text-red">
+                {pending === a.role ? <Spinner className="size-3.5" /> : a.name.split(" ")[0]}
+                {pending !== a.role && <ArrowIcon className="size-3.5" />}
+              </span>
             </button>
           </li>
         ))}
@@ -104,101 +93,49 @@ export function DemoQuickStrip({
 }
 
 /**
- * "Try a demo account": one-click Student / Tutor / Admin logins. Sets the demo
- * session cookie through the foundation helper, then routes to the role's home
- * (or to a ?next= inside that role's area).
+ * "Demo accounts": one-click Student / Tutor / Admin logins as a ruled list
+ * (role · name + what you'll find · Use →).
  */
 export function DemoAccounts({
   next,
   id = "demo",
-  heading = "Just looking around?",
+  heading = "Demo accounts",
+  className,
 }: {
   next?: string | null;
   id?: string;
   heading?: string;
+  className?: string;
 }) {
-  const { loginAs } = useDemoAuth();
-  const [pending, setPending] = useState<Role | null>(null);
-
-  const go = (role: Role, name: string) => {
-    setPending(role);
-    loginAs(role, { redirectTo: landingFor(role, next ?? null) });
-    toast.success(`You're in as ${name}.`, {
-      description: "Demo session: everything you change stays in this browser.",
-    });
-  };
-
+  const { pending, go } = useDemoGo(next);
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="rounded-card-lg bg-butter p-5 md:p-7"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <h2 id={`${id}-title`} className="t-app-h2">
+    <section id={id} aria-labelledby={`${id}-title`} className={clsx("scroll-mt-8", className)}>
+      <div className="flex items-baseline justify-between gap-3 border-b border-fg pb-3">
+        <h2 id={`${id}-title`} className="t-label">
           {heading}
         </h2>
-        <DemoPill className="mt-0.5 shrink-0 bg-white!" />
+        <p className="t-small text-muted">One click. No password. Nothing real.</p>
       </div>
-      <p className="mt-1 t-small text-ink/70">
-        Try a demo account. One click, no password, nothing real.
-      </p>
-      <ul className="mt-5 grid gap-2.5">
+      <ul>
         {DEMO_ACCOUNT_CARDS.map((a) => (
-          <li key={a.role}>
+          <li key={a.role} className="border-b border-line">
             <button
               type="button"
               onClick={() => go(a.role, a.name)}
               disabled={pending !== null}
               aria-busy={pending === a.role || undefined}
-              className="group tap flex w-full items-center gap-3 rounded-card bg-white p-3 text-left shadow-soft transition-[box-shadow,scale] duration-200 ease-ui disabled:cursor-wait disabled:opacity-70 sm:gap-3.5 sm:pr-4 hf:shadow-lift"
+              className="group grid w-full grid-cols-[4.5rem_minmax(0,1fr)_auto] items-start gap-x-4 py-4 text-left transition-colors disabled:cursor-wait disabled:opacity-60 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:py-5"
             >
-              <span
-                className={clsx(
-                  "grid size-12 shrink-0 place-items-end justify-center overflow-hidden rounded-[16px] pt-2 sm:size-14 sm:rounded-[18px]",
-                  toneBg[a.tone],
-                )}
-                aria-hidden
-              >
-                <BlockBuddy
-                  body="#fffdf8"
-                  head={a.buddy.head}
-                  hat={a.buddy.hat}
-                  className="w-7 translate-y-1 sm:w-9"
-                />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="t-app-h3">
-                    <span className="sr-only sm:not-sr-only">Continue as </span>
-                    {a.name}
-                  </span>
-                  <span
-                    className={clsx("rounded-full px-2 py-1 t-micro", a.chip)}
-                  >
-                    {a.label}
-                  </span>
+              <span className="t-label pt-[5px] text-muted">{a.label}</span>
+              <span className="min-w-0">
+                <span className="block font-heading text-[18px] leading-tight font-semibold tracking-[-0.025em] transition-colors group-hf:text-red sm:text-[19px]">
+                  <span className="sr-only">Continue as </span>
+                  {a.name}
                 </span>
-                <span className="mt-1 block t-small text-ink/70">
-                  {a.blurb}
-                </span>
+                <span className="mt-1 block text-[13.5px] leading-snug text-muted">{a.blurb}</span>
               </span>
-              <span
-                className={clsx(
-                  "grid size-9 shrink-0 place-items-center rounded-full transition-colors",
-                  a.chip,
-                )}
-                aria-hidden
-              >
-                {pending === a.role ? (
-                  <Spinner className="size-4" />
-                ) : (
-                  <Icon
-                    name="arrow-right"
-                    className="size-4"
-                    strokeWidth={2.6}
-                  />
-                )}
+              <span className="pt-[5px]">
+                <UseCell busy={pending === a.role} />
               </span>
               <span className="sr-only">Opens the {a.lands}</span>
             </button>
@@ -215,40 +152,24 @@ export function SessionBanner({ className }: { className?: string }) {
   const { logout } = useDemoAuth();
   // Only for a session that existed when the page opened: logging in from this
   // page must not slide a banner in (and push the form down) under the curtain.
-  const [initialKey] = useState(() =>
-    user ? `${user.role}:${user.userId}` : null,
-  );
+  const [initialKey] = useState(() => (user ? `${user.role}:${user.userId}` : null));
   if (!user || `${user.role}:${user.userId}` !== initialKey) return null;
+  const area = user.meta.area.split(" ")[0].toLowerCase() === "admin" ? "control room" : user.meta.area.toLowerCase();
   return (
-    <div
-      role="status"
-      className={clsx(
-        "app-fade flex flex-col gap-3 rounded-card bg-white p-4 shadow-soft sm:flex-row sm:items-center",
-        className,
-      )}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-mint text-forest"
-          aria-hidden
-        >
-          <Icon name="check" className="size-4" strokeWidth={2.8} />
+    <div role="status" className={clsx("app-fade flex flex-col gap-3 border-y border-line py-4 sm:flex-row sm:items-center", className)}>
+      <p className="flex min-w-0 flex-1 items-start gap-3 text-[14px] leading-snug">
+        <span aria-hidden className="mt-[5px] size-[7px] shrink-0 rounded-full bg-red" />
+        <span className="min-w-0">
+          Logged in as <strong className="font-semibold">{user.profile.name}</strong>
+          <span className="t-label mt-1 block text-muted">{user.meta.label} demo</span>
         </span>
-        <p className="min-w-0 t-small">
-          Logged in as{" "}
-          <strong className="font-bold">{user.profile.name}</strong>
-          <span className="block text-ink/70">{user.meta.label} demo</span>
-        </p>
-      </div>
+      </p>
       <div className="flex shrink-0 justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={() => logout()}>
           Log out
         </Button>
         <Button size="sm" href={user.meta.href} iconRight="arrow-right">
-          Go to{" "}
-          {user.meta.area.split(" ")[0].toLowerCase() === "admin"
-            ? "control room"
-            : user.meta.area.toLowerCase()}
+          Go to {area}
         </Button>
       </div>
     </div>

@@ -38,16 +38,18 @@ export function shouldCurtain(fromPath: string, toPath: string) {
 }
 
 /* =============================================================================
-   Route transitions (spec V2 §7): cream cloud curtain + accent disc + Tami.
+   Route transitions (design system v2): black curtain with a red leading edge,
+   hairline columns and a slate (red SC/TK block + destination title + running
+   timecode). The art lives in CurtainArt.tsx; the engine below is unchanged.
    - One persistent curtain in the root layout.
    - A window-level capture click listener turns EVERY internal <a href> (plain
      anchors, next/link, ArrowButton, TransitionLink) into: cover -> router.push
      -> wait for the new route to render -> land (top / #hash / restored y) ->
      reveal. next/link sees defaultPrevented and stands down; the link's own
      onClick still runs.
-   - Every cover resets the disc, Tami and label explicitly (fromTo with full
+   - Every cover resets the slate, timecode and label explicitly (fromTo with full
      from/to states), so the 2nd, 3rd... transition looks exactly like the 1st.
-   - While the route loads, Tami bobs on an idle loop. The disc/label/Tami ride
+   - While the route loads, the timecode runs. The slate/label/timecode ride
      up WITH the sheet on reveal (they live inside it), so the screen is never an
      empty cream sheet.
    - Same-page hashes (/#how on /) smooth-scroll with Lenis instead.
@@ -232,27 +234,32 @@ export function TransitionLink(props: React.ComponentProps<typeof Link>) {
   return <Link {...props} data-transition="" />;
 }
 
-/** Destination accent colour + label for the curtain disc. */
-const ROUTES: { test: RegExp; accent: string; label: string }[] = [
-  { test: /^\/$/, accent: "#ffcf3f", label: "Home" },
-  { test: /^\/login/, accent: "#2668fd", label: "Log in" },
-  { test: /^\/signup/, accent: "#ff008c", label: "Sign up" },
-  { test: /^\/courses/, accent: "#ffcf3f", label: "Courses" },
-  { test: /^\/become-tutor/, accent: "#00b351", label: "Teach" },
-  { test: /^\/admin/, accent: "#3b308f", label: "Admin" },
-  { test: /^\/dashboard/, accent: "#ff008c", label: "Your space" },
-  { test: /^\/tutor(\/|$)/, accent: "#00b351", label: "Studio" },
-  { test: /^\/tutors\//, accent: "#f9a220", label: "Tutor" },
-  { test: /^\/learn/, accent: "#2668fd", label: "Press play" },
-  { test: /^\/checkout/, accent: "#ff008c", label: "Checkout" },
-  { test: /^\/certificates/, accent: "#9b82e0", label: "Certificate" },
-  { test: /^\/forgot-password/, accent: "#2668fd", label: "Reset" },
+/** Destination title + scene number for the curtain slate (accent kept for API compat: red). */
+const RED = "#e3061b";
+const ROUTES: { test: RegExp; label: string; scene: string }[] = [
+  { test: /^\/$/, label: "Home", scene: "01" },
+  { test: /^\/courses/, label: "Course", scene: "02" },
+  { test: /^\/films/, label: "Films", scene: "03" },
+  { test: /^\/about/, label: "Director", scene: "04" },
+  { test: /^\/journal/, label: "Journal", scene: "05" },
+  { test: /^\/contact/, label: "Contact", scene: "06" },
+  { test: /^\/learn/, label: "Press play", scene: "07" },
+  { test: /^\/checkout/, label: "Checkout", scene: "08" },
+  { test: /^\/certificates/, label: "Certificate", scene: "09" },
+  { test: /^\/login/, label: "Log in", scene: "10" },
+  { test: /^\/signup/, label: "Sign up", scene: "10" },
+  { test: /^\/forgot-password/, label: "Reset", scene: "10" },
+  { test: /^\/dashboard/, label: "Your desk", scene: "11" },
+  { test: /^\/tutors\//, label: "Tutor", scene: "12" },
+  { test: /^\/tutor(\/|$)/, label: "Studio", scene: "12" },
+  { test: /^\/become-tutor/, label: "Teach", scene: "12" },
+  { test: /^\/admin/, label: "Control room", scene: "13" },
 ];
 export function routeAccent(pathname: string) {
   const hit = ROUTES.find((r) => r.test.test(pathname));
-  if (hit) return hit;
+  if (hit) return { ...hit, accent: RED };
   const seg = decodeURIComponent(pathname.split("/").filter(Boolean)[0] ?? "");
-  return { accent: "#fd4401", label: seg.replace(/-/g, " ") || "Home" };
+  return { accent: RED, scene: "00", label: seg.replace(/-/g, " ") || "Home" };
 }
 
 /* ----------------------------------------------------------------------------- helpers */
@@ -409,6 +416,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       tami: q(root, "[data-curtain-tami]"),
       label: q(root, "[data-curtain-label]"),
       clouds: q(root, "[data-curtain-cloud]"),
+      tc: q(root, "[data-curtain-tc]"),
     };
   }, []);
 
@@ -427,26 +435,29 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
   const setCovered = useCallback(() => {
     const p = pieces();
     gsap.set(p.sheet, { yPercent: 0 });
-    gsap.set(p.clouds, { y: 0 });
-    gsap.set(p.disc, { scale: 1, rotate: 0, autoAlpha: 1 });
-    gsap.set(p.tami, { scale: 1, rotate: 0, y: 0, autoAlpha: 1 });
-    gsap.set(p.label, { yPercent: 0, y: 0, scale: 1, autoAlpha: 1 });
+    gsap.set(p.clouds, { scaleY: 1 });
+    gsap.set(p.disc, { scaleX: 1, autoAlpha: 1 });
+    gsap.set(p.tami, { autoAlpha: 1 });
+    gsap.set(p.label, { yPercent: 0, autoAlpha: 1 });
   }, [pieces]);
 
-  /** Tami bobs while we wait for the route (a long wait still looks alive). */
+  /** The timecode runs (24 fps) while we wait for the route (a long wait still looks alive). */
   const startIdle = useCallback(() => {
     const st = s.current;
-    const { tami } = pieces();
-    if (!tami.length || prefersReducedMotion()) return;
+    const { tc } = pieces();
+    if (!tc.length || prefersReducedMotion()) return;
     st.idle?.kill();
-    st.idle = gsap.to(tami, {
-      keyframes: [
-        { y: -12, rotate: 7, scaleX: 0.96, scaleY: 1.05, duration: 0.26, ease: "power2.out" },
-        { y: 0, rotate: 0, scaleX: 1.05, scaleY: 0.95, duration: 0.22, ease: "power2.in" },
-        { scaleX: 1, scaleY: 1, duration: 0.18, ease: "back.out(3)" },
-      ],
-      repeat: -1,
-      repeatDelay: 0.12,
+    const clock = { f: 0 };
+    const fmt = (n: number) => String(n).padStart(2, "0");
+    st.idle = gsap.to(clock, {
+      f: 24 * 60,
+      duration: 60,
+      ease: "none",
+      onUpdate: () => {
+        const f = Math.floor(clock.f);
+        const text = `00:00:${fmt(Math.floor(f / 24) % 60)}:${fmt(f % 24)}`;
+        for (const n of tc) n.textContent = text;
+      },
     });
   }, [pieces]);
 
@@ -464,37 +475,18 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
           return;
         }
         gsap.set(root, { opacity: 1 });
-        // Wipe whatever the previous reveal / idle loop left on the centre piece.
+        // Wipe whatever the previous reveal / idle loop left on the slate.
         gsap.set([...p.disc, ...p.tami, ...p.label], {
           clearProps: "transform,opacity,visibility",
         });
+        for (const n of p.tc) n.textContent = "00:00:00:00";
         st.coverTl = gsap
           .timeline()
           .fromTo(p.sheet, { yPercent: 100 }, { yPercent: 0, duration: 0.56, ease: "expo.inOut" }, 0)
-          .fromTo(
-            p.clouds,
-            { y: "30vh" },
-            { y: 0, duration: 0.7, ease: "expo.inOut", stagger: 0.03 },
-            0,
-          )
-          .fromTo(
-            p.disc,
-            { scale: 0, rotate: -45, autoAlpha: 1 },
-            { scale: 1, rotate: 0, duration: 0.62, ease: "elastic.out(1,0.6)" },
-            0.26,
-          )
-          .fromTo(
-            p.tami,
-            { scale: 0, rotate: -24, y: 0, autoAlpha: 1 },
-            { scale: 1, rotate: 0, duration: 0.5, ease: "back.out(2.2)" },
-            0.32,
-          )
-          .fromTo(
-            p.label,
-            { autoAlpha: 0, yPercent: 60, y: 0, scale: 1 },
-            { autoAlpha: 1, yPercent: 0, duration: 0.5, ease: "expo.out" },
-            0.38,
-          )
+          .fromTo(p.clouds, { scaleY: 0 }, { scaleY: 1, duration: 0.7, ease: "expo.out", stagger: 0.05 }, 0.22)
+          .fromTo(p.disc, { scaleX: 0, transformOrigin: "0% 50%", autoAlpha: 1 }, { scaleX: 1, duration: 0.5, ease: "expo.out" }, 0.3)
+          .fromTo(p.label, { yPercent: 110, autoAlpha: 1 }, { yPercent: 0, duration: 0.6, ease: "expo.out" }, 0.34)
+          .fromTo(p.tami, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "power1.out" }, 0.42)
           .call(resolve, [], 0.56);
         if (isTouch()) {
           // idle bob only when the route takes longer than ~600ms after covering
@@ -530,17 +522,15 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
           gsap.to(root, { opacity: 0, duration: 0.16, onComplete: end });
           return;
         }
-        // The disc, Tami and label sit inside the sheet: they stay on screen and
-        // lift away WITH it (no empty cream frame). Tami hops first.
+        // The slate, title and timecode sit inside the sheet: they leave first, then the
+        // sheet lifts away (never an empty black frame on screen for long).
         gsap
           .timeline({ onComplete: end })
           .timeScale(isTouch() ? REVEAL_SCALE : 1)
-          .to(p.tami, { y: -16, rotate: 8, scale: 1, duration: 0.18, ease: "power2.out" }, 0)
-          .to(p.tami, { y: 0, rotate: 0, duration: 0.3, ease: "power2.in" }, 0.18)
-          .to(p.disc, { scale: 0.9, duration: 0.5, ease: "power2.in" }, 0.08)
-          .to(p.label, { yPercent: -30, duration: 0.5, ease: "power2.in" }, 0.08)
-          .to(p.sheet, { yPercent: -100, duration: 0.72, ease: "expo.inOut" }, 0.1)
-          .to(p.clouds, { y: "-24vh", duration: 0.72, ease: "expo.inOut", stagger: 0.02 }, 0.1)
+          .to(p.label, { yPercent: -110, duration: 0.4, ease: "power2.in" }, 0)
+          .to(p.disc, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.4, ease: "power2.in" }, 0.04)
+          .to(p.tami, { autoAlpha: 0, duration: 0.2, ease: "power1.in" }, 0)
+          .to(p.sheet, { yPercent: -100, duration: 0.72, ease: "expo.inOut" }, 0.12)
           .call(announce, [], 0.45);
       });
     },
@@ -766,9 +756,16 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       window.history.scrollRestoration = "manual";
     } catch {}
 
+    // Track the last resting y for Back. Read once a gesture settles (120ms after the last
+    // scroll event), never per event: reading scrollY right after scroll-driven style writes
+    // forces a style/layout pass every frame (profiled on /terms: ~10% of scroll frame time).
+    let yTimer = 0;
     const onScroll = () => {
-      const st = s.current;
-      if (!st.busy && !st.pop) st.y = window.scrollY;
+      window.clearTimeout(yTimer);
+      yTimer = window.setTimeout(() => {
+        const st = s.current;
+        if (!st.busy && !st.pop) st.y = window.scrollY;
+      }, 120);
     };
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0) return;
@@ -805,7 +802,8 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       if (!shouldCurtain(st.path, window.location.pathname)) return;
       const root = rootRef.current;
       if (!root) return;
-      saveScroll(st.path, st.y);
+      // the position right now (a Back within 120ms of scrolling), else the last settled one
+      saveScroll(st.path, window.scrollY || st.y);
       st.busy = true;
       st.pop = true;
       st.unlock?.();
@@ -825,12 +823,9 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       getLenis()?.stop();
       killAll();
       // Frame 0 of a Back cover = the hold frame of a push cover: every piece at its
-      // final "in" state BEFORE the root becomes visible, the destination accent
-      // painted directly (React's setDest render lands a microtask later), and the
+      // final "in" state BEFORE the root becomes visible (React's setDest render lands a
+      // microtask later), and the
       // idle bob running from the first frame.
-      const { disc } = pieces();
-      const accent = routeAccent(window.location.pathname).accent;
-      for (const d of disc) d.style.background = accent;
       setCovered();
       gsap.set(root, { opacity: 1 });
       root.setAttribute("data-active", "");
@@ -846,6 +841,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
     window.addEventListener("click", onClick, true);
     window.addEventListener("popstate", onPop);
     return () => {
+      window.clearTimeout(yTimer);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", onPop);
@@ -858,7 +854,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
     <RouteCtx.Provider value={value}>
       {children}
       <div ref={rootRef} className="route-curtain" aria-hidden>
-        <CurtainArt accent={dest.accent} label={dest.label} />
+        <CurtainArt label={dest.label} scene={dest.scene} />
       </div>
       <div ref={liveRef} aria-live="polite" className="sr-only" />
     </RouteCtx.Provider>

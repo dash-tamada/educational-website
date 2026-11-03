@@ -45,3 +45,6 @@ next-env.d.ts
 
 # visual QA frames
 /.qa
+
+# local design snapshots
+/_design-backups

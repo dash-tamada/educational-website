@@ -28,7 +28,7 @@ export const PasswordInput = forwardRef<
           onClick={() => setShown((s) => !s)}
           aria-label="Show password"
           aria-pressed={shown}
-          className="grid size-9 place-items-center rounded-full text-ink/70 transition-colors coarse:-mr-1 coarse:size-11 hf:bg-ink/[0.06] hf:text-ink"
+          className="grid size-9 place-items-center text-fg/60 transition-colors coarse:-mr-1 coarse:size-11 hf:text-red"
         >
           <Icon name={shown ? "eye-off" : "eye"} className="size-[18px]" />
         </button>
@@ -37,20 +37,9 @@ export const PasswordInput = forwardRef<
   );
 });
 
-const BAR_TONE = [
-  "bg-flame",
-  "bg-flame",
-  "bg-tangerine",
-  "bg-green",
-  "bg-green",
-];
-const TEXT_TONE = [
-  "text-[#c13500]",
-  "text-[#c13500]",
-  "text-[#8a5300]",
-  "text-[#00753a]",
-  "text-[#00753a]",
-];
+/* Monochrome + the one red: weak = red, fair = smoke, good / strong = ink. */
+const BAR_TONE = ["bg-red", "bg-red", "bg-smoke", "bg-ink", "bg-ink"];
+const TEXT_TONE = ["text-red-deep", "text-red-deep", "text-smoke", "text-ink", "text-ink"];
 
 /** Four-segment strength meter + a short tip. Announced politely to screen readers. */
 export function StrengthMeter({
@@ -70,22 +59,22 @@ export function StrengthMeter({
           <span
             key={i}
             className={clsx(
-              "h-1.5 flex-1 rounded-full transition-colors duration-300",
+              "h-[3px] flex-1 transition-colors duration-300",
               password && (s.score >= i || (s.score === 0 && i === 1))
                 ? BAR_TONE[s.score]
-                : "bg-ink/[0.08]",
+                : "bg-ink/[0.1]",
             )}
           />
         ))}
       </div>
       <p
         className={clsx(
-          "mt-1.5 flex-wrap items-baseline gap-x-2 text-[13px] leading-snug text-ink/70",
+          "mt-2 flex-wrap items-baseline gap-x-2 text-[12.5px] leading-snug text-muted",
           hideTip && !s.label ? "hidden" : "flex",
         )}
       >
         {s.label && (
-          <span className={clsx("font-bold", TEXT_TONE[s.score])}>
+          <span className={clsx("t-label", TEXT_TONE[s.score])}>
             {s.label}.
           </span>
         )}

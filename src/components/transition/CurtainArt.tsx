@@ -1,82 +1,61 @@
 import clsx from "clsx";
-import { Mascot } from "@/components/decor/Mascot";
-import { Cloud } from "@/components/decor/Cloud";
-import { ScallopEdge } from "@/components/decor/Scallop";
 
 /**
- * The shared curtain visual (route transitions + first-visit intro): a cream sheet
- * with scalloped top and bottom edges, drifting white clouds, a colour disc with
- * Tami, and an optional Londrina label. Pure markup: animate it with GSAP via the
- * data hooks:
+ * The route curtain (design system v2): a black sheet wiping up with a red
+ * leading edge, hairline columns, and a slate in the middle (red SC/TK block +
+ * the destination title in Anton + a running timecode). No mascot.
+ * Pure markup: RouteTransition animates it through the data hooks
  *   [data-curtain-sheet]  the sheet (yPercent 100 -> 0 cover, 0 -> -100 reveal)
- *   [data-curtain-cloud]  each cloud (extra parallax)
- *   [data-curtain-disc]   the colour disc
- *   [data-curtain-tami]   the mascot
- *   [data-curtain-label]  the label
- * The sheet is taller than the viewport by one scallop so the bumps lead/trail.
+ *   [data-curtain-cloud]  each hairline column (scaleY in)
+ *   [data-curtain-disc]   the red slate block (scaleX in)
+ *   [data-curtain-label]  the destination title (rises out of a mask)
+ *   [data-curtain-tami]   the timecode row (counts while the route loads)
+ *   [data-curtain-tc]     the timecode text node
+ * (hook names are kept from v1 so the transition engine did not change shape)
  */
 export function CurtainArt({
-  accent = "#fd4401",
   label,
+  scene = "01",
   className,
-  children,
 }: {
-  accent?: string;
+  /** destination title, e.g. "Course" */
   label?: React.ReactNode;
+  /** scene number on the slate */
+  scene?: string;
   className?: string;
-  /** replaces the default disc + label centre piece (e.g. the intro wordmark) */
-  children?: React.ReactNode;
 }) {
   return (
-    <div
-      data-curtain-sheet
-      className={clsx("absolute inset-x-0 bg-cream", className)}
-      style={{
-        top: "calc(var(--scallop) / -2)",
-        height: "calc(100% + var(--scallop))",
-      }}
-    >
-      <ScallopEdge placement="outside-top" color="var(--color-cream)" />
-      <ScallopEdge placement="outside-bottom" color="var(--color-cream)" />
-      <div className="absolute inset-0 overflow-hidden">
-        <span data-curtain-cloud className="absolute top-[14%] left-[6%] block">
-          <Cloud size="l" delay={-6} />
-        </span>
-        <span data-curtain-cloud className="absolute top-[22%] right-[8%] block">
-          <Cloud size="m" delay={-12} flip />
-        </span>
-        <span data-curtain-cloud className="absolute bottom-[18%] left-[16%] block">
-          <Cloud size="s" delay={-3} />
-        </span>
-        <span data-curtain-cloud className="absolute right-[14%] bottom-[12%] block">
-          <Cloud size="l" delay={-18} flip />
-        </span>
+    <div data-curtain-sheet className={clsx("theatre absolute inset-0 overflow-hidden", className)}>
+      {/* red leading edge of the wipe */}
+      <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-red" />
+      <div className="container-wide pointer-events-none absolute inset-0">
+        <div className="relative h-full">
+          {[25, 50, 75].map((p) => (
+            <span key={p} data-curtain-cloud className="absolute inset-y-0 w-px origin-top bg-line" style={{ left: `${p}%` }} />
+          ))}
+        </div>
       </div>
       <div className="absolute inset-0 grid place-items-center">
-        {children ?? (
-          <div className="flex flex-col items-center">
-            <div
-              data-curtain-disc
-              className="grid size-[132px] place-items-center rounded-full md:size-[188px]"
-              style={{ background: accent }}
-            >
-              <span data-curtain-tami className="block">
-                <Mascot
-                  title=""
-                  className="w-[86px] translate-x-[6%] md:w-[122px]"
-                />
-              </span>
-            </div>
-            {label !== undefined && (
-              <p
-                data-curtain-label
-                className="t-display-l mt-5 text-flame md:mt-7"
-              >
+        <div className="flex flex-col items-start">
+          <div className="flex items-stretch gap-4">
+            <span data-curtain-disc className="t-label flex origin-left flex-col justify-center gap-1 bg-red px-3 py-2.5 text-white">
+              <span>Sc {scene}</span>
+              <span>Tk 1</span>
+            </span>
+            <span className="line-mask">
+              <span data-curtain-label className="t-display-xl block text-cream">
                 {label}
-              </p>
-            )}
+              </span>
+            </span>
           </div>
-        )}
+          <p data-curtain-tami className="t-timecode mt-4 flex w-full items-center justify-between gap-6 text-ash">
+            <span className="flex items-center gap-2">
+              <span aria-hidden className="curtain-rec block size-[7px] rounded-full bg-red" />
+              Rec
+            </span>
+            <span data-curtain-tc>00:00:00:00</span>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -8,7 +8,6 @@ import {
   Badge,
   BottomSheet,
   Button,
-  Card,
   ConfirmDialog,
   DemoPill,
   DropdownMenu,
@@ -31,6 +30,7 @@ import {
   getNotes,
   getUser,
   itemTitle,
+  pad2,
   plural,
   timeAgo,
   type Db,
@@ -77,14 +77,14 @@ export function LessonTabs({
   const count = (id: LearnTab, n: number) => (
     <span
       className={clsx(
-        "rounded-full px-1.5 py-px text-[11.5px] font-bold",
-        tab === id ? "bg-white/20" : "bg-ink/[0.07]",
+        "font-mono text-[11px] font-normal tabular-nums",
+        tab === id ? "text-red-deep on-dark:text-red-lite" : "text-muted",
         n === 0 && "max-sm:hidden",
         // under 360px the four labels alone just fit
         "max-[359px]:hidden",
       )}
     >
-      {n}
+      {String(n).padStart(2, "0")}
     </span>
   );
   const sectionRef = useRef<HTMLElement>(null);
@@ -108,7 +108,7 @@ export function LessonTabs({
     >
       <div
         ref={rowRef}
-        className="max-sm:sticky max-sm:top-[calc(3.5rem+var(--sat)+var(--learn-pin,0px))] max-sm:z-10 max-sm:-mx-3 max-sm:bg-cream max-sm:px-3 max-sm:py-2"
+        className="max-sm:sticky max-sm:top-[calc(3.5rem+var(--sat)+var(--learn-pin,0px))] max-sm:z-10 max-sm:-mx-3 max-sm:bg-ink max-sm:px-3"
       >
         <Tabs
           label="Lesson details"
@@ -139,7 +139,7 @@ export function LessonTabs({
           className="max-sm:w-full max-sm:justify-between max-sm:gap-0.5 max-[359px]:[&>button]:px-1.5 max-sm:[&>button]:px-2.5"
         />
       </div>
-      <div className="mt-4 max-sm:mt-2">
+      <div className="mt-8 max-sm:mt-6">
         <TabPanel id="overview" active={tab} idBase={IDB}>
           <OverviewPanel ctx={ctx} access={access} />
         </TabPanel>
@@ -183,28 +183,30 @@ function OverviewPanel({
     player.current.reveal();
   };
   return (
-    <div className="grid gap-4 @[860px]:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="min-w-0 space-y-4">
-        <Card>
+    <div className="grid gap-x-12 gap-y-12 @[860px]:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="min-w-0 space-y-12">
+        <section>
           <AboutItem ctx={ctx} />
           {chapters.length > 0 && (
-            <div className="mt-5 border-t border-ink/[0.07] pt-4">
-              <h3 className="t-app-h3">Jump to a chapter</h3>
-              <ol className="mt-2 divide-y divide-ink/[0.07]">
+            <div className="mt-9">
+              <h3 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Chapters
+              </h3>
+              <ol className="mt-3 border-t border-line">
                 {chapters.map((c, i) => (
-                  <li key={c.atSec}>
+                  <li key={c.atSec} className="border-b border-line">
                     <button
                       type="button"
                       onClick={() => seekChapter(c.atSec)}
-                      className="tap group flex min-h-12 w-full items-center gap-3 py-2.5 text-left"
+                      className="tap group flex min-h-12 w-full items-baseline gap-4 py-3 text-left"
                     >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#dfe8ff] text-[12px] font-bold text-blue-deep tabular-nums">
-                        {i + 1}
+                      <span className="w-6 shrink-0 font-mono text-[11px] text-muted tabular-nums group-hf:text-red-lite">
+                        {pad2(i + 1)}
                       </span>
-                      <span className="min-w-0 flex-1 text-[15px] font-semibold group-hf:underline">
+                      <span className="min-w-0 flex-1 text-[15px] font-medium tracking-[-0.01em] group-hf:text-red-lite">
                         {c.title}
                       </span>
-                      <span className="text-[13px] font-bold text-ink/65 tabular-nums">
+                      <span className="font-mono text-[11.5px] text-muted tabular-nums">
                         {formatDuration(c.atSec, "clock")}
                       </span>
                     </button>
@@ -213,42 +215,48 @@ function OverviewPanel({
               </ol>
             </div>
           )}
-        </Card>
-        {/* its own size container: the outcome columns and stat tiles follow
-            the card's width, not the viewport's */}
-        <Card className="@container">
+        </section>
+        {/* its own size container: the outcome columns and stat cells follow
+            the column's width, not the viewport's */}
+        <section className="@container border-t border-fg pt-5">
           {hasOutcomes ? (
             <>
-              <h2 className="t-app-h2">What you&apos;ll be able to do</h2>
+              <h2 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+                What you&apos;ll be able to do
+              </h2>
               {course.promise && (
-                <p className="mt-1 t-small text-ink/65">{course.promise}</p>
+                <p className="mt-4 max-w-[36ch] font-heading text-[clamp(1.25rem,1rem+0.8vw,1.75rem)] leading-[1.15] font-semibold tracking-[-0.025em]">
+                  {course.promise}
+                </p>
               )}
-              <ul className="mt-4 grid gap-2.5 @[480px]:grid-cols-2">
-                {course.outcomes.map((o) => (
+              <ol className="mt-6 grid border-t border-line @[520px]:grid-cols-2 @[520px]:gap-x-8">
+                {course.outcomes.map((o, i) => (
                   <li
                     key={o}
-                    className="flex items-start gap-2.5 text-[14.5px] leading-snug font-semibold"
+                    className="flex items-baseline gap-4 border-b border-line py-3 text-[14.5px] leading-snug"
                   >
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-mint text-forest">
-                      <Icon name="check" className="size-3" strokeWidth={3} />
+                    <span className="w-6 shrink-0 font-mono text-[11px] text-red-lite tabular-nums">
+                      {pad2(i + 1)}
                     </span>
                     {o}
                   </li>
                 ))}
-              </ul>
+              </ol>
             </>
           ) : (
             <>
-              <h2 className="t-app-h2">About the course</h2>
+              <h2 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+                About the course
+              </h2>
               {course.promise ? (
-                <p className="mt-1 t-small text-ink/65">{course.promise}</p>
+                <p className="mt-3 t-small text-muted">{course.promise}</p>
               ) : courseAccess.owner ? (
-                <p className="mt-1 t-small text-ink/65">
+                <p className="mt-3 t-small text-muted">
                   No promise or outcomes yet. Learners see them here, so it pays
                   to spell out what they&apos;ll walk away with.{" "}
                   <Link
                     href={`/tutor/courses/${course.id}/builder?tab=details`}
-                    className="font-bold text-blue-deep hf:underline"
+                    className="font-semibold text-fg underline decoration-line-strong underline-offset-4 hf:decoration-red"
                   >
                     Add outcomes in Details
                   </Link>
@@ -256,34 +264,30 @@ function OverviewPanel({
               ) : null}
             </>
           )}
-          <dl
-            className={clsx(
-              "grid grid-cols-2 gap-2 @[440px]:grid-cols-4",
-              hasOutcomes || course.promise || courseAccess.owner
-                ? "mt-5"
-                : "mt-4",
-            )}
-          >
+          <dl className="mt-8 grid grid-cols-2 border-t border-l border-line @[440px]:grid-cols-4">
             {[
               ["Modules", String(stats.modules)],
               ["Lessons", String(stats.videos)],
               ["Tests", String(stats.quizzes)],
-              ["Total video", formatDuration(stats.totalSec, "short")],
-            ].map(([k, v]) => (
+              ["Runtime", formatDuration(stats.totalSec, "short")],
+            ].map(([k, v], i) => (
               <div
                 key={k}
-                className="min-w-0 rounded-[18px] bg-cream/70 px-3.5 py-3"
+                className="min-w-0 border-r border-b border-line px-4 pt-3.5 pb-4"
               >
-                <dt className="truncate text-[12px] font-bold text-ink/65">
-                  {k}
+                <dt className="flex items-center justify-between gap-2 text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase">
+                  <span className="truncate">{k}</span>
+                  <span className="font-mono font-normal tracking-normal opacity-70">
+                    {pad2(i + 1)}
+                  </span>
                 </dt>
-                <dd className="mt-1 font-display text-[24px] leading-none whitespace-nowrap">
+                <dd className="mt-4 font-display text-[34px] leading-none whitespace-nowrap">
                   {v}
                 </dd>
               </div>
             ))}
           </dl>
-          <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-semibold text-ink/65">
+          <p className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
             <span>
               {course.level} · {course.language}
               {course.hasCertificate && " · Certificate on completion"}
@@ -291,38 +295,38 @@ function OverviewPanel({
             {coursePage && (
               <Link
                 href={coursePage.href}
-                className="inline-flex items-center gap-1 font-bold text-blue-deep hf:underline"
+                className="inline-flex items-center gap-1.5 text-fg hf:text-red-lite"
               >
-                {coursePage.short}{" "}
-                <Icon name="arrow-right" className="size-3.5" />
+                {coursePage.short}
+                <Icon name="arrow-right" className="size-3.5" strokeWidth={1.8} />
               </Link>
             )}
           </p>
-        </Card>
+        </section>
       </div>
       {/* stacked under the main column (narrow main): tutor and shortcuts
           side by side instead of one very long column */}
       <div
         className={clsx(
-          "grid content-start gap-4",
+          "grid content-start gap-12",
           tutor &&
             item.type === "video" &&
             access.allowed &&
-            "md:@[600px]:@max-[859px]:grid-cols-2",
+            "md:@[600px]:@max-[859px]:grid-cols-2 md:@[600px]:@max-[859px]:gap-8",
         )}
       >
         {tutor && (
-          <Card>
+          <section className="border-t border-fg pt-5">
             <div className="flex items-center justify-between gap-2">
-              <p className="t-micro text-ink/65 uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase">
                 {courseAccess.owner ? "Your public profile" : "Your tutor"}
               </p>
               {/* from xl the top bar already shows the pill */}
               <span className="xl:hidden">
-                <DemoPill />
+                <DemoPill tone="dark" />
               </span>
             </div>
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-5 flex items-center gap-3.5">
               <Avatar
                 name={tutor.name}
                 src={tutor.avatar}
@@ -331,56 +335,52 @@ function OverviewPanel({
                 decorative
               />
               <div className="min-w-0">
-                <p className="t-app-h3">{tutor.name}</p>
-                <p className="mt-0.5 line-clamp-2 t-small text-ink/65">
+                <p className="font-heading text-[19px] leading-tight font-semibold tracking-[-0.02em]">
+                  {tutor.name}
+                </p>
+                <p className="mt-1 line-clamp-2 t-small text-muted">
                   {tutor.headline}
                 </p>
               </div>
             </div>
-            <p className="mt-3 line-clamp-4 t-small text-ink/70">{tutor.bio}</p>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] font-bold text-ink/65">
-              <span className="inline-flex items-center gap-1">
-                <Icon name="star" className="size-3.5 text-tangerine" />
-                {tutor.rating.toFixed(1)} tutor rating
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Icon name="users" className="size-3.5" />
-                {formatNumber(tutor.learners)} learners
-              </span>
+            <p className="mt-4 line-clamp-4 t-small text-muted">{tutor.bio}</p>
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-y border-line py-2.5 font-mono text-[11px] tracking-[0.04em] text-muted uppercase tabular-nums">
+              <span>★ {tutor.rating.toFixed(1)} rating</span>
+              <span>{formatNumber(tutor.learners)} learners</span>
             </div>
             {courseAccess.owner ? (
               <Button
-                variant="secondary"
+                variant="arrow"
                 size="sm"
                 href="/tutor/settings"
-                icon="edit"
                 className="mt-4"
               >
                 Edit profile
               </Button>
             ) : (
               <Button
-                variant="secondary"
+                variant="arrow"
                 size="sm"
                 href={`/tutors/${tutor.slug}`}
-                iconRight="arrow-right"
                 className="mt-4"
               >
                 View profile
               </Button>
             )}
-          </Card>
+          </section>
         )}
         {item.type === "video" && access.allowed && (
-          <Card tone="butter" className="max-md:hidden">
-            <h2 className="t-app-h3">Keyboard shortcuts</h2>
-            <p className="mt-1 text-[12.5px] font-semibold text-ink/65">
+          <section className="border-t border-fg pt-5 max-md:hidden">
+            <h2 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+              Keyboard shortcuts
+            </h2>
+            <p className="mt-2 text-[12.5px] text-muted">
               {keysOn
                 ? "Click the video, then press ? for the full list."
                 : "Letter keys are off. Turn shortcuts on in Playback settings (the gear)."}
             </p>
-            <ShortcutList className="mt-3" />
-          </Card>
+            <ShortcutList className="mt-4" />
+          </section>
         )}
       </div>
     </div>
@@ -392,7 +392,7 @@ function AboutItem({ ctx }: { ctx: ItemContext }) {
   const { tracking, courseAccess, tutorBrowsing } = useLearn();
   const untracked = untrackedLine({ ...courseAccess, tutorBrowsing });
   const item = ctx.item;
-  const facts: { icon: string; text: string }[] = [];
+  const facts: string[] = [];
   let heading = "About this lesson";
   // the header above already shows a lesson's own description, so say where it sits instead
   const place = `Step ${ctx.module.items.findIndex((i) => i.id === item.id) + 1} of ${ctx.module.items.length} in “${ctx.module.title}”.`;
@@ -400,17 +400,10 @@ function AboutItem({ ctx }: { ctx: ItemContext }) {
   let points: string[] = [];
   if (item.type === "video") {
     const l = item.lesson;
-    facts.push({ icon: "clock", text: formatDuration(l.durationSec, "long") });
-    facts.push({
-      icon: "video",
-      text: l.hasCaptions ? "Captions available" : "Captions coming soon",
-    });
-    if (l.chapters?.length)
-      facts.push({
-        icon: "layers",
-        text: plural(l.chapters.length, "chapter"),
-      });
-    if (l.isFreePreview) facts.push({ icon: "unlock", text: "Free preview" });
+    facts.push(formatDuration(l.durationSec, "long"));
+    facts.push(l.hasCaptions ? "Captions" : "Captions soon");
+    if (l.chapters?.length) facts.push(plural(l.chapters.length, "chapter"));
+    if (l.isFreePreview) facts.push("Free preview");
     points = tracking
       ? [
           "Completes on its own once you've watched 90%.",
@@ -421,19 +414,12 @@ function AboutItem({ ctx }: { ctx: ItemContext }) {
     const q = item.quiz;
     heading = "About this test";
     body = [q.description, place].filter(Boolean).join(" ");
-    facts.push({ icon: "quiz", text: plural(q.questions.length, "question") });
-    facts.push({
-      icon: "check-circle",
-      text: `Pass mark ${q.passPercentage}%`,
-    });
-    facts.push({
-      icon: "refresh",
-      text: q.maxAttempts
-        ? plural(q.maxAttempts, "attempt")
-        : "Unlimited attempts",
-    });
-    if (q.timeLimitMin)
-      facts.push({ icon: "clock", text: `${q.timeLimitMin} min` });
+    facts.push(plural(q.questions.length, "question"));
+    facts.push(`Pass mark ${q.passPercentage}%`);
+    facts.push(
+      q.maxAttempts ? plural(q.maxAttempts, "attempt") : "Unlimited attempts",
+    );
+    if (q.timeLimitMin) facts.push(`${q.timeLimitMin} min`);
     points = [
       q.isGating
         ? "Checkpoint: the lessons after this stay locked until you pass."
@@ -445,44 +431,46 @@ function AboutItem({ ctx }: { ctx: ItemContext }) {
   } else {
     const r = item.resource;
     heading = "About this download";
-    facts.push({
-      icon: FILE_META[r.fileType].icon,
-      text: FILE_META[r.fileType].label,
-    });
+    facts.push(FILE_META[r.fileType].label);
     const size = formatSize(r.sizeKb);
-    if (size) facts.push({ icon: "download", text: size });
+    if (size) facts.push(size);
     points = [
       tracking ? "Counts as done once you've downloaded it." : untracked,
       "Every download in the course also lives in the Resources tab.",
     ];
   }
   return (
-    <>
-      <h2 className="t-app-h2">{heading}</h2>
-      {body && <p className="mt-2 max-w-[62ch] t-body text-ink/75">{body}</p>}
-      <ul className="mt-4 flex flex-wrap gap-2">
+    <div className="border-t border-fg pt-5">
+      <h2 className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+        {heading}
+      </h2>
+      {body && (
+        <p className="mt-4 max-w-[58ch] font-heading text-[clamp(1.125rem,1rem+0.5vw,1.375rem)] leading-[1.35] font-medium tracking-[-0.015em] text-fg/90">
+          {body}
+        </p>
+      )}
+      <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
         {facts.map((f) => (
-          <li
-            key={f.text}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-cream/80 px-3 text-[13px] font-bold text-ink/70"
-          >
-            <Icon name={f.icon} className="size-3.5" />
-            {f.text}
+          <li key={f} className="flex items-center gap-2">
+            <span aria-hidden className="size-[5px] bg-red" />
+            {f}
           </li>
         ))}
       </ul>
-      <ul className="mt-4 space-y-1.5">
+      <ul className="mt-6 border-t border-line">
         {points.map((p) => (
           <li
             key={p}
-            className="flex items-start gap-2 text-[14px] leading-snug font-semibold text-ink/70"
+            className="flex items-baseline gap-3 border-b border-line py-2.5 text-[14px] leading-snug text-muted"
           >
-            <Icon name="info" className="mt-0.5 size-4 shrink-0 text-blue" />
+            <span aria-hidden className="shrink-0 font-mono text-[11px]">
+              —
+            </span>
             {p}
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 }
 
@@ -750,17 +738,21 @@ function QAPanel({
         : "Nobody has asked about this one yet. Questions from learners in the course show up here.";
 
   return (
-    <div className="grid gap-4 @[860px]:grid-cols-[minmax(0,1fr)_340px]">
-      <div ref={listRef} className="min-w-0 space-y-3">
+    <div className="grid gap-x-12 gap-y-10 @[860px]:grid-cols-[minmax(0,1fr)_320px]">
+      <div ref={listRef} className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 ref={headRef} tabIndex={-1} className="t-app-h2 outline-none">
+            <h2
+              ref={headRef}
+              tabIndex={-1}
+              className="font-heading text-[clamp(1.375rem,1.1rem+0.9vw,1.875rem)] leading-tight font-semibold tracking-[-0.03em] outline-none"
+            >
               {plural(questions.length, "question")}
               {updates > 0 && ` · ${plural(updates, "update")}`}
             </h2>
             {/* from xl the top bar already shows the pill */}
             <span className="xl:hidden">
-              <DemoPill />
+              <DemoPill tone="dark" />
             </span>
           </div>
           {threads.length > 1 && (
@@ -778,17 +770,19 @@ function QAPanel({
           )}
         </div>
         {sorted.length === 0 ? (
-          <Card>
+          <div className="mt-5 border-t border-line">
             <EmptyState
               compact
-              art="buddies"
-              tone="cyan"
+              art="none"
+              align="start"
+              eyebrow="Q&A · 00 threads"
+              className="px-0"
               title="No questions yet."
               body={emptyBody}
             />
-          </Card>
+          </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="mt-5 divide-y divide-line border-y border-line">
             {sorted.map((t) => (
               <ThreadCard
                 key={t.question.id}
@@ -813,9 +807,9 @@ function QAPanel({
 
       <div className="@[860px]:sticky @[860px]:top-[84px] @[860px]:self-start">
         {courseAccess.owner ? (
-          <Card tone="cyan">
+          <div className="border border-line bg-night p-5 md:p-6">
             <h2 className="t-app-h3">Answer inside the threads</h2>
-            <p className="mt-2 t-small text-ink">
+            <p className="mt-2 t-small text-muted">
               {waiting
                 ? `${plural(waiting, "question")} on this ${item.type === "quiz" ? "test" : "lesson"} ${waiting === 1 ? "is" : "are"} waiting for you. Answer on the thread, or mark it resolved if it sorted itself out.`
                 : "Nothing waiting on this one. When a learner asks, hit Answer on their thread."}
@@ -829,11 +823,11 @@ function QAPanel({
             >
               All your questions
             </Button>
-          </Card>
+          </div>
         ) : courseAccess.admin ? (
-          <Card tone="lilac">
+          <div className="border border-line bg-night p-5 md:p-6">
             <h2 className="t-app-h3">Moderation lives in the admin area</h2>
-            <p className="mt-2 t-small text-ink">
+            <p className="mt-2 t-small text-muted">
               Q&amp;A here is between learners and {tutorFirst}. Review reports
               and the course from the admin area.
             </p>
@@ -845,24 +839,30 @@ function QAPanel({
               >
                 Course review
               </Button>
-              <Button size="sm" variant="secondary" href="/admin/reports">
+              <Button size="sm" variant="outline" href="/admin/reports">
                 Reports
               </Button>
             </div>
-          </Card>
+          </div>
         ) : !settled && !canAsk ? (
           // logged in, store overlay not in yet: the course may already be theirs
-          <Card>
-            <Skeleton className="h-6 w-36 rounded-full" />
+          <div className="border border-line bg-night p-5 md:p-6">
+            <Skeleton className="h-5 w-36" />
             <Skeleton variant="text" lines={2} className="mt-3" />
-            <Skeleton className="mt-4 h-9 w-40 rounded-full" />
-          </Card>
+            <Skeleton className="mt-4 h-9 w-40" />
+          </div>
         ) : (
-          <Card>
-            <h2 className="t-app-h3">Ask the tutor</h2>
+          <div className="border border-line bg-night p-5 md:p-6">
+            <p className="flex items-center justify-between gap-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+              Ask the tutor
+              <span className="font-mono text-[10.5px] font-normal tracking-[0.04em] text-muted">
+                Q&amp;A
+              </span>
+            </p>
+            <h2 className="sr-only">Ask the tutor</h2>
             {canAsk && phone ? (
               <div className="mt-2">
-                <p className="t-small text-ink/70">
+                <p className="t-small text-muted">
                   Stuck on something? {tutorFirst} reads every question.
                   {body.trim() && " Your draft is saved."}
                 </p>
@@ -902,13 +902,13 @@ function QAPanel({
                 <Button type="submit" icon="chat" fullWidth>
                   Post question
                 </Button>
-                <p className="text-[12.5px] font-semibold text-ink/65">
+                <p className="text-[12.5px] font-semibold text-muted">
                   Questions are public to other learners in this course.
                 </p>
               </form>
             ) : !session ? (
               <div className="mt-2">
-                <p className="t-small text-ink/70">
+                <p className="t-small text-muted">
                   Log in to ask {tutorFirst} a question. Reading is open to
                   everyone.
                 </p>
@@ -922,7 +922,7 @@ function QAPanel({
               </div>
             ) : gatedHere ? (
               <div className="mt-2">
-                <p className="t-small text-ink/70">
+                <p className="t-small text-muted">
                   Pass the checkpoint test first, then ask away on this one.
                 </p>
                 {access.blockedBy && (
@@ -939,23 +939,29 @@ function QAPanel({
               </div>
             ) : (
               <div className="mt-2">
-                <p className="t-small text-ink/70">
+                <p className="t-small text-muted">
                   {tutorBrowsing
                     ? `Q&A is for learners in the course. ${TUTOR_BROWSING_LINE}`
                     : `Q&A is for learners in the course. Unlock it to ask ${tutorFirst} anything.`}
                 </p>
                 {courseAccess.purchasable && (
-                  <BuyButton size="sm" className="mt-3" />
+                  <BuyButton
+                    size="sm"
+                    variant="red"
+                    label="Unlock the full course"
+                    className="mt-4"
+                  />
                 )}
               </div>
             )}
-          </Card>
+          </div>
         )}
       </div>
       {canAsk && phone && (
         <BottomSheet
           open={composer}
           onClose={() => setComposer(false)}
+          surface="ink"
           title={`Ask ${tutorFirst}`}
           description="Questions are public to other learners in this course."
           footerLayout="row"
@@ -1027,13 +1033,13 @@ function HiddenPost({
       <span
         aria-hidden
         className={clsx(
-          "grid shrink-0 place-items-center rounded-full bg-ink/[0.06] text-ink/65",
+          "grid shrink-0 place-items-center text-muted ring-1 ring-line-strong ring-inset",
           small ? "size-8" : "size-10",
         )}
       >
         <Icon name="flag" className="size-4" />
       </span>
-      <p className="min-w-0 flex-1 basis-48 text-[14px] leading-snug font-semibold text-ink/70">
+      <p className="min-w-0 flex-1 basis-48 text-[14px] leading-snug font-semibold text-muted">
         {mineOnly
           ? "You reported this post. It's hidden for you while the Tamada team takes a look."
           : "Hidden while the Tamada team reviews a report."}
@@ -1042,7 +1048,7 @@ function HiddenPost({
         <button
           type="button"
           onClick={onShow}
-          className="tap hit rounded-full px-2.5 py-1 text-[13px] font-bold text-blue-deep hf:bg-[#dfe8ff]"
+          className="tap hit px-1 py-1 text-[11px] font-semibold tracking-[0.14em] uppercase underline decoration-line-strong underline-offset-4 hf:text-red-lite"
         >
           Show anyway
         </button>
@@ -1050,7 +1056,7 @@ function HiddenPost({
         <button
           type="button"
           onClick={() => onUnreport(row)}
-          className="tap hit rounded-full px-2.5 py-1 text-[13px] font-bold text-blue-deep hf:bg-[#dfe8ff]"
+          className="tap hit px-1 py-1 text-[11px] font-semibold tracking-[0.14em] uppercase underline decoration-line-strong underline-offset-4 hf:text-red-lite"
         >
           Undo report
         </button>
@@ -1126,21 +1132,19 @@ function ThreadCard({
 
   if (isHidden(q))
     return (
-      <li className="app-fade">
-        <Card padding="sm" className="p-4 md:p-5">
-          <HiddenPost
-            row={q}
-            canModerate={canModerate}
-            onShow={() => show(q.id)}
-            onUnreport={onUnreport}
-          />
-        </Card>
+      <li className="app-fade py-5">
+        <HiddenPost
+          row={q}
+          canModerate={canModerate}
+          onShow={() => show(q.id)}
+          onUnreport={onUnreport}
+        />
       </li>
     );
 
   return (
-    <li className="app-fade">
-      <Card padding="sm" className="p-4 md:p-5">
+    <li className="app-fade py-5">
+      <div>
         <CommentRow
           c={q}
           tutorId={tutorId}
@@ -1175,7 +1179,7 @@ function ThreadCard({
               data-answer-waiting={
                 isTutorViewer && !thread.handled ? "" : undefined
               }
-              className="tap hit rounded-full px-2.5 py-1 text-[13px] font-bold text-blue-deep hf:bg-[#dfe8ff] coarse:py-2"
+              className="tap hit ml-1 px-1.5 py-1 text-[11px] font-semibold tracking-[0.14em] uppercase hf:text-red-lite coarse:py-2"
             >
               {replying
                 ? "Cancel"
@@ -1188,22 +1192,22 @@ function ThreadCard({
             <button
               type="button"
               onClick={() => setResolved(!thread.resolved)}
-              className="tap hit rounded-full px-2.5 py-1 text-[13px] font-bold text-ink/70 hf:bg-ink/[0.05] hf:text-ink coarse:py-2"
+              className="tap hit px-1.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase hf:text-fg coarse:py-2"
             >
               {thread.resolved ? "Reopen" : "Mark as resolved"}
             </button>
           )}
         </div>
         {thread.replies.length > 0 && (
-          <ul className="mt-3 space-y-2 pl-[52px] max-sm:pl-0">
+          <ul className="mt-4 space-y-4 pl-[52px] max-sm:pl-0">
             {thread.replies.map((r) => {
               const isTutor = r.userId === tutorId;
               return (
                 <li
                   key={r.id}
                   className={clsx(
-                    "rounded-[18px] p-3.5",
-                    isTutor ? "bg-cyan/60" : "bg-cream/70",
+                    "border-l-2 py-1 pl-4",
+                    isTutor ? "border-red" : "border-line-strong",
                   )}
                 >
                   {isHidden(r) ? (
@@ -1272,7 +1276,7 @@ function ThreadCard({
             </div>
           </form>
         )}
-      </Card>
+      </div>
       <ConfirmDialog
         open={!!del}
         onClose={() => setDel(null)}
@@ -1282,6 +1286,7 @@ function ThreadCard({
           toast("Deleted");
         }}
         tone="danger"
+        surface="ink"
         title="Delete this post?"
         description="It disappears for everyone in the course."
         confirmLabel="Delete"
@@ -1327,7 +1332,7 @@ function CommentRow({
       />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-[14px] font-bold">{mine ? "You" : name}</span>
+          <span className="text-[14px] font-semibold">{mine ? "You" : name}</span>
           {isTutor && (
             <Badge tone="ink" size="sm">
               Tutor
@@ -1338,13 +1343,13 @@ function CommentRow({
               Reported: {c.report.reason}
             </Badge>
           )}
-          <span className="text-[12.5px] font-semibold text-ink/65">
+          <span className="font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
             {timeAgo(c.createdAt)}
           </span>
         </p>
         <p
           className={clsx(
-            "mt-1 leading-relaxed break-words whitespace-pre-line text-ink/85",
+            "mt-1.5 leading-relaxed break-words whitespace-pre-line text-fg/85",
             small ? "text-[14px]" : "text-[15px]",
           )}
         >
@@ -1359,16 +1364,16 @@ function CommentRow({
               aria-label={`Helpful, ${likeLabel}`}
               title={on ? "Take back your like" : "Mark as helpful"}
               className={clsx(
-                "tap hit inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12.5px] font-bold coarse:h-9",
-                on ? "bg-blush text-[#8a0d55]" : "text-ink/65 hf:bg-ink/[0.05]",
+                "tap hit inline-flex h-7 items-center gap-1.5 px-1.5 font-mono text-[11.5px] tabular-nums coarse:h-9",
+                on ? "text-red-deep on-dark:text-red-lite" : "text-muted hf:text-fg",
               )}
             >
-              <Icon name="heart" className="size-3.5" strokeWidth={2.4} />
+              <Icon name="heart" className={clsx("size-3.5", on && "fill-current")} strokeWidth={1.8} />
               {count}
             </button>
           ) : (
-            <span className="inline-flex h-7 items-center gap-1 px-2 text-[12.5px] font-bold text-ink/65">
-              <Icon name="heart" className="size-3.5" strokeWidth={2.4} />
+            <span className="inline-flex h-7 items-center gap-1.5 px-1.5 font-mono text-[11.5px] text-muted tabular-nums">
+              <Icon name="heart" className="size-3.5" strokeWidth={1.8} />
               {count}
               <span className="sr-only"> {count === 1 ? "like" : "likes"}</span>
             </span>
@@ -1377,7 +1382,7 @@ function CommentRow({
             <button
               type="button"
               onClick={() => onDelete(c)}
-              className="tap hit inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12.5px] font-bold text-ink/65 hf:bg-[#ffe1d4] hf:text-[#b02f00] coarse:h-9"
+              className="tap hit inline-flex h-7 items-center gap-1.5 px-1.5 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase hf:text-red-deep on-dark:hf:text-red-lite coarse:h-9"
             >
               <Icon name="trash" className="size-3.5" />
               Delete
@@ -1388,7 +1393,7 @@ function CommentRow({
               label={`Report post by ${name}`}
               align="start"
               width={232}
-              triggerClassName="tap hit inline-flex h-7 items-center gap-1 rounded-full px-2 text-[12.5px] font-bold text-ink/65 hf:bg-ink/[0.05] hf:text-ink coarse:h-9"
+              triggerClassName="tap hit inline-flex h-7 items-center gap-1.5 px-1.5 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase hf:text-fg coarse:h-9"
               trigger={
                 <>
                   <Icon name="flag" className="size-3.5" />
@@ -1396,7 +1401,7 @@ function CommentRow({
                 </>
               }
               header={
-                <p className="text-[12.5px] font-bold text-ink/65">
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
                   What&apos;s wrong with it?
                 </p>
               }
@@ -1521,11 +1526,13 @@ function NotesPanel({
 
   if (session && (courseAccess.owner || courseAccess.admin)) {
     return (
-      <Card>
+      <div className="border-t border-line">
         <EmptyState
           compact
-          art="tami"
-          tone="cyan"
+          art="none"
+          align="start"
+          eyebrow="Notes · private"
+          className="px-0"
           title="Notes are personal to each learner."
           body={
             courseAccess.owner
@@ -1533,26 +1540,28 @@ function NotesPanel({
               : "Learners pin private, timestamped notes here. Admins can't read them, and nothing is saved in this view."
           }
         />
-      </Card>
+      </div>
     );
   }
   if (session && !canNote && !settled) {
     // the store overlay may still enroll them (a demo purchase): wait a beat
     return (
-      <Card>
-        <Skeleton className="h-6 w-48 rounded-full" />
+      <div className="border-t border-line py-8">
+        <Skeleton className="h-5 w-48" />
         <Skeleton variant="text" lines={2} className="mt-3 max-w-md" />
-      </Card>
+      </div>
     );
   }
   if (session && !canNote && access.reason === "gated") {
     const test = access.blockedBy;
     return (
-      <Card>
+      <div className="border-t border-line">
         <EmptyState
           compact
-          art="tami"
-          tone="butter"
+          art="none"
+          align="start"
+          eyebrow="Notes · locked"
+          className="px-0"
           title={
             test
               ? `Notes open once you pass “${itemTitle(test)}”.`
@@ -1572,16 +1581,18 @@ function NotesPanel({
             ) : undefined
           }
         />
-      </Card>
+      </div>
     );
   }
   if (!session || !canNote) {
     return (
-      <Card>
+      <div className="border-t border-line">
         <EmptyState
           compact
-          art="tami"
-          tone="blush"
+          art="none"
+          align="start"
+          eyebrow="Notes · learners only"
+          className="px-0"
           title="Notes are for learners in the course."
           body={
             !session
@@ -1599,19 +1610,26 @@ function NotesPanel({
                 Log in
               </Button>
             ) : (
-              <BuyButton size="sm" arrow={false} />
+              <BuyButton
+                size="sm"
+                variant="red"
+                arrow={false}
+                label="Unlock the full course"
+              />
             )
           }
         />
-      </Card>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4 @[860px]:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="min-w-0 space-y-3">
+    <div className="grid gap-x-12 gap-y-10 @[860px]:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="t-app-h2">Your notes</h2>
+          <h2 className="font-heading text-[clamp(1.375rem,1.1rem+0.9vw,1.875rem)] leading-tight font-semibold tracking-[-0.03em]">
+            Your notes
+          </h2>
           <Segmented
             label="Which notes"
             size="sm"
@@ -1624,11 +1642,13 @@ function NotesPanel({
           />
         </div>
         {list.length === 0 ? (
-          <Card>
+          <div className="mt-5 border-t border-line">
             <EmptyState
               compact
-              art="buddy"
-              tone="butter"
+              art="none"
+              align="start"
+              eyebrow="Notes · 00"
+              className="px-0"
               title={
                 scope === "item"
                   ? "No notes on this one yet."
@@ -1636,22 +1656,22 @@ function NotesPanel({
               }
               body="Jot down the bits you'll want later. Notes are private to you."
             />
-          </Card>
+          </div>
         ) : (
-          <ul className="space-y-2.5">
+          <ul className="mt-5 divide-y divide-line border-y border-line">
             {list.map((n) => {
               const sameItem = n.itemId === ctx.item.id;
               const isEditing = editing?.id === n.id;
               return (
-                <li key={n.id} className="app-fade">
-                  <Card padding="sm" className="p-4">
+                <li key={n.id} className="app-fade py-4">
+                  <div>
                     <div className="flex flex-wrap items-center gap-2">
                       {(isVideo || !sameItem) &&
                         (sameItem ? (
                           <button
                             type="button"
                             onClick={() => jump(n.itemId, n.atSec)}
-                            className="tap hit inline-flex h-7 items-center gap-1 rounded-full bg-blue px-2.5 text-[12.5px] font-bold text-white tabular-nums hf:bg-[#1c55e0] coarse:h-9"
+                            className="tap hit inline-flex h-7 items-center gap-1.5 bg-red px-2 font-mono text-[11.5px] text-white tabular-nums hf:bg-red-deep coarse:h-9"
                             aria-label={`Jump to ${formatDuration(n.atSec, "clock")}`}
                           >
                             <Icon
@@ -1668,7 +1688,7 @@ function NotesPanel({
                             atSec={n.atSec}
                           />
                         ))}
-                      <span className="text-[12.5px] font-semibold text-ink/65">
+                      <span className="font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
                         {timeAgo(n.createdAt)}
                       </span>
                       <span className="flex-1" />
@@ -1734,11 +1754,11 @@ function NotesPanel({
                         </div>
                       </form>
                     ) : (
-                      <p className="mt-2 text-[15px] leading-relaxed whitespace-pre-line">
+                      <p className="mt-2.5 text-[15px] leading-relaxed whitespace-pre-line text-fg/90">
                         {n.text}
                       </p>
                     )}
-                  </Card>
+                  </div>
                 </li>
               );
             })}
@@ -1746,8 +1766,13 @@ function NotesPanel({
         )}
       </div>
       <div className="@[860px]:sticky @[860px]:top-[84px] @[860px]:self-start">
-        <Card tone="butter">
-          <h2 className="t-app-h3">New note</h2>
+        <div className="border border-line bg-night p-5 md:p-6">
+          <h2 className="flex items-center justify-between gap-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+            New note
+            <span className="font-mono text-[10.5px] font-normal tracking-[0.04em] text-muted">
+              Private
+            </span>
+          </h2>
           <form onSubmit={save} className="mt-3 space-y-3" noValidate>
             <Field
               label={
@@ -1760,7 +1785,7 @@ function NotesPanel({
                   <button
                     type="button"
                     onClick={syncTime}
-                    className="hit text-blue-deep hf:underline"
+                    className="hit text-red-deep underline-offset-4 on-dark:text-red-lite hf:underline"
                   >
                     Use current time
                   </button>
@@ -1785,7 +1810,7 @@ function NotesPanel({
               Save note
             </Button>
           </form>
-        </Card>
+        </div>
       </div>
     </div>
   );
@@ -1809,7 +1834,7 @@ function NoteTarget({
   const item = flat.find((f) => f.item.id === itemId)?.item;
   const title = item ? itemTitle(item) : "Lesson";
   const chip =
-    "tap hit inline-flex h-7 max-w-full items-center gap-1 rounded-full bg-[#dfe8ff] px-2.5 text-[12.5px] font-bold text-blue-deep hf:underline coarse:h-9";
+    "tap hit inline-flex h-7 max-w-full items-center gap-1.5 px-2 font-mono text-[11px] tracking-[0.02em] text-fg ring-1 ring-line-strong ring-inset hf:ring-fg coarse:h-9";
   if (!item || item.type === "video")
     return (
       <Link
@@ -1862,15 +1887,17 @@ function ResourcesPanel({ ctx }: { ctx: ItemContext }) {
   ];
   if (!ordered.length)
     return (
-      <Card>
+      <div className="border-t border-line">
         <EmptyState
           compact
-          art="buddy"
-          tone="cyan"
+          art="none"
+          align="start"
+          eyebrow="Downloads · 00"
+          className="px-0"
           title="No downloads in this course."
           body="Everything you need is in the videos and tests."
         />
-      </Card>
+      </div>
     );
   const get = (x: ItemContext & { item: ResourceItem }) => {
     downloadDemoResource(x.item.resource, course.title);
@@ -1885,16 +1912,18 @@ function ResourcesPanel({ ctx }: { ctx: ItemContext }) {
       });
   };
   return (
-    <Card padding="none">
-      <div className="px-5 pt-5 md:px-6 md:pt-6">
-        <h2 className="t-app-h2">Course downloads</h2>
-        <p className="mt-1 t-small text-ink/65">
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+        <h2 className="font-heading text-[clamp(1.375rem,1.1rem+0.9vw,1.875rem)] leading-tight font-semibold tracking-[-0.03em]">
+          Course downloads
+        </h2>
+        <p className="max-w-[52ch] t-small text-muted">
           Cheat sheets and project files. In this demo they&apos;re small sample
           files made in your browser.
         </p>
       </div>
-      <ul className="mt-3 divide-y divide-ink/[0.07]">
-        {ordered.map((x) => {
+      <ul className="mt-5 divide-y divide-line border-y border-line">
+        {ordered.map((x, i) => {
           const r = x.item.resource;
           const meta = FILE_META[r.fileType];
           const ok = accessMap[x.item.id]?.allowed;
@@ -1902,19 +1931,19 @@ function ResourcesPanel({ ctx }: { ctx: ItemContext }) {
           return (
             <li
               key={x.item.id}
-              className="flex flex-wrap items-center gap-3 px-5 py-3.5 md:px-6"
+              className="flex flex-wrap items-center gap-x-5 gap-y-3 py-4"
             >
               <span
-                className={clsx(
-                  "grid size-11 shrink-0 place-items-center rounded-[14px]",
-                  meta.tone,
-                )}
+                aria-hidden
+                className="w-6 shrink-0 self-start pt-[3px] font-mono text-[11px] text-muted tabular-nums"
               >
-                <Icon name={meta.icon} className="size-5" />
+                {pad2(i + 1)}
               </span>
               <div className="min-w-0 flex-1 basis-48">
-                <p className="text-[15px] leading-snug font-bold">{r.title}</p>
-                <p className="mt-0.5 text-[12.5px] font-semibold text-ink/65">
+                <p className="text-[15px] leading-snug font-medium tracking-[-0.01em]">
+                  {r.title}
+                </p>
+                <p className="mt-1 font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
                   {[
                     meta.label,
                     formatSize(r.sizeKb),
@@ -1928,7 +1957,7 @@ function ResourcesPanel({ ctx }: { ctx: ItemContext }) {
               {ok ? (
                 <Button
                   size="sm"
-                  variant={completed.has(x.item.id) ? "secondary" : "primary"}
+                  variant={completed.has(x.item.id) ? "outline" : "primary"}
                   icon={r.fileType === "link" ? "external" : "download"}
                   onClick={() => get(x)}
                   aria-label={
@@ -1946,8 +1975,8 @@ function ResourcesPanel({ ctx }: { ctx: ItemContext }) {
                       : "Download"}
                 </Button>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/[0.06] px-3 py-1.5 text-[12.5px] font-bold text-ink/70">
-                  <Icon name="lock" className="size-3.5" />
+                <span className="inline-flex items-center gap-2 font-mono text-[10.5px] tracking-[0.06em] text-muted uppercase">
+                  <Icon name="lock" className="size-3.5" strokeWidth={1.7} />
                   {lockReason(accessMap[x.item.id], ctx.item.id) ?? "Locked"}
                 </span>
               )}
@@ -1955,6 +1984,6 @@ function ResourcesPanel({ ctx }: { ctx: ItemContext }) {
           );
         })}
       </ul>
-    </Card>
+    </section>
   );
 }

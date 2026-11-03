@@ -10,6 +10,11 @@ export const setLenis = (l: Lenis | null) => {
   instance = l;
 };
 
+/** The page's scroll position WITHOUT a DOM read: Lenis' own (animated) value while it runs,
+ *  window.scrollY otherwise. Use it in per-frame code: reading window.scrollY after GSAP has
+ *  written styles in the same frame forces a synchronous style + layout pass. */
+export const currentScrollY = () => (instance ? instance.scroll : window.scrollY);
+
 /* ---------------------------------------------------------------------------
    Scroll-idle helpers (shared by hover-follow effects, the cursor and the
    refresh scheduler). One passive scroll listener for the whole page; works with

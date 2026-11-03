@@ -12,7 +12,7 @@ import {
   Drawer,
   DropdownMenu,
   Icon,
-  ProgressRing,
+  INK_SURFACE,
   Skeleton,
   toast,
   isCoarse,
@@ -22,8 +22,7 @@ import {
   useScrollHide,
   useScrolledPast,
 } from "@/components/app";
-import { BrandLockup } from "@/components/landing/Header";
-import { Mascot } from "@/components/decor/Mascot";
+import { BrandMark } from "@/components/editorial/BrandMark";
 import {
   flattenCurriculum,
   getCourse,
@@ -404,14 +403,18 @@ export function LearnShell({
 
   return (
     <LearnContext.Provider value={ctx}>
-      <div className="min-h-dvh">
+      {/* The theatre: ink ground, cream text, hairlines and context tokens flip
+          (data-field="dark" lets on-dark: variants and the kit read it too). */}
+      <div data-learn-shell="" data-field="dark" className="theatre min-h-dvh">
         <a
           href="#main"
-          className="sr-only z-[400] rounded-full bg-ink font-bold text-cream shadow-lift focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:inline-flex focus:h-10 focus:items-center focus:px-5"
+          className="sr-only z-[400] bg-cream text-[11px] font-semibold tracking-[0.16em] text-ink uppercase focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:inline-flex focus:h-10 focus:items-center focus:px-5"
         >
           Skip to lesson
         </a>
         <TopBar
+          current={current}
+          position={flatIndex + 1}
           collapsed={collapsed}
           onTogglePath={() => {
             if (
@@ -424,23 +427,14 @@ export function LearnShell({
           onShowCompletion={() => setCompletion({ open: true, cert })}
         />
 
-        {/* bottom padding clears the floating lesson bar (--bottom-ui) below lg */}
-        <div className="flex gap-4 px-3 pt-2 pb-[calc(var(--bottom-ui,0px)+24px)] sm:px-4 lg:gap-5 lg:px-5 lg:pb-6">
-          {!collapsed && (
-            <aside
-              data-learn-aside
-              className="app-fade hidden w-[320px] shrink-0 lg:block xl:w-[348px]"
-              aria-label="Your path"
-            >
-              <div className="sticky top-[76px] h-[calc(100dvh-100px)] overflow-hidden rounded-card-lg bg-white shadow-soft">
-                <PathPanel
-                  currentItemId={itemId}
-                  onCollapse={() => setPathCollapsed(true)}
-                />
-              </div>
-            </aside>
-          )}
-          <main id="main" tabIndex={-1} className="min-w-0 flex-1">
+        {/* stage column + "Your path" on the right. Bottom padding clears the
+            lesson bar (--bottom-ui) below lg. */}
+        <div className="flex">
+          <main
+            id="main"
+            tabIndex={-1}
+            className="min-w-0 flex-1 px-3 pt-2 pb-[calc(var(--bottom-ui,0px)+40px)] focus:outline-none sm:px-5 sm:pt-5 lg:px-8 lg:pt-6 lg:pb-20"
+          >
             {/* fullscreen host: persists across items (see toggleFullscreen) */}
             <div
               ref={fsHost}
@@ -451,6 +445,20 @@ export function LearnShell({
               {children}
             </div>
           </main>
+          {!collapsed && (
+            <aside
+              data-learn-aside
+              className="app-fade hidden w-[340px] shrink-0 border-l border-line lg:block xl:w-[372px]"
+              aria-label="Your path"
+            >
+              <div className="sticky top-[calc(3.5rem+var(--sat))] h-[calc(100dvh-3.5rem-var(--sat))] overflow-hidden">
+                <PathPanel
+                  currentItemId={itemId}
+                  onCollapse={() => setPathCollapsed(true)}
+                />
+              </div>
+            </aside>
+          )}
         </div>
 
         {/* Mobile / tablet: bottom bar with prev, path, next */}
@@ -473,11 +481,13 @@ export function LearnShell({
         <Drawer
           open={pathOpen}
           onClose={() => setPathOpen(false)}
-          side="left"
+          side="right"
           width={420}
+          eyebrow={course.title}
           title="Your path"
           bodyClassName="flex flex-col"
           mobile="sheet"
+          surface="ink"
         >
           <PathPanel
             currentItemId={itemId}
@@ -498,33 +508,56 @@ export function LearnShell({
   );
 }
 
+/** "TM." — the player's own mark (the full logo sits in the top bar from lg). */
+function TmMark({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={clsx(
+        "font-display text-[24px] leading-none tracking-[0.01em] text-fg",
+        className,
+      )}
+    >
+      TM<span className="text-red">.</span>
+    </span>
+  );
+}
+
+/** Home link: the light logo from lg, "TM." below. */
+function HomeMark() {
+  return (
+    <Link
+      href="/"
+      aria-label="Tamada Media home"
+      className="tap flex h-11 shrink-0 items-center"
+    >
+      <TmMark className="lg:hidden" />
+      <BrandMark
+        tone="light"
+        sizes="104px"
+        className="hidden w-[104px] lg:block"
+      />
+    </Link>
+  );
+}
+
 function GoneScreen({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center gap-3 px-3 pt-[var(--sat)] sm:h-16 sm:px-4 lg:px-5">
-        <Link
-          href="/"
-          aria-label="Tamada Media home"
-          className="group tap flex shrink-0 items-center [--lw:92px]"
-        >
-          <BrandLockup sizes="92px" interactive />
-        </Link>
+    <div data-field="dark" className="theatre flex min-h-dvh flex-col">
+      <header className="flex h-14 items-center gap-3 border-b border-line px-3 pt-[var(--sat)] sm:px-5 lg:px-8">
+        <HomeMark />
         <span className="flex-1" />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon="chevron-left"
-          href="/courses"
-        >
+        <Button variant="ghost" size="sm" icon="arrow-left" href="/courses">
           All courses
         </Button>
       </header>
-      <main id="main" className="grid flex-1 place-items-center px-4 pb-16">
+      <main id="main" className="grid flex-1 items-center px-3 pb-16 sm:px-5 lg:px-8">
         <LearnEmpty
           title={title}
           body={body}
+          eyebrow="404 · Off the reel"
           action={
-            <Button href="/courses" iconRight="arrow-right">
+            <Button href="/courses" variant="red" iconRight="arrow-right">
               Browse courses
             </Button>
           }
@@ -549,39 +582,50 @@ function backTarget(
 
 function BarLink({
   href,
-  icon,
-  label,
+  dir,
 }: {
   href: string | null;
-  icon: "chevron-left" | "chevron-right";
-  label: string;
+  dir: "prev" | "next";
 }) {
+  const icon = dir === "prev" ? "arrow-left" : "arrow-right";
+  const word = dir === "prev" ? "Prev" : "Next";
+  const inner = (
+    <>
+      {dir === "prev" && <Icon name={icon} className="size-4" strokeWidth={1.8} />}
+      <span className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+        {word}
+      </span>
+      {dir === "next" && <Icon name={icon} className="size-4" strokeWidth={1.8} />}
+    </>
+  );
+  const cls = clsx(
+    "flex h-full min-w-[84px] shrink-0 items-center gap-2 px-4",
+    dir === "next" ? "justify-end" : "justify-start",
+  );
   if (!href)
     return (
-      <span
-        aria-hidden
-        className="grid size-11 shrink-0 place-items-center rounded-full text-cream/30"
-      >
-        <Icon name={icon} className="size-5" />
+      <span aria-hidden className={clsx(cls, "text-fg/25")}>
+        {inner}
       </span>
     );
   return (
     <Link
       href={href}
-      aria-label={label}
-      className="tap grid size-11 shrink-0 place-items-center rounded-full bg-white/10 hf:bg-white/20"
+      aria-label={dir === "prev" ? "Previous item" : "Next item"}
+      className={clsx(cls, "tap text-fg hf:text-red-lite active:bg-white/[0.06]")}
     >
-      <Icon name={icon} className="size-5" strokeWidth={2.4} />
+      {inner}
     </Link>
   );
 }
 
 /**
- * The floating ink pill below lg: previous · Your path · next. It slides away
- * while the learner scrolls down (reading), comes back on any scroll up and at
- * the end of the page, hides with the on-screen keyboard (data-kbd-hide) and
- * during a test attempt (`away`). Its footprint is published as --bottom-ui, so
- * the content padding, toasts and scroll-padding clear it.
+ * The bottom bar below lg: previous · Your path · next, flush to the screen
+ * edge like a player transport. It slides away while the learner scrolls down
+ * (reading), comes back on any scroll up and at the end of the page, hides with
+ * the on-screen keyboard (data-kbd-hide) and during a test attempt (`away`). Its
+ * footprint is published as --bottom-ui, so the content padding, toasts and
+ * scroll-padding clear it.
  */
 function LessonBar({
   prevHref,
@@ -631,23 +675,35 @@ function LessonBar({
       inert={away}
       data-hidden={hidden || undefined}
       data-kbd-hide=""
-      className="bottom-bar fixed right-[max(12px,var(--sar))] bottom-[max(12px,var(--sab))] left-[max(12px,var(--sal))] z-30 lg:hidden [html[data-learn-immersive]_&]:pointer-events-none [html[data-learn-immersive]_&]:translate-y-[calc(100%+24px)] [html[data-learn-immersive]_&]:opacity-0"
+      data-field="dark"
+      className={clsx(
+        INK_SURFACE,
+        "bottom-bar fixed inset-x-0 bottom-0 z-30 border-t border-line-strong pr-[var(--sar)] pb-[var(--sab)] pl-[var(--sal)] lg:hidden [html[data-learn-immersive]_&]:pointer-events-none [html[data-learn-immersive]_&]:translate-y-[calc(100%+24px)] [html[data-learn-immersive]_&]:opacity-0",
+      )}
     >
-      <div className="mx-auto flex h-14 max-w-[560px] items-center gap-1 rounded-full bg-ink p-1.5 text-cream shadow-lift land:h-[52px]">
-        <BarLink href={prevHref} icon="chevron-left" label="Previous item" />
+      {/* course position as a hairline along the top edge */}
+      <span
+        aria-hidden
+        className="absolute top-[-1px] left-0 h-px bg-red"
+        style={{ width: `${(position / Math.max(1, total)) * 100}%` }}
+      />
+      <div className="mx-auto flex h-14 max-w-[720px] items-stretch divide-x divide-line land:h-12">
+        <BarLink href={prevHref} dir="prev" />
         <button
           type="button"
           onClick={onOpenPath}
-          className="tap flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 text-[14px] font-bold hf:bg-white/10"
+          className="tap flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3 hf:text-red-lite active:bg-white/[0.06]"
           aria-haspopup="dialog"
         >
-          <Icon name="layers" className="size-[18px]" />
-          <span>Your path</span>
-          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[12px] tabular-nums">
-            {position}/{total}
+          <Icon name="layers" className="size-4 shrink-0" strokeWidth={1.7} />
+          <span className="text-[11px] font-semibold tracking-[0.16em] uppercase">
+            Your path
+          </span>
+          <span className="font-mono text-[11.5px] text-muted tabular-nums">
+            {String(position).padStart(2, "0")}/{String(total).padStart(2, "0")}
           </span>
         </button>
-        <BarLink href={nextHref} icon="chevron-right" label="Next item" />
+        <BarLink href={nextHref} dir="next" />
       </div>
     </nav>
   );
@@ -666,18 +722,26 @@ function emptyProgress(total: number) {
   };
 }
 
+/** "MODULE 05 / LESSON 02" -> "Module 05 · Lesson 02" (mono caps in the bar). */
+const slateLabel = (label: string) => label.replace(" / ", " · ");
+
 /* ----------------------------------------------------------------------------- top bar */
 function TopBar({
+  current,
+  position,
   collapsed,
   onTogglePath,
   onShowCompletion,
 }: {
+  current: { label: string } | null;
+  position: number;
   collapsed: boolean;
   onTogglePath: () => void;
   onShowCompletion: () => void;
 }) {
   const {
     course,
+    flat,
     progress,
     tracking,
     courseAccess,
@@ -700,46 +764,32 @@ function TopBar({
       data-learn-topbar=""
       data-hidden={hidden || undefined}
       data-scrolled={scrolled || undefined}
-      className="app-topbar sticky top-0 z-40 bg-cream/90 pt-[var(--sat)] backdrop-blur-md max-sm:bg-cream"
+      className="app-topbar sticky top-0 z-40 border-b border-line bg-ink/[0.94] pt-[var(--sat)] backdrop-blur-md max-sm:bg-ink"
     >
-      <div className="flex h-14 items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-4 lg:px-5 land:h-14">
-        <Link
-          href="/"
-          aria-label="Tamada Media home"
-          className="group tap hidden shrink-0 items-center [--lw:92px] lg:flex"
-        >
-          <BrandLockup sizes="92px" interactive />
-        </Link>
-        {/* tablets only: on phones Back already leaves the player */}
-        <Link
-          href="/"
-          aria-label="Tamada Media home"
-          className="tap hidden size-11 shrink-0 place-items-center sm:grid lg:hidden"
-        >
-          <Mascot
-            title=""
-            className="w-7"
-            style={{ transform: "rotate(-8deg)" }}
-          />
-        </Link>
-        <span aria-hidden className="hidden h-7 w-px bg-ink/10 lg:block" />
-        <Button
-          variant="secondary"
-          size="sm"
-          icon="chevron-left"
-          href={back.href}
-          aria-label={back.label}
-          className="max-md:w-9 max-md:px-0 coarse:max-md:w-11"
-        >
-          {/* icon-only below md, where the course title needs the room */}
-          <span className="hidden md:inline">{back.label}</span>
-        </Button>
-        <div className="min-w-0 flex-1 pl-1">
-          <p className="hidden t-micro whitespace-nowrap text-ink/65 uppercase lg:block">
-            {previewing ? "Previewing" : "Now learning"}
-          </p>
-          <p className="truncate text-[15px] leading-tight font-bold lg:mt-0.5">
+      <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-5 lg:px-6">
+        <HomeMark />
+        <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-line-strong max-sm:hidden" />
+
+        {/* what's playing: course in tiny caps, module · lesson in mono */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[10.5px] leading-tight font-semibold tracking-[0.16em] text-muted uppercase sm:text-[11px]">
+            {previewing && (
+              <span className="text-red-lite">
+                {courseAccess.owner ? "Tutor preview" : "Admin view"} ·{" "}
+              </span>
+            )}
             {course.title}
+          </p>
+          <p className="mt-1 flex min-w-0 items-baseline gap-2 font-mono text-[11px] leading-tight tracking-[0.06em] text-fg uppercase tabular-nums sm:text-[11.5px]">
+            <span className="truncate">
+              {current ? slateLabel(current.label) : "Your path"}
+            </span>
+            {current && (
+              <span className="shrink-0 text-muted max-sm:hidden">
+                {String(position).padStart(2, "0")}/
+                {String(flat.length).padStart(2, "0")}
+              </span>
+            )}
           </p>
         </div>
 
@@ -751,53 +801,32 @@ function TopBar({
             collapsed ? "lg:inline-flex" : "xl:inline-flex",
           )}
         >
-          <DemoPill />
+          <DemoPill tone="dark" />
         </span>
 
         {/* Before the store overlay is in, draw what the seed says. A learner's
-            ring shows at once (only its number may change); states that could
+            figure shows at once (only its number may change); states that could
             still flip (a demo purchase) keep their footprint but stay invisible,
             so nothing in the bar moves when the overlay lands. */}
         {tracking ? (
-          <div
+          <p
             className={clsx(
-              "flex shrink-0 items-center gap-2",
+              "flex shrink-0 items-baseline gap-2 font-mono text-[11.5px] tracking-[0.04em] tabular-nums",
               // phones: the award button already says "done", give the title the room
               finished && "max-sm:hidden",
             )}
             title={`${progress.completed} of ${progress.total} items done`}
           >
-            <ProgressRing
-              value={progress.percent}
-              size={40}
-              stroke={5}
-              tone="green"
-              label="Course progress"
-            >
-              <span className="text-[11px] font-bold tabular-nums">
-                {progress.percent}%
-              </span>
-            </ProgressRing>
-            <span className="hidden min-w-[4.5rem] text-[13px] leading-tight font-bold md:block">
+            <span className="text-fg">{progress.percent}%</span>
+            <span className="text-muted max-md:hidden">
               {progress.percent === 100
-                ? "All done"
-                : `${progress.completed}/${progress.total} done`}
+                ? "ALL DONE"
+                : `${progress.completed}/${progress.total} DONE`}
             </span>
-          </div>
-        ) : courseAccess.owner ? (
-          <span className="hidden shrink-0 sm:inline-flex">
-            <Badge tone="cyan" dot>
-              Tutor preview
-            </Badge>
-          </span>
-        ) : courseAccess.admin ? (
-          <span className="hidden shrink-0 sm:inline-flex">
-            <Badge tone="lilac" dot>
-              Admin view
-            </Badge>
-          </span>
-        ) : (
-          // the in-video chip and the blue banner say it below lg
+            <span className="sr-only">course progress</span>
+          </p>
+        ) : courseAccess.owner || courseAccess.admin ? null : (
+          // the in-video chip and the preview strip say it below lg
           <span
             className={clsx(
               "hidden shrink-0 lg:inline-flex",
@@ -805,7 +834,7 @@ function TopBar({
             )}
             aria-hidden={!settled || undefined}
           >
-            <Badge tone={tutorBrowsing ? "cyan" : "blue"} dot>
+            <Badge tone={tutorBrowsing ? "neutral" : "butter"} dot>
               {tutorBrowsing ? "Tutor account" : "Free preview"}
             </Badge>
           </span>
@@ -814,7 +843,7 @@ function TopBar({
         {finished && (
           <>
             <Button
-              variant="sun"
+              variant="outline"
               size="sm"
               icon="award"
               onClick={onShowCompletion}
@@ -823,7 +852,7 @@ function TopBar({
               {certificate ? "Certificate" : "Finished"}
             </Button>
             <Button
-              variant="sun"
+              variant="outline"
               size="sm"
               iconOnly
               icon="award"
@@ -838,14 +867,19 @@ function TopBar({
             className={clsx("shrink-0 max-md:hidden", !settled && "invisible")}
             aria-hidden={!settled || undefined}
           >
-            <BuyButton size="sm" arrow={false} switchLabel="Student demo" />
+            <BuyButton
+              size="sm"
+              arrow={false}
+              label="Unlock the full course"
+              switchLabel="Student demo"
+            />
           </span>
         )}
 
         <Button
-          variant="secondary"
+          variant="ghost"
           size="sm"
-          icon="panel-left"
+          icon="layers"
           onClick={onTogglePath}
           aria-label={collapsed ? "Show your path" : "Your path"}
           // tablets: phones open "Your path" from the bottom bar it belongs to
@@ -861,9 +895,9 @@ function TopBar({
         >
           <Button
             id="learn-path-show"
-            variant="secondary"
+            variant="outline"
             size="sm"
-            icon="panel-left"
+            icon="layers"
             onClick={onTogglePath}
             aria-expanded={false}
           >
@@ -876,12 +910,35 @@ function TopBar({
         ) : (
           <Button
             size="sm"
+            variant="outline"
             href={`/login?next=${encodeURIComponent(`/learn/${course.slug}`)}`}
           >
             Log in
           </Button>
         )}
+
+        <span aria-hidden className="h-6 w-px shrink-0 bg-line-strong max-sm:hidden" />
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="x"
+          href={back.href}
+          aria-label={`Exit to ${back.label.replace(/^Back to /, "").toLowerCase()}`}
+          title={back.label}
+          className="-mr-1.5 max-md:w-9 max-md:px-0 coarse:max-md:w-11"
+        >
+          <span className="hidden md:inline">Exit</span>
+        </Button>
       </div>
+
+      {/* course progress: one red line along the bar's bottom edge */}
+      {tracking && (
+        <span
+          aria-hidden
+          className="absolute bottom-[-1px] left-0 h-[2px] bg-red transition-[width] duration-700 ease-expo"
+          style={{ width: `${progress.percent}%` }}
+        />
+      )}
     </header>
   );
 }
@@ -895,7 +952,7 @@ function AccountMenu() {
     <DropdownMenu
       label="Account menu"
       width={260}
-      triggerClassName="tap hit grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-soft hf:ring-2 hf:ring-ink/10"
+      triggerClassName="tap hit grid size-9 shrink-0 place-items-center rounded-full ring-1 ring-line-strong transition-shadow hf:ring-fg"
       trigger={
         <Avatar
           name={profile.name}
@@ -915,8 +972,8 @@ function AccountMenu() {
             decorative
           />
           <div className="min-w-0">
-            <p className="truncate text-[14px] font-bold">{profile.name}</p>
-            <p className="truncate text-[12px] text-ink/65">{profile.email}</p>
+            <p className="truncate text-[14px] font-semibold">{profile.name}</p>
+            <p className="truncate text-[12px] text-muted">{profile.email}</p>
           </div>
         </div>
       }
@@ -958,26 +1015,39 @@ function AccountMenu() {
 /* ----------------------------------------------------------------------------- skeleton */
 export function ShellSkeleton({ collapsed = false }: { collapsed?: boolean }) {
   return (
-    <div className="min-h-dvh" aria-busy="true" aria-label="Loading the player">
-      <div className="flex h-14 items-center gap-3 px-3 sm:h-16 sm:px-4 lg:px-5">
-        <Mascot
-          title=""
-          className="hidden w-8 lg:block"
-          style={{ transform: "rotate(-6deg)" }}
-        />
-        <Skeleton className="h-9 w-36 rounded-full" />
-        <Skeleton className="h-5 flex-1 rounded-full sm:max-w-xs" />
-        <Skeleton variant="circle" className="ml-auto size-10" />
+    <div
+      data-learn-shell=""
+      data-field="dark"
+      className="theatre min-h-dvh"
+      aria-busy="true"
+      aria-label="Loading the player"
+    >
+      <div className="flex h-14 items-center gap-3 border-b border-line px-3 sm:px-5 lg:px-6">
+        <TmMark />
+        <div className="min-w-0 flex-1 space-y-1.5 pl-2">
+          <Skeleton className="h-2.5 w-48 max-w-full" />
+          <Skeleton className="h-2.5 w-32" />
+        </div>
+        <Skeleton variant="circle" className="size-9" />
       </div>
-      <div className="flex gap-5 px-3 pt-2 sm:px-4 lg:px-5">
-        <Skeleton
+      <div className="flex">
+        <div className="min-w-0 flex-1 px-3 pt-2 sm:px-5 sm:pt-5 lg:px-8 lg:pt-6">
+          <StageSkeleton />
+        </div>
+        <div
           className={clsx(
-            "hidden h-[calc(100dvh-88px)] w-[320px] shrink-0 rounded-card-lg xl:w-[348px]",
+            "hidden h-[calc(100dvh-56px)] w-[340px] shrink-0 border-l border-line p-6 xl:w-[372px]",
             !collapsed && "lg:block",
           )}
-        />
-        <div className="min-w-0 flex-1">
-          <StageSkeleton />
+          aria-hidden
+        >
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="mt-4 h-[2px] w-full" />
+          <div className="mt-8 space-y-5">
+            {Array.from({ length: 7 }, (_, i) => (
+              <Skeleton key={i} className="h-4 w-full" />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -987,10 +1057,10 @@ export function ShellSkeleton({ collapsed = false }: { collapsed?: boolean }) {
 export function StageSkeleton() {
   return (
     <div className="mx-auto w-full max-w-[1120px]" aria-hidden>
-      <Skeleton className="aspect-video w-full rounded-card-lg" />
-      <Skeleton className="mt-6 h-4 w-48 rounded-full" />
-      <Skeleton className="mt-3 h-10 w-2/3 rounded-full" />
-      <Skeleton variant="text" lines={2} className="mt-4 max-w-xl" />
+      <Skeleton className="aspect-video w-full" />
+      <Skeleton className="mt-7 h-3 w-48" />
+      <Skeleton className="mt-4 h-11 w-2/3" />
+      <Skeleton variant="text" lines={2} className="mt-5 max-w-xl" />
     </div>
   );
 }

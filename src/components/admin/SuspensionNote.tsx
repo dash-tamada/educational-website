@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import clsx from "clsx";
-import { Icon } from "@/components/app";
+import { RuleNote } from "@/components/tutor/editorial";
 import { useDb } from "@/lib/demo/store";
 import { formatDate, getUser, type Db, type Profile } from "@/lib/mock";
 
@@ -28,7 +27,8 @@ function useDropLegacyNotes() {
   }, []);
 }
 
-/** "Suspended by Admin · 5 Oct 2026" + the note, for a suspended person (drawer). */
+/** "Suspended by Admin · 5 Oct 2026" + the note, for a suspended person (drawer):
+ *  a red-ruled note block (design system v2). */
 export function SuspensionNote({
   userId,
   className,
@@ -41,29 +41,23 @@ export function SuspensionNote({
   const u = getUser(userId, db);
   const info = u ? suspensionInfo(u, db) : null;
   return (
-    <div
-      className={clsx(
-        "flex items-start gap-3 rounded-tag bg-[#ffe1d4] p-3 text-[14px] text-[#7a2200]",
-        className,
-      )}
+    <RuleNote
+      tone="red"
+      icon="lock"
+      className={className}
+      label={info ? `Suspended by ${info.by} · ${info.at}` : "Suspended"}
     >
-      <Icon name="lock" className="mt-0.5 size-4 shrink-0" strokeWidth={2.4} />
-      <div className="min-w-0">
-        <p className="font-bold">
-          {info ? `Suspended by ${info.by} · ${info.at}` : "Suspended"}
-        </p>
-        <p className="mt-0.5 font-medium break-words">
-          {info ? (
-            info.note ? (
-              <>“{info.note}”</>
-            ) : (
-              "No note left."
-            )
+      <span className="break-words">
+        {info ? (
+          info.note ? (
+            <>“{info.note}”</>
           ) : (
-            "Suspended before this demo started, so there's no note on file."
-          )}
-        </p>
-      </div>
-    </div>
+            "No note left."
+          )
+        ) : (
+          "Suspended before this demo started, so there's no note on file."
+        )}
+      </span>
+    </RuleNote>
   );
 }

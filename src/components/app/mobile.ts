@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { currentScrollY } from "@/lib/lenis";
 
 /* =============================================================================
    Mobile foundation hooks (.qa/mobile/MOBILE_SPEC.md §1.1, §1.8, §1.16).
@@ -59,11 +60,11 @@ export function useScrollHide({ after = 56, delta = 8, enabled = true }: { after
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
     if (!enabled) return;
-    let last = window.scrollY;
+    let last = currentScrollY();
     let raf = 0;
     const update = () => {
       raf = 0;
-      const y = window.scrollY;
+      const y = currentScrollY();
       if (y < after) {
         setHidden(false);
         last = y;
@@ -92,7 +93,7 @@ export function useScrolledPast(px = 4) {
     let raf = 0;
     const update = () => {
       raf = 0;
-      setPast(window.scrollY > px);
+      setPast(currentScrollY() > px);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);

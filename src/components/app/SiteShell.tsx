@@ -1,49 +1,63 @@
 import clsx from "clsx";
-import { Header } from "@/components/landing/Header";
-import { Footer } from "@/components/landing/Footer";
+import { SiteHeader } from "@/components/editorial/SiteHeader";
+import { WordmarkFooter } from "@/components/editorial/WordmarkFooter";
+import { LiveClock } from "@/components/editorial/LiveClock";
+import { ShellFooter } from "@/components/editorial/ShellFooter";
 
 /**
- * Public inner pages (catalog, course, tutor profile, checkout, about, legal…):
- * the landing Header + <main> + Footer.
+ * The PUBLIC site shell (home, course, films, director, journal, contact, legal,
+ * checkout, 404): editorial SiteHeader + <main> + WordmarkFooter + LiveClock
+ * (src/components/editorial). Every public page renders through this.
  *   <SiteShell>…</SiteShell>                      main starts below the fixed header
- *   <SiteShell flush headerLight>…</SiteShell>    content runs under the header (colour hero); white logo letters
+ *   <SiteShell flush headerLight>…</SiteShell>    content runs under the header (dark hero);
+ *                                                 headerLight = SSR hint "the page opens on a
+ *                                                 dark ground" (the header then follows the
+ *                                                 ground under it live)
  *   <SiteShell footer={false}>…</SiteShell>       no footer at all
- *   <SiteShell footer="minimal">…</SiteShell>     task pages: one 44px legal row (checkout gets it
- *                                                 automatically: footer={true} = "auto")
- *   <SiteShell footerEdge="var(--color-flame)">   colour of the footer's top bumps; default
- *                                                 "auto" = the last full-bleed .field's colour,
- *                                                 else the cream canvas
- *   <SiteShell loginNext={false}>                 header Log in / Sign up skip ?next=<this page>
- *                                                 (not-found pages)
+ *   <SiteShell footer="minimal">…</SiteShell>     task pages: one legal row (checkout gets it
+ *                                                 automatically through footer={true})
+ *   <SiteShell clock={false}>                     no fixed clock (default: off with the minimal footer)
+ *   <SiteShell loginNext={false}>                 header Log in skips ?next=<this page> (404s)
+ *   footerEdge                                    legacy (v1 scallop colour), ignored
  */
 export function SiteShell({
   children,
   flush,
   headerLight,
   footer = true,
-  footerEdge = "auto",
+  clock,
   loginNext = true,
   className,
+  before,
 }: {
   children: React.ReactNode;
   /** let the first section sit under the fixed header (it must add its own top padding) */
   flush?: boolean;
+  /** the page opens on a dark ground (SSR hint for the header tone) */
   headerLight?: boolean;
-  /** true (default): the full footer, minimal on /checkout/*; "minimal": the one-row footer; false: none */
+  /** true (default): the full footer ("minimal" on /checkout/* is decided by the page); "minimal": one row; false: none */
   footer?: boolean | "minimal";
-  /** colour of the footer's scalloped top edge (CSS colour or "auto") */
+  /** fixed live clock (default true, false with the minimal footer) */
+  clock?: boolean;
+  /** @deprecated v1 scalloped footer edge colour (ignored) */
   footerEdge?: string;
-  /** header auth links return here after login (?next=); false on 404 pages */
+  /** header Log in returns here after login (?next=); false on 404 pages */
   loginNext?: boolean;
   className?: string;
+  /** rendered before the header (e.g. the home intro) */
+  before?: React.ReactNode;
 }) {
   return (
     <>
-      <Header light={headerLight} loginNext={loginNext} />
-      <main id="main" className={clsx(!flush && "pt-[calc(var(--header-offset)+8px)] md:pt-[calc(var(--header-offset)+24px)]", className)}>
+      {before}
+      <SiteHeader initialGround={headerLight ? "dark" : "light"} loginNext={loginNext} />
+      <main id="main" tabIndex={-1} className={clsx(!flush && "pt-[calc(var(--header-offset)+var(--sat)+8px)] md:pt-[calc(var(--header-offset)+var(--sat)+24px)]", className)}>
         {children}
       </main>
-      {footer && <Footer edge={footerEdge} variant={footer === "minimal" ? "minimal" : "auto"} />}
+      {/* footer={true}: full footer + clock, or the minimal row on /checkout/* (ShellFooter) */}
+      {footer === true && <ShellFooter clock={clock ?? true} />}
+      {footer === "minimal" && <WordmarkFooter variant="minimal" />}
+      {footer !== true && clock && <LiveClock />}
     </>
   );
 }

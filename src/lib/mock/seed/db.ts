@@ -172,12 +172,12 @@ function withJoinedBeforeActivity(users: typeof USERS): typeof USERS {
 /* Internal notes for the accounts the seed ships suspended (admin user pages show them). */
 const SEEDED_SUSPENSIONS: Record<string, { note: string; by: string; hoursAfterLastActive: number }> = {
   u_s014: {
-    note: "Shared screen recordings of paid Money Without the Ick lessons in a public Telegram group. Warned twice first; the links were reported and taken down.",
+    note: "Shared screen recordings of paid AI Filmmaking lessons in a public Telegram group. Warned twice first; the links were reported and taken down.",
     by: DEMO_ADMIN_ID,
     hoursAfterLastActive: 5,
   },
   u_s042: {
-    note: "Kept posting abusive replies under JEE Physics lessons after a warning. Two learners reported it; review again after 30 days.",
+    note: "Kept posting abusive replies under other learners' capstone questions after a warning. Two learners reported it; review again after 30 days.",
     by: "u_ops_karan",
     hoursAfterLastActive: 26,
   },

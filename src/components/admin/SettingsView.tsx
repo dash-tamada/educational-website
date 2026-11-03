@@ -7,13 +7,13 @@ import {
   Badge,
   Button,
   Card,
-  CardHeader,
   ConfirmDialog,
   Field,
   Icon,
   Input,
   PageHeader,
   RadioGroup,
+  Section,
   Segmented,
   Select,
   Skeleton,
@@ -24,11 +24,17 @@ import {
   UnsavedChangesGuard,
   useIsClient,
 } from "@/components/app";
+import { RuleNote } from "@/components/tutor/editorial";
+import { SITE } from "@/lib/content/site";
+import { PanelLabel } from "./ledgerKit";
 import { focusFirstInvalid } from "./shared";
 
 /* =============================================================================
    Platform settings (demo). Saved in this browser only (localStorage): there is
    no backend yet, and nothing here changes how other pages behave.
+   Design system v2: Mobius split sections (mono index, label and note on the
+   left, fields on the right), switches on hairline rows, the maintenance banner
+   previewed in the editorial palette, and a square ink save bar.
    ============================================================================= */
 
 const KEY = "tm-admin-settings";
@@ -57,9 +63,9 @@ interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  siteName: "Tamada Media",
-  tagline: "Short videos, tiny tests, real progress.",
-  supportEmail: "hello@tamadamedia.com",
+  siteName: SITE.name,
+  tagline: SITE.tagline,
+  supportEmail: SITE.email,
   supportPhone: "+91 98765 43210",
   language: "English",
   provider: "manual",
@@ -112,9 +118,12 @@ export function SettingsView() {
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Settings"
-        eyebrowTone="purple"
-        title="House rules."
+        eyebrow="Control room · Settings"
+        title={
+          <>
+            House <em>rules</em>.
+          </>
+        }
         description="Site details, payments, learning rules and the maintenance banner, all in one place."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
@@ -130,11 +139,11 @@ export function SettingsView() {
         <SettingsForm />
       ) : (
         <div
-          className="grid gap-6 xl:grid-cols-3"
+          className="space-y-14"
           aria-busy="true"
           aria-label="Loading settings"
         >
-          <Skeleton className="h-[420px] xl:col-span-2" />
+          <Skeleton className="h-[360px]" />
           <Skeleton className="h-[260px]" />
         </div>
       )}
@@ -215,10 +224,10 @@ function SettingsForm() {
   };
 
   const bannerStyles: Record<BannerTone, string> = {
-    info: "bg-blue text-white",
-    warning: "bg-sun text-ink",
-    // hotpink-deep: small white text needs the deeper pink for AA (5.1:1)
-    party: "bg-hotpink-deep text-white",
+    info: "bg-ink text-cream",
+    warning: "bg-sand text-ink",
+    // red-deep: small white text on it is 6.4:1
+    party: "bg-red-deep text-white",
   };
 
   return (
@@ -229,337 +238,355 @@ function SettingsForm() {
       noValidate
       className="sm:pb-24"
     >
-      <div className="grid gap-4 md:gap-6 xl:grid-cols-3">
-        <div className="min-w-0 space-y-4 md:space-y-6 xl:col-span-2">
-          <Card as="section" aria-labelledby="general-title">
-            <CardHeader
-              id="general-title"
-              title="General"
-              description="How Tamada introduces itself in emails, receipts and the footer."
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Site name" required error={errors.siteName}>
-                <Input
-                  value={s.siteName}
-                  onChange={(e) => set("siteName", e.target.value)}
-                  maxLength={40}
-                />
-              </Field>
-              <Field
-                label="Default language"
-                hint="For emails and new course pages."
-              >
-                <Select
-                  value={s.language}
-                  onChange={(e) => set("language", e.target.value)}
-                  options={[
-                    "English",
-                    "Hindi",
-                    "Hinglish",
-                    "Tamil",
-                    "Telugu",
-                    "Bengali",
-                    "Marathi",
-                  ].map((l) => ({ value: l, label: l }))}
-                />
-              </Field>
-              <Field label="Tagline" optional className="sm:col-span-2">
-                <Input
-                  value={s.tagline}
-                  onChange={(e) => set("tagline", e.target.value)}
-                  maxLength={80}
-                />
-              </Field>
-              <Field
-                label="Support email"
-                required
-                error={errors.supportEmail}
-                hint="Learners reply here from receipts."
-              >
-                <Input
-                  type="email"
-                  icon="mail"
-                  value={s.supportEmail}
-                  onChange={(e) => set("supportEmail", e.target.value)}
-                  autoComplete="off"
-                />
-              </Field>
-              <Field label="Support phone" optional error={errors.supportPhone}>
-                <Input
-                  type="tel"
-                  value={s.supportPhone}
-                  onChange={(e) => set("supportPhone", e.target.value)}
-                  autoComplete="off"
-                />
-              </Field>
-              <Field
-                label="Currency"
-                hint="Every price is in Indian rupees for now."
-              >
-                <Input value="INR (₹)" disabled readOnly />
-              </Field>
-            </div>
-          </Card>
-
-          <Card as="section" aria-labelledby="pay-title">
-            <CardHeader
-              id="pay-title"
-              title="Payments"
-              description="How learners pay and how money is split."
-            />
-            <RadioGroup<Provider>
-              label="Payment provider"
-              name="provider"
-              value={s.provider}
-              onChange={(v) => set("provider", v)}
-              variant="cards"
-              orientation="horizontal"
-              options={[
-                {
-                  value: "manual",
-                  label: "Manual (demo)",
-                  description:
-                    "Mock checkout. Orders are marked paid instantly.",
-                },
-                {
-                  value: "razorpay",
-                  label: (
-                    <span className="flex flex-col items-start gap-1">
-                      Razorpay <Badge size="sm">Coming soon</Badge>
-                    </span>
-                  ),
-                  description: "UPI, cards and netbanking.",
-                  disabled: true,
-                },
-                {
-                  value: "stripe",
-                  label: (
-                    <span className="flex flex-col items-start gap-1">
-                      Stripe <Badge size="sm">Coming soon</Badge>
-                    </span>
-                  ),
-                  description: "International cards.",
-                  disabled: true,
-                },
-              ]}
-            />
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <Field
-                label="GST rate"
-                error={errors.gstRate}
-                hint="Included in every price."
-              >
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={28}
-                  value={s.gstRate}
-                  onChange={(e) => set("gstRate", e.target.value)}
-                  suffix={<span className="pr-2 font-bold text-ink/55">%</span>}
-                />
-              </Field>
-              <Field
-                label="Tutor share"
-                error={errors.revenueShare}
-                hint="Default for new tutors."
-              >
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={50}
-                  max={90}
-                  value={s.revenueShare}
-                  onChange={(e) => set("revenueShare", e.target.value)}
-                  suffix={<span className="pr-2 font-bold text-ink/55">%</span>}
-                />
-              </Field>
-              <Field
-                label="Refund window"
-                error={errors.refundDays}
-                hint="Days after purchase."
-              >
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={30}
-                  value={s.refundDays}
-                  onChange={(e) => set("refundDays", e.target.value)}
-                  suffix={
-                    <span className="pr-2 font-bold text-ink/55">days</span>
-                  }
-                />
-              </Field>
-            </div>
-          </Card>
-
-          <Card as="section" aria-labelledby="learn-title">
-            <CardHeader
-              id="learn-title"
-              title="Learning rules"
-              description="The promises we make to every learner."
-            />
-            <div className="divide-y divide-ink/[0.07]">
-              <div className="pb-4">
-                <Switch
-                  label="The first video of every course is free"
-                  description="Anyone can watch it without buying or signing up. This is the heart of the Tamada promise."
-                  checked={s.freeFirstVideo}
-                  onChange={(v) => set("freeFirstVideo", v)}
-                />
-                {!s.freeFirstVideo && (
-                  <p
-                    role="status"
-                    className="app-fade mt-3 flex gap-2 rounded-tag bg-[#ffe1d4] p-3 text-[14px] font-semibold text-[#8a2600]"
-                  >
-                    <Icon name="alert" className="mt-0.5 size-4 shrink-0" />
-                    Every course page loses its free preview. Expect fewer
-                    people to try, and fewer to buy.
-                  </p>
-                )}
-              </div>
-              <Switch
-                className="py-4"
-                label="Tutors can open extra free previews"
-                description="Up to 3 more videos per course, when it helps learners decide."
-                checked={s.extraPreviews}
-                onChange={(v) => set("extraPreviews", v)}
-                disabled={!s.freeFirstVideo}
-              />
-              <Switch
-                className="py-4"
-                label="Gating tests"
-                description="Tutors can lock later lessons until a test is passed."
-                checked={s.gatingQuizzes}
-                onChange={(v) => set("gatingQuizzes", v)}
-              />
-              <Switch
-                className="py-4"
-                label="Certificates on completion"
-                description="Issued when every lesson and test is done. Verifiable at /certificates/[code]."
-                checked={s.certificates}
-                onChange={(v) => set("certificates", v)}
-              />
-              <div className="flex items-start justify-between gap-4 pt-4">
-                <div>
-                  <p className="text-[15px] font-semibold">
-                    A video counts as watched at
-                  </p>
-                  <p className="mt-0.5 text-[13px] text-ink/60">
-                    Fixed for now, so progress means the same thing everywhere.
-                  </p>
-                </div>
-                <Badge tone="neutral">90%</Badge>
-              </div>
-            </div>
-          </Card>
-
-          <Card as="section" aria-labelledby="mod-title">
-            <CardHeader id="mod-title" title="Moderation" />
-            <div className="divide-y divide-ink/[0.07]">
-              <Switch
-                className="pb-4"
-                label="Review every course before it goes live"
-                description="New and updated courses wait in the review queue."
-                checked={s.reviewBeforePublish}
-                onChange={(v) => set("reviewBeforePublish", v)}
-              />
-              <Switch
-                className="pt-4"
-                label="Hold reviews that contain links"
-                description="They wait in Reports until an admin approves them."
-                checked={s.holdLinkReviews}
-                onChange={(v) => set("holdLinkReviews", v)}
-              />
-            </div>
-          </Card>
-        </div>
-
-        <div className="grid min-w-0 content-start items-start gap-4 md:grid-cols-2 md:gap-6 xl:sticky xl:top-24 xl:grid-cols-1 xl:self-start">
-          <Card as="section" aria-labelledby="banner-title">
-            <CardHeader
-              id="banner-title"
-              title="Maintenance banner"
-              description="A strip across the top of every page."
-            />
-            <Switch
-              label="Show the banner"
-              checked={s.bannerOn}
-              onChange={(v) => set("bannerOn", v)}
-            />
-            <Field label="Message" className="mt-4" error={errors.bannerText}>
-              <Textarea
-                rows={3}
-                value={s.bannerText}
-                onChange={(e) => set("bannerText", e.target.value)}
-                maxLength={160}
-                showCount
+      <div className="space-y-14 md:space-y-20">
+        <Section
+          index="01"
+          label="General"
+          note="How Tamada introduces itself in emails, receipts and the footer."
+          title="The school"
+        >
+          <div className="grid gap-x-6 gap-y-6 sm:grid-cols-2">
+            <Field label="Site name" required error={errors.siteName}>
+              <Input
+                value={s.siteName}
+                onChange={(e) => set("siteName", e.target.value)}
+                maxLength={40}
               />
             </Field>
-            <div className="mt-4">
-              <p className="mb-1.5 text-[14px] font-bold">Style</p>
-              <Segmented
-                label="Banner style"
-                size="sm"
-                value={s.bannerTone}
-                onChange={(v) => set("bannerTone", v)}
-                options={[
-                  { value: "info", label: "Info" },
-                  { value: "warning", label: "Warning" },
-                  { value: "party", label: "Celebrate" },
-                ]}
-              />
-            </div>
-            <p className="mt-5 mb-2 t-micro text-ink/55 uppercase">Preview</p>
-            <div
-              className={clsx(
-                "flex items-start gap-2 rounded-tag px-3.5 py-2.5 text-[13.5px] leading-snug font-semibold transition-colors",
-                bannerStyles[s.bannerTone],
-              )}
+            <Field
+              label="Default language"
+              hint="For emails and new course pages."
             >
-              <Icon
-                name={
-                  s.bannerTone === "party"
-                    ? "sparkles"
-                    : s.bannerTone === "warning"
-                      ? "alert"
-                      : "info"
-                }
-                className="mt-px size-4 shrink-0"
+              <Select
+                value={s.language}
+                onChange={(e) => set("language", e.target.value)}
+                options={[
+                  "English",
+                  "Hindi",
+                  "Hinglish",
+                  "Tamil",
+                  "Telugu",
+                  "Bengali",
+                  "Marathi",
+                ].map((l) => ({ value: l, label: l }))}
               />
-              <span className="min-w-0 break-words">
-                {s.bannerText.trim() || "Your message here."}
-              </span>
-            </div>
-            <p className="mt-2 t-small text-ink/55">
-              Preview only in this demo: the banner isn&apos;t wired to the
-              site yet.{" "}
-              {s.bannerOn
-                ? "Once it is, every visitor sees it after you save."
-                : "It’s switched off, so nobody would see it."}
-            </p>
-          </Card>
+            </Field>
+            <Field label="Tagline" optional className="sm:col-span-2">
+              <Input
+                value={s.tagline}
+                onChange={(e) => set("tagline", e.target.value)}
+                maxLength={80}
+              />
+            </Field>
+            <Field
+              label="Support email"
+              required
+              error={errors.supportEmail}
+              hint="Learners reply here from receipts."
+            >
+              <Input
+                type="email"
+                icon="mail"
+                value={s.supportEmail}
+                onChange={(e) => set("supportEmail", e.target.value)}
+                autoComplete="off"
+              />
+            </Field>
+            <Field label="Support phone" optional error={errors.supportPhone}>
+              <Input
+                type="tel"
+                value={s.supportPhone}
+                onChange={(e) => set("supportPhone", e.target.value)}
+                autoComplete="off"
+              />
+            </Field>
+            <Field
+              label="Currency"
+              hint="Every price is in Indian rupees for now."
+            >
+              <Input value="INR (₹)" disabled readOnly />
+            </Field>
+          </div>
+        </Section>
 
-          <Card tone="purple">
-            <p className="t-app-h3">Heads up</p>
-            <p className="mt-1.5 t-small opacity-90">
-              This is a demo control room. Settings are remembered in this
-              browser so you can play, but the live site keeps its defaults
-              until the backend arrives.
+        <Section
+          index="02"
+          label="Payments"
+          note="How learners pay and how money is split."
+          title="Checkout and the split"
+        >
+          <RadioGroup<Provider>
+            label="Payment provider"
+            name="provider"
+            value={s.provider}
+            onChange={(v) => set("provider", v)}
+            variant="cards"
+            orientation="horizontal"
+            options={[
+              {
+                value: "manual",
+                label: "Manual (demo)",
+                description:
+                  "Mock checkout. Orders are marked paid instantly.",
+              },
+              {
+                value: "razorpay",
+                label: (
+                  <span className="flex flex-col items-start gap-1.5">
+                    Razorpay <Badge size="sm">Coming soon</Badge>
+                  </span>
+                ),
+                description: "UPI, cards and netbanking.",
+                disabled: true,
+              },
+              {
+                value: "stripe",
+                label: (
+                  <span className="flex flex-col items-start gap-1.5">
+                    Stripe <Badge size="sm">Coming soon</Badge>
+                  </span>
+                ),
+                description: "International cards.",
+                disabled: true,
+              },
+            ]}
+          />
+          <div className="mt-8 grid gap-x-6 gap-y-6 sm:grid-cols-3">
+            <Field
+              label="GST rate"
+              error={errors.gstRate}
+              hint="Included in every price."
+            >
+              <Input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={28}
+                value={s.gstRate}
+                onChange={(e) => set("gstRate", e.target.value)}
+                suffix={<span className="pr-2 font-mono text-[13px] text-muted">%</span>}
+              />
+            </Field>
+            <Field
+              label="Tutor share"
+              error={errors.revenueShare}
+              hint="Default for new tutors."
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={50}
+                max={90}
+                value={s.revenueShare}
+                onChange={(e) => set("revenueShare", e.target.value)}
+                suffix={<span className="pr-2 font-mono text-[13px] text-muted">%</span>}
+              />
+            </Field>
+            <Field
+              label="Refund window"
+              error={errors.refundDays}
+              hint="Days after purchase."
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={30}
+                value={s.refundDays}
+                onChange={(e) => set("refundDays", e.target.value)}
+                suffix={
+                  <span className="pr-2 font-mono text-[12px] tracking-[0.04em] text-muted uppercase">days</span>
+                }
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          index="03"
+          label="Learning rules"
+          note="The promises we make to every learner."
+          title="What every course guarantees"
+        >
+          <div className="divide-y divide-line border-y border-line border-t-fg">
+            <div className="py-5">
+              <Switch
+                label="The first video of every course is free"
+                description="Anyone can watch it without buying or signing up. This is the heart of the Tamada promise."
+                checked={s.freeFirstVideo}
+                onChange={(v) => set("freeFirstVideo", v)}
+              />
+              {!s.freeFirstVideo && (
+                <RuleNote
+                  role="status"
+                  tone="red"
+                  label="Heads up"
+                  icon="alert"
+                  className="app-fade mt-4"
+                >
+                  Every course page loses its free preview. Expect fewer
+                  people to try, and fewer to buy.
+                </RuleNote>
+              )}
+            </div>
+            <Switch
+              className="py-5"
+              label="Tutors can open extra free previews"
+              description="Up to 3 more videos per course, when it helps learners decide."
+              checked={s.extraPreviews}
+              onChange={(v) => set("extraPreviews", v)}
+              disabled={!s.freeFirstVideo}
+            />
+            <Switch
+              className="py-5"
+              label="Gating tests"
+              description="Tutors can lock later lessons until a test is passed."
+              checked={s.gatingQuizzes}
+              onChange={(v) => set("gatingQuizzes", v)}
+            />
+            <Switch
+              className="py-5"
+              label="Certificates on completion"
+              description="Issued when every lesson and test is done. Verifiable at /certificates/[code]."
+              checked={s.certificates}
+              onChange={(v) => set("certificates", v)}
+            />
+            <div className="flex items-start justify-between gap-4 py-5">
+              <div>
+                <p className="text-[15px] font-semibold tracking-[-0.01em]">
+                  A video counts as watched at
+                </p>
+                <p className="mt-0.5 text-[13px] text-muted">
+                  Fixed for now, so progress means the same thing everywhere.
+                </p>
+              </div>
+              <span className="font-display text-[34px] leading-none tabular-nums">90%</span>
+            </div>
+          </div>
+        </Section>
+
+        <Section
+          index="04"
+          label="Moderation"
+          note="What waits for an admin before learners see it."
+          title="Review before it goes live"
+        >
+          <div className="divide-y divide-line border-y border-line border-t-fg">
+            <Switch
+              className="py-5"
+              label="Review every course before it goes live"
+              description="New and updated courses wait in the review queue."
+              checked={s.reviewBeforePublish}
+              onChange={(v) => set("reviewBeforePublish", v)}
+            />
+            <Switch
+              className="py-5"
+              label="Hold reviews that contain links"
+              description="They wait in Reports until an admin approves them."
+              checked={s.holdLinkReviews}
+              onChange={(v) => set("holdLinkReviews", v)}
+            />
+          </div>
+        </Section>
+
+        <Section
+          index="05"
+          label="Banner"
+          note="A strip across the top of every page, for maintenance windows and launches."
+          title="Maintenance banner"
+        >
+          <div className="grid gap-x-10 gap-y-8 xl:grid-cols-2">
+            <div className="min-w-0 space-y-6">
+              <div className="border-y border-line border-t-fg py-5">
+                <Switch
+                  label="Show the banner"
+                  checked={s.bannerOn}
+                  onChange={(v) => set("bannerOn", v)}
+                />
+              </div>
+              <Field label="Message" error={errors.bannerText}>
+                <Textarea
+                  rows={3}
+                  value={s.bannerText}
+                  onChange={(e) => set("bannerText", e.target.value)}
+                  maxLength={160}
+                  showCount
+                />
+              </Field>
+              <div>
+                <p className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] uppercase">
+                  Style
+                </p>
+                <Segmented
+                  label="Banner style"
+                  size="sm"
+                  value={s.bannerTone}
+                  onChange={(v) => set("bannerTone", v)}
+                  options={[
+                    { value: "info", label: "Info" },
+                    { value: "warning", label: "Warning" },
+                    { value: "party", label: "Celebrate" },
+                  ]}
+                />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <PanelLabel as="p">Preview</PanelLabel>
+              <div
+                className={clsx(
+                  "flex items-start gap-3 px-4 py-3 text-[13.5px] leading-snug font-medium transition-colors",
+                  bannerStyles[s.bannerTone],
+                )}
+              >
+                <Icon
+                  name={
+                    s.bannerTone === "party"
+                      ? "sparkles"
+                      : s.bannerTone === "warning"
+                        ? "alert"
+                        : "info"
+                  }
+                  strokeWidth={1.6}
+                  className="mt-px size-4 shrink-0"
+                />
+                <span className="min-w-0 break-words">
+                  {s.bannerText.trim() || "Your message here."}
+                </span>
+              </div>
+              <p className="t-small mt-3 text-muted">
+                Preview only in this demo: the banner isn&apos;t wired to the
+                site yet.{" "}
+                {s.bannerOn
+                  ? "Once it is, every visitor sees it after you save."
+                  : "It’s switched off, so nobody would see it."}
+              </p>
+            </div>
+          </div>
+        </Section>
+
+        <Section
+          index="06"
+          label="Demo"
+          note="Nothing here reaches the live site yet."
+          title="This control room is a demo"
+        >
+          <Card variant="cream" padding="lg">
+            <p className="max-w-[56ch] text-[15px] leading-relaxed text-fg/85">
+              Settings are remembered in this browser so you can play, but the
+              live site keeps its defaults until the backend arrives.
             </p>
             <Button
               type="button"
               size="sm"
-              variant="secondary"
-              className="mt-4"
+              variant="outline"
+              className="mt-6"
               icon="refresh"
               onClick={() => setConfirmReset(true)}
             >
               Reset to defaults
             </Button>
           </Card>
-        </div>
+        </Section>
       </div>
 
       <SaveBar
@@ -587,7 +614,7 @@ function SettingsForm() {
         >
           Discard
         </Button>
-        <Button type="submit" form="settings-form" variant="primary" className="h-12 px-6!">
+        <Button type="submit" form="settings-form" variant="red" className="h-12 px-6!">
           Save
         </Button>
       </StickyActionBar>
@@ -687,9 +714,11 @@ function SaveBar({ dirty, onDiscard }: { dirty: boolean; onDiscard: () => void }
       <div
         role="region"
         aria-label="Unsaved settings"
-        className="mx-auto flex max-w-[860px] items-center gap-2 rounded-full bg-ink py-2 pr-2 pl-5 text-cream shadow-lift sm:gap-3"
+        data-field="dark"
+        className="mx-auto flex max-w-[860px] items-center gap-2 border border-white/[0.08] bg-ink py-2 pr-2 pl-5 text-cream shadow-lift sm:gap-3"
       >
-        <span className="min-w-0 flex-1 truncate text-[14px] font-bold">
+        <span className="flex min-w-0 flex-1 items-center gap-2.5 truncate text-[11px] font-semibold tracking-[0.16em] uppercase">
+          <span aria-hidden className="size-[6px] shrink-0 bg-red" />
           <span className="sm:hidden">Unsaved</span>
           <span className="max-sm:hidden">You have unsaved changes</span>
         </span>
@@ -697,7 +726,7 @@ function SaveBar({ dirty, onDiscard }: { dirty: boolean; onDiscard: () => void }
           type="button"
           onClick={onDiscard}
           tabIndex={dirty ? 0 : -1}
-          className="tap h-9 rounded-full px-3.5 text-[14px] font-bold text-cream/80 transition-colors hf:bg-white/10 hf:text-cream"
+          className="tap h-9 px-3.5 text-[11px] font-semibold tracking-[0.13em] text-cream/75 uppercase transition-colors hf:text-cream focus-visible:outline-2 focus-visible:outline-cream"
         >
           Discard
         </button>
@@ -705,7 +734,7 @@ function SaveBar({ dirty, onDiscard }: { dirty: boolean; onDiscard: () => void }
           type="submit"
           form="settings-form"
           size="sm"
-          variant="sun"
+          variant="red"
           icon="check"
           tabIndex={dirty ? 0 : -1}
         >

@@ -4,13 +4,19 @@ import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { cropSrc } from "@/lib/img";
-import { toneBg } from "@/lib/landing-data";
 import { MOCK_NOW, MOCK_NOW_ISO, formatDate, formatINR, getCategories, type Coupon, type Course, type CourseLevel, type Db } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
 import { COURSE_LANGUAGES, COURSE_LEVELS, GST_RATE, PRICE_MAX, PRICE_MIN, THUMBNAIL_PRESETS } from "@/lib/mock/extra/tutor";
-import { Badge, Button, Card, CardHeader, ConfirmDialog, Field, Icon, Input, Segmented, Select, Switch, Textarea, toast } from "@/components/app";
-import { TonePicker } from "../NewCourseWizard";
+import { Badge, Button, Card, CardHeader, ConfirmDialog, Field, Icon, Input, Section, Segmented, Select, Switch, Textarea, toast } from "@/components/app";
+import { EDITORIAL_TONES, Figure, Idx, MonoMeta, TonePalette, editorialTone, toneSurface } from "../editorial";
 import { focusFirstInvalid } from "../shared";
+
+/* =============================================================================
+   Course studio: Details + Pricing tabs (design system v2). Mobius split sections
+   (mono index + tiny caps label + note on the left, flat kit fields on the right),
+   square cover presets, the editorial palette, a ruled price breakdown and a ruled
+   list of coupon codes.
+   ============================================================================= */
 
 export type CourseFields = Pick<
   Course,
@@ -27,45 +33,47 @@ export function fieldErrors(f: CourseFields): Partial<Record<keyof CourseFields,
   return e;
 }
 
+/** Tiny caps group label (matches the kit Field label). */
+const LEGEND = "mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] text-fg uppercase";
+
 /* ----------------------------------------------------------------------------- details */
 export function DetailsPanel({ fields, onChange, db }: { fields: CourseFields; onChange: (f: Partial<CourseFields>) => void; db: Db }) {
   const errors = fieldErrors(fields);
   const categories = useMemo(() => getCategories(db), [db]);
+  const preset = THUMBNAIL_PRESETS.find((t) => t.src === fields.thumbnail);
   return (
-    <div className="grid gap-4 md:gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="flex min-w-0 flex-col gap-4 md:gap-5">
-        <Card>
-          <CardHeader title="The basics" description="What shows on your course card and at the top of the course page." />
-          <div className="flex flex-col gap-5">
-            <Field label="Title" required error={errors.title}>
-              <Input value={fields.title} onChange={(e) => onChange({ title: e.target.value })} maxLength={90} />
+    <div className="space-y-14 md:space-y-20">
+      <Section index="01" label="The basics" note="What shows on your course card and at the top of the course page.">
+        <div className="flex max-w-3xl flex-col gap-6">
+          <Field label="Title" required error={errors.title}>
+            <Input value={fields.title} onChange={(e) => onChange({ title: e.target.value })} maxLength={90} />
+          </Field>
+          <Field label="One-line promise" hint={`What can learners do after the last lesson? ${fields.promise.length}/120`} error={errors.promise}>
+            <Textarea value={fields.promise} onChange={(e) => onChange({ promise: e.target.value })} rows={2} />
+          </Field>
+          <Field label="Description" hint="Who it's for, what they'll build, how it's taught. Plain words win.">
+            <Textarea value={fields.description} onChange={(e) => onChange({ description: e.target.value })} rows={6} maxLength={1200} showCount />
+          </Field>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <Field label="Category">
+              <Select value={fields.categoryId} onChange={(e) => onChange({ categoryId: e.target.value })} options={categories.map((c) => ({ value: c.id, label: c.name }))} />
             </Field>
-            <Field label="One-line promise" hint={`What can learners do after the last lesson? ${fields.promise.length}/120`} error={errors.promise}>
-              <Textarea value={fields.promise} onChange={(e) => onChange({ promise: e.target.value })} rows={2} />
+            <Field label="Level">
+              <Select value={fields.level} onChange={(e) => onChange({ level: e.target.value as CourseLevel })} options={COURSE_LEVELS.map((l) => ({ value: l.value, label: l.label }))} />
             </Field>
-            <Field label="Description" hint="Who it's for, what they'll build, how it's taught. Plain words win.">
-              <Textarea value={fields.description} onChange={(e) => onChange({ description: e.target.value })} rows={6} maxLength={1200} showCount />
+            <Field label="Language">
+              <Select value={fields.language} onChange={(e) => onChange({ language: e.target.value })} options={COURSE_LANGUAGES.map((l) => ({ value: l, label: l }))} />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Category">
-                <Select value={fields.categoryId} onChange={(e) => onChange({ categoryId: e.target.value })} options={categories.map((c) => ({ value: c.id, label: c.name }))} />
-              </Field>
-              <Field label="Level">
-                <Select value={fields.level} onChange={(e) => onChange({ level: e.target.value as CourseLevel })} options={COURSE_LEVELS.map((l) => ({ value: l.value, label: l.label }))} />
-              </Field>
-              <Field label="Language">
-                <Select value={fields.language} onChange={(e) => onChange({ language: e.target.value })} options={COURSE_LANGUAGES.map((l) => ({ value: l, label: l }))} />
-              </Field>
-            </div>
-            <TagInput label="Tags" hint="Up to 6. Helps search: tools, topics, exams." values={fields.tags} max={6} onChange={(tags) => onChange({ tags })} />
           </div>
-        </Card>
+          <TagInput label="Tags" hint="Up to 6. Helps search: tools, topics, exams." values={fields.tags} max={6} onChange={(tags) => onChange({ tags })} />
+        </div>
+      </Section>
 
-        <Card>
-          <CardHeader title="What learners get" description="Shown as a checklist on the course page." />
-          <div className="flex flex-col gap-6">
-            <ListEditor label="Learning outcomes" placeholder="e.g. Build a responsive portfolio site" values={fields.outcomes} onChange={(outcomes) => onChange({ outcomes })} max={8} />
-            <ListEditor label="Requirements" placeholder="e.g. A laptop with Chrome" values={fields.requirements} onChange={(requirements) => onChange({ requirements })} max={5} />
+      <Section index="02" label="What learners get" note="Shown as a checklist on the course page.">
+        <div className="flex max-w-3xl flex-col gap-9">
+          <ListEditor label="Learning outcomes" placeholder="e.g. Build a responsive portfolio site" values={fields.outcomes} onChange={(outcomes) => onChange({ outcomes })} max={8} />
+          <ListEditor label="Requirements" placeholder="e.g. A laptop with Chrome" values={fields.requirements} onChange={(requirements) => onChange({ requirements })} max={5} />
+          <div className="border-y border-line py-4">
             <Switch
               label="Certificate of completion"
               description="Learners get a verifiable certificate when they finish every lesson and pass every test."
@@ -73,40 +81,62 @@ export function DetailsPanel({ fields, onChange, db }: { fields: CourseFields; o
               onChange={(v) => onChange({ hasCertificate: v })}
             />
           </div>
-        </Card>
-      </div>
+        </div>
+      </Section>
 
-      <Card className="h-fit xl:sticky xl:top-[88px]">
-        <CardHeader title="Cover and colour" description="The cover image sits inside a frame in your card colour." />
-        <div className={clsx("mb-4 rounded-card p-2.5 transition-colors duration-200", toneBg[fields.tone])}>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-img bg-ink/10">
-            {fields.thumbnail && <Image src={cropSrc(fields.thumbnail, 3 / 4)} alt="Current cover" fill sizes="340px" loading="eager" className="object-cover" />}
+      <Section index="03" label="Cover and colour" note="The cover still sits on a frame in your card colour, on the course card and the course page.">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-10">
+          <figure className="min-w-0">
+            <div className={clsx("p-2.5 transition-colors duration-200", toneSurface(fields.tone))}>
+              <div className="relative aspect-[4/3] overflow-hidden bg-charcoal">
+                {fields.thumbnail && <Image src={cropSrc(fields.thumbnail, 3 / 4)} alt="Current cover" fill sizes="320px" loading="eager" className="object-cover" />}
+              </div>
+            </div>
+            <figcaption className="mt-3 flex items-baseline justify-between gap-3">
+              <MonoMeta as="span">{preset?.label ?? "Custom cover"}</MonoMeta>
+              <MonoMeta as="span">4:3 · {editorialToneLabel(fields.tone)}</MonoMeta>
+            </figcaption>
+          </figure>
+          <div className="flex min-w-0 flex-col gap-7">
+            <fieldset>
+              <legend className={LEGEND}>Cover image</legend>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-6">
+                {THUMBNAIL_PRESETS.map((t) => {
+                  const on = fields.thumbnail === t.src;
+                  return (
+                    <label key={t.id} className="group relative block cursor-pointer" title={t.label}>
+                      <input type="radio" name="cover" checked={on} onChange={() => onChange({ thumbnail: t.src })} className="peer sr-only" />
+                      <span
+                        className={clsx(
+                          "relative block aspect-square overflow-hidden bg-charcoal transition-[box-shadow,opacity] duration-200",
+                          on ? "ring-2 ring-fg ring-offset-2 ring-offset-surface" : "opacity-80 group-hf:opacity-100",
+                        )}
+                      >
+                        <Image src={cropSrc(t.src, 1)} alt="" fill sizes="80px" loading="eager" className="object-cover" />
+                        {on && (
+                          <span className="absolute top-0 right-0 grid size-5 place-items-center bg-fg text-surface" aria-hidden>
+                            <Icon name="check" className="size-3" strokeWidth={2.6} />
+                          </span>
+                        )}
+                      </span>
+                      <span className="sr-only">{t.label}</span>
+                      <span className="pointer-events-none absolute inset-0 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-red" />
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <TonePalette legend="Card colour" hint="Five editorial grounds. The red one is loud: keep it for the course you want seen." value={fields.tone} onChange={(tone) => onChange({ tone })} />
           </div>
         </div>
-        <fieldset>
-          <legend className="mb-2 text-[14px] font-bold">Cover image</legend>
-          <div className="grid grid-cols-4 gap-2">
-            {THUMBNAIL_PRESETS.map((t) => {
-              const on = fields.thumbnail === t.src;
-              return (
-                <label key={t.id} className={clsx("relative block cursor-pointer overflow-hidden rounded-[12px] ring-offset-2", on ? "ring-3 ring-ink" : "hf:ring-2 hf:ring-ink/30")} title={t.label}>
-                  <input type="radio" name="cover" checked={on} onChange={() => onChange({ thumbnail: t.src })} className="peer sr-only" />
-                  <span className="relative block aspect-square">
-                    <Image src={cropSrc(t.src, 1)} alt="" fill sizes="80px" loading="eager" className="object-cover" />
-                  </span>
-                  <span className="sr-only">{t.label}</span>
-                  <span className="pointer-events-none absolute inset-0 rounded-[12px] peer-focus-visible:outline-3 peer-focus-visible:-outline-offset-3 peer-focus-visible:outline-blue" />
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-        <div className="mt-5">
-          <TonePicker value={fields.tone} onChange={(tone) => onChange({ tone })} />
-        </div>
-      </Card>
+      </Section>
     </div>
   );
+}
+
+function editorialToneLabel(t: Course["tone"]) {
+  const e = editorialTone(t);
+  return EDITORIAL_TONES.find((x) => x.value === e)?.label ?? "Sand";
 }
 
 function TagInput({ label, hint, values, onChange, max }: { label: string; hint?: string; values: string[]; onChange: (v: string[]) => void; max: number }) {
@@ -152,12 +182,12 @@ function TagInput({ label, hint, values, onChange, max }: { label: string; hint?
         />
       </Field>
       {values.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={`${label} added`}>
+        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={`${label} added`}>
           {values.map((t) => (
-            <li key={t} className="inline-flex h-8 items-center gap-1 rounded-full bg-ink pr-1 pl-3 text-[13px] font-bold text-cream">
+            <li key={t} className="inline-flex h-8 items-center gap-1 bg-ink pr-1 pl-3 font-mono text-[11.5px] tracking-[0.04em] text-cream uppercase">
               {t}
-              <button type="button" onClick={() => onChange(values.filter((x) => x !== t))} className="grid size-6 place-items-center rounded-full hf:bg-white/15" aria-label={`Remove tag ${t}`}>
-                <Icon name="x" className="size-3.5" />
+              <button type="button" onClick={() => onChange(values.filter((x) => x !== t))} className="grid size-6 place-items-center transition-colors hf:bg-white/15 coarse:size-8" aria-label={`Remove tag ${t}`}>
+                <Icon name="x" className="size-3.5" strokeWidth={1.8} />
               </button>
             </li>
           ))}
@@ -170,20 +200,23 @@ function TagInput({ label, hint, values, onChange, max }: { label: string; hint?
 function ListEditor({ label, values, onChange, placeholder, max }: { label: string; values: string[]; onChange: (v: string[]) => void; placeholder: string; max: number }) {
   return (
     <fieldset>
-      <legend className="mb-2 text-[14px] font-bold">{label}</legend>
+      <legend className={clsx(LEGEND, "flex w-full items-baseline justify-between gap-3")}>
+        <span>{label}</span>
+        <span className="font-mono text-[11px] font-normal tracking-normal text-muted tabular-nums">
+          {values.length}/{max}
+        </span>
+      </legend>
       <ol className="flex flex-col gap-2">
         {values.map((v, i) => (
-          <li key={i} className="flex items-center gap-2">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-mint text-forest" aria-hidden>
-              <Icon name="check" className="size-3.5" strokeWidth={3} />
-            </span>
+          <li key={i} className="flex items-center gap-3">
+            <Idx n={i + 1} className="w-5" />
             <Input value={v} onChange={(e) => onChange(values.map((x, j) => (j === i ? e.target.value : x)))} placeholder={placeholder} aria-label={`${label} ${i + 1}`} maxLength={120} />
             <Button size="sm" variant="ghost" iconOnly icon="x" aria-label={`Remove ${label.toLowerCase()} ${i + 1}`} onClick={() => onChange(values.filter((_, j) => j !== i))} />
           </li>
         ))}
       </ol>
       {values.length < max && (
-        <Button size="sm" variant="secondary" icon="plus" className="mt-2" onClick={() => onChange([...values, ""])}>
+        <Button size="sm" variant="outline" icon="plus" className="mt-3" onClick={() => onChange([...values, ""])}>
           Add {label === "Requirements" ? "a requirement" : "an outcome"}
         </Button>
       )}
@@ -195,11 +228,11 @@ function ListEditor({ label, values, onChange, placeholder, max }: { label: stri
 /** Same rules, in the same order, as validateCoupon at checkout, checked against the price being edited. */
 function couponState(c: Coupon, price: number) {
   if (!c.active) return { label: "Off", tone: "neutral" as const, works: false };
-  if (MOCK_NOW_ISO < c.startsAt) return { label: "Scheduled", tone: "blue" as const, works: false };
-  if (MOCK_NOW_ISO > c.endsAt) return { label: "Expired", tone: "flame" as const, works: false };
-  if (c.redemptions >= c.maxRedemptions) return { label: "Used up", tone: "lilac" as const, works: false };
-  if (c.minAmount && price < c.minAmount) return { label: `Needs ${formatINR(c.minAmount)}+`, tone: "butter" as const, works: false };
-  if (c.kind === "flat" && c.value >= price) return { label: "Too big for this price", tone: "butter" as const, works: false };
+  if (MOCK_NOW_ISO < c.startsAt) return { label: "Scheduled", tone: "butter" as const, works: false };
+  if (MOCK_NOW_ISO > c.endsAt) return { label: "Expired", tone: "neutral" as const, works: false };
+  if (c.redemptions >= c.maxRedemptions) return { label: "Used up", tone: "ink" as const, works: false };
+  if (c.minAmount && price < c.minAmount) return { label: `Needs ${formatINR(c.minAmount)}+`, tone: "flame" as const, works: false };
+  if (c.kind === "flat" && c.value >= price) return { label: "Too big for this price", tone: "flame" as const, works: false };
   return { label: "Live", tone: "mint" as const, works: true };
 }
 
@@ -229,17 +262,15 @@ export function PricingPanel({
   const liveCount = coupons.filter((c) => couponState(c, fields.price).works).length;
 
   return (
-    <div className="grid gap-4 md:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-      <div className="flex min-w-0 flex-col gap-4 md:gap-5">
-        <Card className="h-fit">
-          <CardHeader title="Price" description="One-time purchase, lifetime access. The first video is always free." />
-          <div className="flex flex-col gap-5">
+    <div className="space-y-14 md:space-y-20">
+      <Section index="01" label="Price" note="One-time purchase, lifetime access. The first video is always free.">
+        <div className="flex max-w-3xl flex-col gap-7">
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Price (incl. GST)" required error={errors.price}>
               <Input
                 prefix="₹"
                 inputMode="numeric"
                 value={priceDraft}
-                className="max-w-[220px]"
                 onChange={(e) => {
                   const v = e.target.value.replace(/[^\d]/g, "");
                   setPriceDraft(v);
@@ -252,7 +283,6 @@ export function PricingPanel({
                 prefix="₹"
                 inputMode="numeric"
                 value={compareDraft}
-                className="max-w-[220px]"
                 onChange={(e) => {
                   const v = e.target.value.replace(/[^\d]/g, "");
                   setCompareDraft(v);
@@ -260,82 +290,89 @@ export function PricingPanel({
                 }}
               />
             </Field>
-            <dl className="grid grid-cols-3 gap-3 rounded-[20px] bg-mint/50 p-4">
-              {[
-                ["Learner pays", formatINR(fields.price)],
-                ["Price before GST", formatINR(exGst)],
-                [`You keep (${Math.round(revenueShare * 100)}%)`, formatINR(Math.round(exGst * revenueShare))],
-              ].map(([k, v], i) => (
-                <div key={k}>
-                  <dt className="text-[12px] font-bold text-forest/70">{k}</dt>
-                  <dd className={clsx("mt-1 font-heading leading-none font-extrabold tracking-[-0.02em] text-forest", i === 2 ? "text-[22px]" : "text-[18px]")}>{v}</dd>
-                </div>
-              ))}
-            </dl>
-            {course.status === "published" && <p className="t-small text-ink/60">Price changes apply to new purchases only. People who already bought keep their access.</p>}
           </div>
-        </Card>
-        {/* no verdict for a price that can't be saved anyway */}
-        {!errors.price && <PriceContext db={db} courseId={course.id} categoryId={fields.categoryId} price={fields.price} />}
-      </div>
+          <dl className="grid grid-cols-3 divide-x divide-line border-y border-fg">
+            {[
+              ["Learner pays", formatINR(fields.price)],
+              ["Before 18% GST", formatINR(exGst)],
+              [`You keep · ${Math.round(revenueShare * 100)}%`, formatINR(Math.round(exGst * revenueShare))],
+            ].map(([k, v], i) => (
+              <div key={k} className="min-w-0 px-3 py-4 first:pl-0 sm:px-4">
+                <dt className="sr-only">{k}</dt>
+                <dd>
+                  <Figure label={k} value={<span className={i === 2 ? "text-red-deep" : undefined}>{v}</span>} strong={i === 2} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {course.status === "published" && <p className="t-small text-muted">Price changes apply to new purchases only. People who already bought keep their access.</p>}
+          {/* no verdict for a price that can't be saved anyway */}
+          {!errors.price && <PriceContext db={db} courseId={course.id} categoryId={fields.categoryId} price={fields.price} />}
+        </div>
+      </Section>
 
-      <div className="flex min-w-0 flex-col gap-4 md:gap-5">
-        <CouponForm courseId={course.id} userId={userId} price={fields.price} existing={db.coupons.map((c) => c.code)} />
-        <Card>
-          <CardHeader
-            title="Codes for this course"
-            description={`Yours first, then platform-wide codes run by the Tamada team.${liveCount === coupons.length ? "" : ` ${liveCount} of ${coupons.length} work at checkout at ${formatINR(fields.price)}.`}`}
-          />
-          {coupons.length === 0 ? (
-            <p className="t-small text-ink/60">No codes yet. Create one above for your community or a launch week.</p>
-          ) : (
-            <ul className="divide-y divide-ink/[0.07]">
-              {coupons.map((c) => {
-                const st = couponState(c, fields.price);
-                const mine = c.createdBy === userId;
-                return (
-                  <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3 first:pt-0 last:pb-0">
-                    <span className="rounded-[10px] bg-cream px-2.5 py-1.5 font-mono text-[13.5px] font-bold tracking-wide sm:min-w-[7.25rem] sm:text-center">{c.code}</span>
-                    <Badge tone={st.tone} dot size="sm" className="max-sm:ml-auto sm:hidden">
-                      {st.label}
-                    </Badge>
-                    <div className="min-w-0 max-sm:basis-full sm:flex-1">
-                      <p className="text-[14px] font-bold">
-                        {c.kind === "percent" ? `${c.value}% off` : `${formatINR(c.value)} off`}
-                        <span className="font-semibold text-ink/55"> · {c.courseIds === null ? "Platform-wide" : c.courseIds.length > 1 ? `${c.courseIds.length} courses` : "This course"}</span>
-                      </p>
-                      <p className="text-[12.5px] font-semibold text-ink/55">
-                        {c.redemptions}/{c.maxRedemptions} used · until {formatDate(c.endsAt)}
-                        {c.minAmount ? ` · courses of ${formatINR(c.minAmount)}+` : ""}
-                        {c.firstPurchaseOnly ? " · first purchase only" : ""}
-                      </p>
-                    </div>
-                    <Badge tone={st.tone} dot size="sm" className="max-sm:hidden">
-                      {st.label}
-                    </Badge>
-                    {mine ? (
-                      <div className="flex items-center gap-1 max-sm:-ml-1">
-                        <Switch
-                          hideLabel
-                          label={`${c.code} active`}
-                          checked={c.active}
-                          onChange={(v) => {
-                            demo.setCouponActive(c.id, v);
-                            toast(v ? `${c.code} switched on` : `${c.code} switched off`);
-                          }}
-                        />
-                        <Button size="sm" variant="ghost" iconOnly icon="trash" aria-label={`Delete ${c.code}`} onClick={() => setDel(c)} />
+      <Section
+        index="02"
+        label="Coupons"
+        note="Great for launch week, your YouTube audience or a college club."
+        title="Codes for this course"
+        action={<MonoMeta as="span">{liveCount}/{coupons.length} work at {formatINR(fields.price)}</MonoMeta>}
+      >
+        <div className="grid gap-10 2xl:grid-cols-[minmax(0,1fr)_380px] 2xl:gap-12">
+          <div className="min-w-0">
+            <p className="t-small mb-4 text-muted">Yours first, then platform-wide codes run by the Tamada team.</p>
+            {coupons.length === 0 ? (
+              <p className="t-small border-y border-line py-5 text-muted">No codes yet. Create one for your community or a launch week.</p>
+            ) : (
+              <ul className="divide-y divide-line border-y border-fg">
+                {coupons.map((c) => {
+                  const st = couponState(c, fields.price);
+                  const mine = c.createdBy === userId;
+                  return (
+                    <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-4">
+                      <span className="bg-cream-2 px-2.5 py-1.5 font-mono text-[13px] font-medium tracking-[0.06em] sm:min-w-[7.5rem] sm:text-center">{c.code}</span>
+                      <Badge tone={st.tone} dot size="sm" className="max-sm:ml-auto sm:hidden">
+                        {st.label}
+                      </Badge>
+                      <div className="min-w-0 max-sm:basis-full sm:flex-1">
+                        <p className="font-heading text-[15px] font-semibold tracking-[-0.015em]">
+                          {c.kind === "percent" ? `${c.value}% off` : `${formatINR(c.value)} off`}
+                          <span className="font-sans text-[13px] font-normal tracking-normal text-muted"> · {c.courseIds === null ? "Platform-wide" : c.courseIds.length > 1 ? `${c.courseIds.length} courses` : "This course"}</span>
+                        </p>
+                        <MonoMeta className="mt-1">
+                          {c.redemptions}/{c.maxRedemptions} used · until {formatDate(c.endsAt)}
+                          {c.minAmount ? ` · ${formatINR(c.minAmount)}+ courses` : ""}
+                          {c.firstPurchaseOnly ? " · first purchase only" : ""}
+                        </MonoMeta>
                       </div>
-                    ) : (
-                      <span className="text-[12px] font-semibold text-ink/45">Managed by admins</span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Card>
-      </div>
+                      <Badge tone={st.tone} dot size="sm" className="max-sm:hidden">
+                        {st.label}
+                      </Badge>
+                      {mine ? (
+                        <div className="flex items-center gap-1 max-sm:-ml-1">
+                          <Switch
+                            hideLabel
+                            label={`${c.code} active`}
+                            checked={c.active}
+                            onChange={(v) => {
+                              demo.setCouponActive(c.id, v);
+                              toast(v ? `${c.code} switched on` : `${c.code} switched off`);
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" iconOnly icon="trash" aria-label={`Delete ${c.code}`} onClick={() => setDel(c)} />
+                        </div>
+                      ) : (
+                        <MonoMeta as="span">Managed by admins</MonoMeta>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <CouponForm courseId={course.id} userId={userId} price={fields.price} existing={db.coupons.map((c) => c.code)} />
+        </div>
+      </Section>
       <ConfirmDialog
         open={!!del}
         onClose={() => setDel(null)}
@@ -400,14 +437,16 @@ function CouponForm({ courseId, userId, price, existing }: { courseId: string; u
   };
 
   return (
-    <Card tone="butter">
-      <CardHeader title="Create a coupon" description="Great for launch week, your YouTube audience or a college club." />
-      <form ref={formRef} onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
+    <Card className="h-fit">
+      <CardHeader as="h3" eyebrow="New code" title="Create a coupon" />
+      <form ref={formRef} onSubmit={submit} noValidate className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-1">
         <Field label="Code" required error={errors.code}>
           <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s/g, ""))} maxLength={16} placeholder="LAUNCH20" className="font-mono uppercase" />
         </Field>
         <div>
-          <p className="mb-1.5 text-[14px] font-bold">Discount</p>
+          <p id="coupon-discount-label" className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] text-fg uppercase">
+            Discount
+          </p>
           <div className="flex items-start gap-2">
             <Segmented
               label="Discount type"
@@ -434,8 +473,9 @@ function CouponForm({ courseId, userId, price, existing }: { courseId: string; u
             />
           </div>
           {errors.value && (
-            <p id="coupon-value-err" role="alert" className="mt-1.5 flex items-center gap-1 text-[13px] font-semibold text-[#c13500]">
-              <Icon name="alert" className="size-3.5" strokeWidth={2.4} /> {errors.value}
+            <p id="coupon-value-err" role="alert" className="mt-2 flex items-start gap-2 text-[12.5px] leading-snug font-medium text-red-deep">
+              <span aria-hidden className="mt-[5px] size-[6px] shrink-0 bg-current" />
+              {errors.value}
             </p>
           )}
         </div>
@@ -445,7 +485,7 @@ function CouponForm({ courseId, userId, price, existing }: { courseId: string; u
         <Field label="Ends on" error={errors.ends}>
           <Input type="date" value={ends} min={tomorrow} onChange={(e) => setEnds(e.target.value)} />
         </Field>
-        <div className="sm:col-span-2">
+        <div className="border-t border-line pt-5 sm:col-span-2 2xl:col-span-1">
           <Button type="submit" icon="ticket">
             Create code
           </Button>
@@ -468,6 +508,7 @@ function PriceContext({ db, courseId, categoryId, price }: { db: Db; courseId: s
   const median = sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
   const span = Math.max(1, hi - lo);
   const at = Math.min(100, Math.max(0, ((price - lo) / span) * 100));
+  const medAt = Math.min(100, Math.max(0, ((median - lo) / span) * 100));
   const verdict =
     price < lo
       ? "Below everything similar. Learners may wonder what's missing."
@@ -483,21 +524,24 @@ function PriceContext({ db, courseId, categoryId, price }: { db: Db; courseId: s
                 ? "Right in the middle of similar courses."
                 : "On the premium side of similar courses.";
   return (
-    <Card tone="butter">
-      <p className="t-app-h3">What similar courses charge</p>
-      <p className="mt-1 t-small text-ink/65">
-        {peers.length >= 2 ? `${sorted.length} published courses in this category` : `${sorted.length} published courses on Tamada`} · median {formatINR(median)}
-      </p>
-      <div className="relative mt-5 mb-2 h-2 rounded-full bg-white">
-        <span aria-hidden className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink ring-4 ring-butter" style={{ left: `${at}%` }} />
+    <div className="border-t border-line pt-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="t-label">What similar courses charge</p>
+        <MonoMeta as="span">
+          {peers.length >= 2 ? `${sorted.length} in this category` : `${sorted.length} on Tamada`} · median {formatINR(median)}
+        </MonoMeta>
       </div>
-      <div className="flex justify-between text-[12.5px] font-bold text-ink/60">
+      <div className="relative mt-7 mb-3 h-px bg-line-strong">
+        <span aria-hidden className="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-muted" style={{ left: `${medAt}%` }} />
+        <span aria-hidden className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 bg-red" style={{ left: `${at}%` }} />
+      </div>
+      <div className="flex justify-between font-mono text-[11px] text-muted tabular-nums">
         <span>{formatINR(lo)}</span>
         <span>{formatINR(hi)}</span>
       </div>
-      <p className="mt-3 text-[14px] leading-snug font-bold">
-        {formatINR(price)}: {verdict}
+      <p className="mt-4 font-heading text-[17px] leading-snug font-semibold tracking-[-0.02em]">
+        {formatINR(price)}: <span className="font-normal text-fg/80">{verdict}</span>
       </p>
-    </Card>
+    </div>
   );
 }

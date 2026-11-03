@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { AuthSplit } from "@/components/auth/AuthSplit";
+import { AuthSplit, AuthSwitch } from "@/components/auth/AuthSplit";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { SessionBanner } from "@/components/auth/DemoAccounts";
-import { HighlightBox } from "@/components/decor/Bits";
 import { backFor, describeNext, safeNext } from "@/lib/mock/extra/auth";
+import { FLAGSHIP } from "@/lib/content/site";
 
 export const metadata: Metadata = {
   title: "Sign up",
-  description:
-    "Make a free Tamada Media account, save your progress and keep every tiny win.",
+  description: "Make a free Tamada Media account, save your progress and start AI Filmmaking: Prompt to Premiere with the free first lesson.",
 };
 
-export default async function SignupPage({
-  searchParams,
-}: PageProps<"/signup">) {
+const PERKS = ["First lesson free", "Pay once, in ₹", `${FLAGSHIP.certificateTitle} certificate`];
+
+export default async function SignupPage({ searchParams }: PageProps<"/signup">) {
   const sp = await searchParams;
   const next = safeNext(sp.next);
   const nextName = next ? describeNext(next) : null;
@@ -23,60 +21,21 @@ export default async function SignupPage({
     <AuthSplit
       scene="signup"
       eyebrow="Sign up"
+      title="Create your account."
+      intro="Save your progress, keep every cut, and start with the free first lesson."
       back={backFor(next)}
-      title={
-        <>
-          Your curiosity{" "}
-          <HighlightBox tone="sun" rotate={-3}>
-            called.
-          </HighlightBox>
-        </>
-      }
-      body="Make an account, save your progress, and keep every tiny win."
-      topAction={
-        <p>
-          Been here before?{" "}
-          <Link
-            href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
-            className="font-bold text-ink underline decoration-blue decoration-2 underline-offset-4 hf:decoration-ink"
-          >
-            Log in
-          </Link>
-        </p>
-      }
+      topAction={<AuthSwitch prompt="Been here before?" label="Log in" href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} />}
     >
-      <SessionBanner className="mb-5" />
+      <SessionBanner className="mb-8" />
       <SignupForm initialIntent={intent} next={next} nextName={nextName} />
-      <ul className="mt-6 grid gap-2.5 text-[14px] font-semibold text-ink/75 sm:grid-cols-3 sm:gap-3">
-        {[
-          "First video of every course free",
-          "Pay per course, in ₹",
-          "Certificates you can verify",
-        ].map((t) => (
-          <li
-            key={t}
-            className="flex items-center gap-2 sm:flex-col sm:items-start sm:gap-1.5"
-          >
-            <span
-              className="grid size-6 shrink-0 place-items-center rounded-full bg-mint text-forest"
-              aria-hidden
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="size-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12.5l4.5 4.5L19 7.5" />
-              </svg>
-            </span>
-            {t}
+      <ol className="mt-12 grid border-t border-line sm:grid-cols-3">
+        {PERKS.map((t, i) => (
+          <li key={t} className="flex items-baseline gap-3 border-b border-line py-3 sm:flex-col sm:gap-1.5 sm:border-b-0 sm:py-4 sm:pr-3">
+            <span className="t-timecode text-muted">{String(i + 1).padStart(2, "0")}</span>
+            <span className="text-[13.5px] leading-snug font-medium">{t}</span>
           </li>
         ))}
-      </ul>
+      </ol>
     </AuthSplit>
   );
 }

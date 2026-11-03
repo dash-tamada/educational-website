@@ -55,12 +55,6 @@ const I = (id: string) => `i|${id}`;
 const Z = (id: string) => `z|${id}`;
 const raw = (id: UniqueIdentifier) => String(id).slice(2);
 
-const TYPE_UI: Record<Kind, { icon: "video" | "quiz" | "file"; chip: string }> = {
-  video: { icon: "video", chip: "bg-[#dfe8ff] text-blue" },
-  quiz: { icon: "quiz", chip: "bg-butter text-[#6b5400]" },
-  resource: { icon: "file", chip: "bg-mint text-forest" },
-};
-
 export function CurriculumEditor({
   courseId,
   modules,
@@ -446,18 +440,30 @@ export function CurriculumEditor({
     <div>
       {/* touch screens: drag handles are hidden; reorder with big up/down buttons instead */}
       {modules.length > 0 && (
-        <div className={clsx("mb-3 hidden items-center gap-3 coarse:flex", reorder && "rounded-full bg-ink py-1.5 pr-1.5 pl-4 shadow-lift")}>
-          <p className={clsx("min-w-0 flex-1 text-[13.5px] leading-snug font-semibold", reorder ? "text-cream" : "text-ink/60")} aria-live="polite">
+        <div className={clsx("mb-4 hidden items-center gap-3 coarse:flex", reorder ? "bg-ink py-1.5 pr-1.5 pl-4 text-cream" : "border-y border-line py-1.5")} data-field={reorder ? "dark" : undefined}>
+          <p className={clsx("min-w-0 flex-1 font-mono text-[11px] leading-snug tracking-[0.06em] uppercase", reorder ? "text-cream/80" : "text-muted")} aria-live="polite">
             {reorder ? "Use the arrows to move lessons and modules." : `Tap a row to edit it · ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
           </p>
-          <Button size="sm" variant={reorder ? "sun" : "secondary"} icon={reorder ? "check" : "sort"} aria-pressed={reorder} onClick={() => setReorder((r) => !r)} className="shrink-0">
+          <Button size="sm" variant={reorder ? "cream" : "outline"} icon={reorder ? "check" : "sort"} aria-pressed={reorder} onClick={() => setReorder((r) => !r)} className="shrink-0">
             {reorder ? "Done" : "Reorder"}
           </Button>
         </div>
       )}
       {modules.length === 0 ? (
-        <div className="rounded-card bg-white shadow-soft">
-          <EmptyState art="tami" title="No modules yet." body="Modules are the chapters of your course. Start with one; you can rename and reorder later." action={<Button icon="plus" onClick={addModule}>Add a module</Button>} />
+        <div className="border-t border-fg">
+          <EmptyState
+            art="none"
+            eyebrow="Curriculum · 00 modules"
+            align="start"
+            className="!px-0"
+            title="No modules yet."
+            body="Modules are the chapters of your course. Start with one; you can rename and reorder later."
+            action={
+              <Button icon="plus" onClick={addModule}>
+                Add a module
+              </Button>
+            }
+          />
         </div>
       ) : (
         <DndContext
@@ -473,7 +479,7 @@ export function CurriculumEditor({
           }}
         >
           <SortableContext items={modules.map((m) => M(m.id))} strategy={verticalListSortingStrategy}>
-            <ol className="flex flex-col gap-4" aria-label="Modules">
+            <ol className="flex flex-col gap-12 md:gap-16" aria-label="Modules">
               {modules.map((m, mi) => (
                 <SortableModule
                   key={m.id}
@@ -530,6 +536,7 @@ export function CurriculumEditor({
                             canUp={!(i === 0 && mi === 0)}
                             canDown={!(i === m.items.length - 1 && mi === modules.length - 1)}
                             onStep={(dir) => stepItem(m, it, i, dir)}
+                            selected={!!editor && !editor.isNew && editor.item.id === it.id}
                           />
                         </li>
                       ))}
@@ -543,10 +550,10 @@ export function CurriculumEditor({
             createPortal(
           <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }} zIndex={260}>
             {activeModule ? (
-              <div className="rounded-card bg-white p-4 shadow-lift ring-2 ring-ink">
-                <p className="t-micro text-ink/50 uppercase">Module {pad2(activeModule.position)}</p>
-                <p className="t-app-h3 mt-1">{activeModule.title}</p>
-                <p className="mt-1 text-[13px] font-semibold text-ink/55">{activeModule.items.length} items</p>
+              <div className="border-t-2 border-fg bg-paper p-4 shadow-[0_18px_40px_-18px_rgb(11_11_11/0.45)] ring-1 ring-line-strong">
+                <p className="font-mono text-[11px] tracking-[0.1em] text-red-deep uppercase">Module {pad2(activeModule.position)}</p>
+                <p className="t-display-s mt-2">{activeModule.title}</p>
+                <p className="mt-2 font-mono text-[10.5px] tracking-[0.08em] text-muted uppercase">{activeModule.items.length} items</p>
               </div>
             ) : activeItem ? (
               <ItemRow item={activeItem} index={overlayNth(modules, activeItem.id)} isFree={activeItem.type === "video" && activeItem.lesson.isFreePreview} isAutoFree={activeItem.id === freeId} overlay />
@@ -562,9 +569,13 @@ export function CurriculumEditor({
           type="button"
           onClick={addModule}
           data-add-module=""
-          className="tap mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-card border-2 border-dashed border-ink/15 text-[15px] font-bold text-ink/70 transition-colors hf:border-ink/30 hf:bg-white hf:text-ink"
+          className="tap group mt-12 flex h-16 w-full items-center justify-between gap-3 border border-line-strong px-5 text-left transition-colors hf:border-fg hf:bg-fg hf:text-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red md:mt-16 md:h-20 md:px-6"
         >
-          <Icon name="plus" className="size-5" strokeWidth={2.4} /> Add module
+          <span className="flex items-baseline gap-4">
+            <span className="font-mono text-[11px] tracking-[0.1em] text-red-deep uppercase tabular-nums group-hf:text-red-lite">Module {pad2(modules.length + 1)}</span>
+            <span className="text-[12px] font-semibold tracking-[0.16em] uppercase">Add module</span>
+          </span>
+          <Icon name="plus" className="size-5" strokeWidth={1.6} />
         </button>
       )}
 
@@ -578,6 +589,7 @@ export function CurriculumEditor({
         item={editor?.item ?? null}
         isNew={!!editor?.isNew}
         isFirstVideo={!!editor && editor.item.type === "video" && (editor.item.id === freeId || (editor.isNew && isFirstVideoSlot(modules, editor.moduleId, editor.index)))}
+        eyebrow={editor ? editorEyebrow(modules, editor) : undefined}
         onClose={() => setEditor(null)}
         onSave={saveItem}
       />
@@ -603,6 +615,17 @@ function overlayNth(modules: Module[], itemId: string) {
     if (i >= 0) return nthOfType(m.items, i);
   }
   return 0;
+}
+
+/** "Module 03 · Video 02" (or "Module 03 · New test") for the editor's eyebrow. */
+function editorEyebrow(modules: Module[], e: NonNullable<EditorState>) {
+  const mi = modules.findIndex((m) => m.id === e.moduleId);
+  const word = { video: "Video", quiz: "Test", resource: "File" }[e.item.type];
+  const mod = mi >= 0 ? `Module ${pad2(mi + 1)} · ` : "";
+  if (e.isNew) return `${mod}New ${word.toLowerCase()}`;
+  const m = modules[mi];
+  const i = m ? m.items.findIndex((x) => x.id === e.item.id) : -1;
+  return i >= 0 ? `${mod}${word} ${pad2(nthOfType(m.items, i) + 1)}` : `${mod}${word}`;
 }
 
 /** Would a new video at (moduleId, index) become the first video of the course? */
@@ -651,19 +674,25 @@ function SortableModule({
   const secs = m.items.reduce((s, i) => s + (i.type === "video" ? i.lesson.durationSec : 0), 0);
   const counts = { video: 0, quiz: 0, resource: 0 };
   m.items.forEach((i) => counts[i.type]++);
+  const parts = [
+    counts.video && `${counts.video} ${counts.video === 1 ? "lesson" : "lessons"}`,
+    counts.quiz && `${counts.quiz} ${counts.quiz === 1 ? "test" : "tests"}`,
+    counts.resource && `${counts.resource} ${counts.resource === 1 ? "file" : "files"}`,
+    secs > 0 && formatDuration(secs),
+  ].filter(Boolean) as string[];
   return (
     <li
       ref={setNodeRef}
       id={`module-${m.id}`}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={clsx(
-        "relative rounded-card",
-        isDragging ? "z-10 bg-sun/30 outline-2 -outline-offset-2 outline-sun outline-dashed" : kb.picked ? "bg-white shadow-lift ring-2 ring-blue" : "bg-white shadow-soft",
+        "relative border-t border-fg",
+        isDragging ? "z-10 bg-cream-2 outline-1 -outline-offset-1 outline-line-strong outline-dashed" : kb.picked ? "z-10 bg-paper outline-2 outline-offset-4 outline-red" : "",
       )}
       aria-label={`Module ${index + 1} of ${count}: ${m.title}`}
     >
       <div className={clsx(isDragging && "opacity-0")}>
-        <div className="flex items-center gap-2 p-3 coarse:pl-4 md:gap-3 md:p-4" data-focus-row="">
+        <div className="flex items-start gap-2 pt-4 pb-4 md:gap-3 md:pt-5" data-focus-row="">
           <button
             ref={setActivatorNodeRef}
             type="button"
@@ -674,29 +703,25 @@ function SortableModule({
             aria-pressed={kb.picked}
             data-cursor="grab"
             aria-label={`Drag to reorder module ${m.title}`}
-            className={clsx("grid size-9 shrink-0 touch-none place-items-center rounded-full coarse:hidden", kb.picked ? "bg-blue text-white" : "text-ink/45 hf:bg-cream hf:text-ink")}
+            className={clsx(
+              "-ml-2 grid size-9 shrink-0 touch-none place-items-center transition-colors coarse:hidden",
+              kb.picked ? "bg-red text-white" : "text-muted hf:bg-cream-2 hf:text-fg",
+            )}
           >
-            <Icon name="drag" className="size-5" />
+            <Icon name="drag" className="size-[18px]" strokeWidth={1.6} />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="t-micro text-ink/50 uppercase">Module {pad2(index + 1)}</p>
-            <InlineEdit value={m.title} editing={renaming} onStart={onStartRename} onDone={onRename} label="Module title" className="t-app-h3 text-[17px] md:text-[18px]" />
-            <p className="mt-0.5 text-[12.5px] leading-snug font-semibold text-ink/55">
+            <p className="font-mono text-[11px] leading-none tracking-[0.1em] text-red-deep uppercase tabular-nums">Module {pad2(index + 1)}</p>
+            <InlineEdit value={m.title} editing={renaming} onStart={onStartRename} onDone={onRename} label="Module title" className="t-display-s mt-2.5" />
+            <p className="mt-2.5 font-mono text-[10.5px] leading-[1.5] tracking-[0.08em] text-muted uppercase tabular-nums">
               {m.items.length === 0
                 ? "Empty"
                 : // each part stays whole and the separator trails it, so a wrapped line never starts with "·"
-                  (
-                    [
-                      counts.video && `${counts.video} ${counts.video === 1 ? "lesson" : "lessons"}`,
-                      counts.quiz && `${counts.quiz} ${counts.quiz === 1 ? "test" : "tests"}`,
-                      counts.resource && `${counts.resource} ${counts.resource === 1 ? "resource" : "resources"}`,
-                      secs > 0 && formatDuration(secs),
-                    ].filter(Boolean) as string[]
-                  ).map((part, i, all) => (
+                  parts.map((part, i, all) => (
                     <Fragment key={part}>
                       <span className="whitespace-nowrap">
                         {part}
-                        {i < all.length - 1 && " ·"}
+                        {i < all.length - 1 && <span aria-hidden className="pl-1.5 opacity-50">·</span>}
                       </span>
                       {i < all.length - 1 && " "}
                     </Fragment>
@@ -706,29 +731,24 @@ function SortableModule({
           {reorder && onStep ? (
             <StepButtons label={`module ${m.title}`} id={M(m.id)} canUp={index > 0} canDown={index < count - 1} onStep={onStep} />
           ) : (
-            <>
+            <div className="-mr-2 flex shrink-0 items-center">
               <Button variant="ghost" size="sm" iconOnly icon={collapsed ? "chevron-down" : "chevron-up"} aria-label={collapsed ? `Expand ${m.title}` : `Collapse ${m.title}`} aria-expanded={!collapsed} onClick={onToggle} />
-              <DropdownMenu
-                label={`Actions for module ${m.title}`}
-                trigger={<Icon name="more" className="size-5" />}
-                items={menu}
-                triggerClassName="grid size-9 place-items-center rounded-full text-ink/70 hf:bg-ink/[0.06] hf:text-ink coarse:size-11"
-              />
-            </>
+              <DropdownMenu label={`Actions for module ${m.title}`} trigger={<Icon name="more" className="size-5" strokeWidth={1.6} />} items={menu} triggerClassName={MENU_TRIGGER} />
+            </div>
           )}
         </div>
         {!collapsed && (
-          <div className="px-2.5 pb-3 sm:px-3 md:px-4 md:pb-4">
+          <div>
             {children}
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+            <div className="grid grid-cols-3 gap-2 border-t border-line py-3 sm:flex sm:flex-wrap sm:items-center">
               {(
                 [
                   { kind: "video", icon: "video", short: "Lesson", long: "Add lesson" },
                   { kind: "quiz", icon: "quiz", short: "Test", long: "Add test" },
-                  { kind: "resource", icon: "file", short: "Resource", long: "Add resource" },
+                  { kind: "resource", icon: "file", short: "File", long: "Add resource" },
                 ] as const
               ).map((b) => (
-                <Button key={b.kind} size="sm" variant="secondary" icon={b.icon} onClick={() => onAdd(b.kind)} aria-label={b.long} className="max-sm:px-2">
+                <Button key={b.kind} size="sm" variant="outline" icon={b.icon} onClick={() => onAdd(b.kind)} aria-label={b.long} className="max-sm:px-2">
                   <span className="sm:hidden">{b.short}</span>
                   <span className="max-sm:hidden">{b.long}</span>
                 </Button>
@@ -741,11 +761,24 @@ function SortableModule({
   );
 }
 
+/** Square "…" trigger used by module and item menus. */
+const MENU_TRIGGER = "grid size-9 place-items-center text-muted transition-colors hf:bg-cream-2 hf:text-fg coarse:size-11";
+
 function ItemsZone({ moduleId, empty, children }: { moduleId: string; empty: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: Z(moduleId), data: { type: "zone", moduleId } });
   return (
-    <ol ref={setNodeRef} className={clsx("flex min-h-12 flex-col rounded-[20px] transition-colors", empty && "items-center justify-center border-2 border-dashed p-4", empty && (isOver ? "border-sun bg-sun/20" : "border-ink/12 bg-cream/50"))}>
-      {empty ? <li className="list-none text-center text-[13.5px] font-semibold text-ink/55">Empty module. Add a lesson below or drag one in here.</li> : children}
+    <ol
+      ref={setNodeRef}
+      className={clsx(
+        "flex min-h-12 flex-col border-t border-line transition-colors",
+        empty ? ["items-center justify-center px-4 py-7", isOver ? "bg-cream-2 outline-1 -outline-offset-1 outline-fg" : "bg-cream-2/40"] : "divide-y divide-line",
+      )}
+    >
+      {empty ? (
+        <li className="list-none text-center font-mono text-[11px] tracking-[0.08em] text-muted uppercase">Empty module · add a lesson below or drag one in</li>
+      ) : (
+        children
+      )}
     </ol>
   );
 }
@@ -766,6 +799,7 @@ function SortableItem(props: {
   canUp?: boolean;
   canDown?: boolean;
   onStep?: (dir: -1 | 1) => void;
+  selected?: boolean;
 }) {
   const { kb, ...rest } = props;
   const id = I(props.item.id);
@@ -783,6 +817,9 @@ function SortableItem(props: {
 }
 
 type KbHandle = { onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => void; picked: boolean };
+
+/** Mono caps word for an item type (the slate the player and the Q&A labels use). */
+const TYPE_WORD: Record<Kind, string> = { video: "Video", quiz: "Test", resource: "File" };
 
 function ItemRow({
   item,
@@ -802,6 +839,7 @@ function ItemRow({
   canUp,
   canDown,
   onStep,
+  selected,
 }: {
   item: ModuleItem;
   /** 0-based number among same-type items before it in the module */
@@ -821,82 +859,96 @@ function ItemRow({
   canUp?: boolean;
   canDown?: boolean;
   onStep?: (dir: -1 | 1) => void;
+  /** the item open in the editor: red rule on the left, cream-2 ground */
+  selected?: boolean;
 }) {
-  const ui = TYPE_UI[item.type];
   const title = itemTitle(item);
-  let meta: React.ReactNode = null;
+  let meta: string[] = [];
   let warn: string | null = null;
   if (item.type === "video") {
-    meta = item.lesson.durationSec ? formatDuration(item.lesson.durationSec, "clock") : "No duration";
+    meta = [item.lesson.durationSec ? formatDuration(item.lesson.durationSec, "clock") : "No duration"];
     if (!item.lesson.videoPath) warn = "No video yet";
   } else if (item.type === "quiz") {
     const p = quizProblems(item.quiz);
-    meta = `${item.quiz.questions.length} ${item.quiz.questions.length === 1 ? "question" : "questions"} · pass ${item.quiz.passPercentage}% · ${item.quiz.maxAttempts ? `${item.quiz.maxAttempts} ${item.quiz.maxAttempts === 1 ? "try" : "tries"}` : "unlimited tries"}`;
+    meta = [
+      `${item.quiz.questions.length} ${item.quiz.questions.length === 1 ? "question" : "questions"}`,
+      `pass ${item.quiz.passPercentage}%`,
+      item.quiz.maxAttempts ? `${item.quiz.maxAttempts} ${item.quiz.maxAttempts === 1 ? "try" : "tries"}` : "unlimited tries",
+    ];
     if (p.empty) warn = "No questions";
     else if (p.broken) warn = `${p.broken} to fix`;
   } else {
-    meta = resourceMeta(item.resource);
+    meta = [resourceMeta(item.resource)];
   }
   return (
     <div
       data-focus-row=""
+      data-item-row=""
+      aria-current={selected || undefined}
       className={clsx(
-        "relative flex items-center gap-2 rounded-[18px] py-2 pr-2 pl-1 coarse:min-h-16 coarse:py-2.5 coarse:pr-1.5 coarse:pl-3.5 md:gap-3",
+        "relative flex items-center gap-2 py-3 pr-0 pl-0 coarse:min-h-[68px] md:gap-3",
         dragging
-          ? "bg-sun/35 outline-2 -outline-offset-2 outline-sun outline-dashed"
+          ? "bg-cream-2 outline-1 -outline-offset-1 outline-line-strong outline-dashed"
           : overlay
-            ? "bg-white shadow-lift ring-2 ring-ink"
+            ? "bg-paper px-3 shadow-[0_18px_40px_-18px_rgb(11_11_11/0.45)] ring-1 ring-fg"
             : picked
-              ? "bg-white shadow-lift ring-2 ring-blue"
-              : "bg-cream/70 hf:bg-cream",
+              ? "z-[3] bg-paper outline-2 -outline-offset-2 outline-red"
+              : selected
+                ? "bg-cream-2 before:absolute before:inset-y-0 before:-left-px before:w-0.5 before:bg-red"
+                : "transition-colors hf:bg-cream-2/60",
       )}
     >
-      <div className={clsx("flex min-w-0 flex-1 items-center gap-2 md:gap-3", dragging && "opacity-0")}>
+      <div className={clsx("flex min-w-0 flex-1 items-center gap-2 md:gap-3", dragging && "opacity-0", selected && "pl-2")}>
         <button
           ref={handle?.ref}
           type="button"
           {...(handle?.props ?? {})}
           data-cursor="grab"
           aria-label={`Drag to reorder ${itemLabel(item.type).toLowerCase()} ${title || "untitled"}`}
-          className={clsx("grid size-8 shrink-0 touch-none place-items-center rounded-full coarse:hidden", picked ? "bg-blue text-white" : "text-ink/40 hf:bg-white hf:text-ink")}
+          className={clsx("-ml-1 grid size-8 shrink-0 touch-none place-items-center transition-colors coarse:hidden", picked ? "bg-red text-white" : "text-muted/70 hf:bg-paper hf:text-fg")}
         >
-          <Icon name="drag" className="size-[18px]" />
+          <Icon name="drag" className="size-4" strokeWidth={1.6} />
         </button>
-        <span className={clsx("grid size-9 shrink-0 place-items-center rounded-full max-sm:hidden", ui.chip)} aria-hidden>
-          <Icon name={ui.icon} className="size-4" strokeWidth={2.2} />
+        <span className="w-[68px] shrink-0 font-mono text-[10.5px] leading-none tracking-[0.08em] uppercase tabular-nums max-[420px]:w-[56px]" aria-hidden>
+          <span className="text-muted">{TYPE_WORD[item.type]}</span> <span className="text-red-deep">{pad2(index + 1)}</span>
+        </span>
+        <span className="sr-only">
+          {itemLabel(item.type)} {pad2(index + 1)}:
         </span>
         <div className="min-w-0 flex-1">
-          <p className="t-micro text-ink/45 uppercase">
-            {itemLabel(item.type)} {pad2(index + 1)}
-          </p>
           {onRename && onStartRename ? (
-            <InlineEdit value={title} editing={!!renaming} onStart={onStartRename} onDone={onRename} label={`${itemLabel(item.type)} title`} className="text-[14.5px] leading-snug font-bold" placeholder="Untitled" />
+            <InlineEdit value={title} editing={!!renaming} onStart={onStartRename} onDone={onRename} label={`${itemLabel(item.type)} title`} className="font-heading text-[15px] leading-snug font-semibold tracking-[-0.015em]" placeholder="Untitled" />
           ) : (
-            <p className="truncate text-[14.5px] font-bold">{title || "Untitled"}</p>
+            <p className="truncate font-heading text-[15px] font-semibold tracking-[-0.015em]">{title || "Untitled"}</p>
           )}
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] font-semibold text-ink/55">
-            <span>{meta}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[10.5px] leading-[1.5] tracking-[0.06em] text-muted uppercase tabular-nums">
+            {meta.map((x, i) => (
+              <span key={i} className="whitespace-nowrap">
+                {x}
+                {(i < meta.length - 1 || isFree || (item.type === "quiz" && item.quiz.isGating)) && <span aria-hidden className="pl-2.5 opacity-50">·</span>}
+              </span>
+            ))}
             {isFree && (
-              <Badge tone="sun" size="sm">
-                <Icon name="play" className="size-2.5" />
+              <span className="inline-flex items-center gap-1 whitespace-nowrap text-fg">
+                <Icon name="play" className="size-2.5" strokeWidth={2.4} />
                 Free preview{isAutoFree ? " · auto" : ""}
-              </Badge>
+              </span>
             )}
             {item.type === "quiz" && item.quiz.isGating && (
-              <Badge tone="lilac" size="sm">
-                <Icon name="lock" className="size-3" />
+              <span className="inline-flex items-center gap-1 whitespace-nowrap text-fg">
+                <Icon name="lock" className="size-3" strokeWidth={2} />
                 Gates next
-              </Badge>
+              </span>
             )}
             {warn && (
-              <Badge tone="flame" size="sm" dot>
+              <Badge tone="flame" size="sm" variant="text" dot>
                 {warn}
               </Badge>
             )}
           </div>
         </div>
         {onEdit && (
-          <Button size="sm" variant="secondary" icon="edit" onClick={onEdit} className="max-sm:hidden coarse:hidden" aria-label={`Edit ${title || "item"}`}>
+          <Button size="sm" variant="ghost" icon="edit" onClick={onEdit} className="max-sm:hidden coarse:hidden" aria-label={`Edit ${title || "item"}`}>
             Edit
           </Button>
         )}
@@ -906,20 +958,15 @@ function ItemRow({
             type="button"
             onClick={onEdit}
             aria-label={`Edit ${itemLabel(item.type).toLowerCase()} ${title || "untitled"}`}
-            className="tap absolute inset-0 z-[1] hidden rounded-[18px] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-blue active:bg-ink/[0.04] coarse:block"
+            className="tap absolute inset-0 z-[1] hidden focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-red active:bg-cream-2 coarse:block"
           />
         )}
         {reorder && onStep ? (
           <StepButtons label={`${itemLabel(item.type).toLowerCase()} ${title || "untitled"}`} id={I(item.id)} canUp={!!canUp} canDown={!!canDown} onStep={onStep} />
         ) : (
           menu && (
-            <span className="relative z-[2] flex shrink-0">
-              <DropdownMenu
-                label={`More actions for ${title || "item"}`}
-                trigger={<Icon name="more" className="size-5" />}
-                items={menu}
-                triggerClassName="grid size-9 place-items-center rounded-full text-ink/70 hf:bg-ink/[0.06] hf:text-ink coarse:size-11"
-              />
+            <span className="relative z-[2] -mr-1 flex shrink-0">
+              <DropdownMenu label={`More actions for ${title || "item"}`} trigger={<Icon name="more" className="size-5" strokeWidth={1.6} />} items={menu} triggerClassName={MENU_TRIGGER} />
             </span>
           )
         )}
@@ -928,16 +975,16 @@ function ItemRow({
   );
 }
 
-/** Reorder mode (touch): 44px up/down buttons. `data-step` lets focus follow the moved row. */
+/** Reorder mode (touch): 44px square up/down buttons. `data-step` lets focus follow the moved row. */
 function StepButtons({ label, id, canUp, canDown, onStep }: { label: string; id: string; canUp: boolean; canDown: boolean; onStep: (dir: -1 | 1) => void }) {
-  const cls = "tap relative z-[2] grid size-11 shrink-0 place-items-center rounded-full bg-white text-ink shadow-soft disabled:opacity-35 disabled:shadow-none";
+  const cls = "tap relative z-[2] grid size-11 shrink-0 place-items-center bg-paper text-fg ring-1 ring-line-strong ring-inset disabled:opacity-35";
   return (
-    <span className="flex shrink-0 items-center gap-2">
+    <span className="flex shrink-0 items-center gap-1.5">
       <button type="button" data-step={`${id}:up`} disabled={!canUp} onClick={() => onStep(-1)} aria-label={`Move ${label} up`} className={cls}>
-        <Icon name="arrow-up" className="size-5" strokeWidth={2.4} />
+        <Icon name="arrow-up" className="size-[18px]" strokeWidth={1.8} />
       </button>
       <button type="button" data-step={`${id}:down`} disabled={!canDown} onClick={() => onStep(1)} aria-label={`Move ${label} down`} className={cls}>
-        <Icon name="arrow-down" className="size-5" strokeWidth={2.4} />
+        <Icon name="arrow-down" className="size-[18px]" strokeWidth={1.8} />
       </button>
     </span>
   );
@@ -946,21 +993,23 @@ function StepButtons({ label, id, canUp, canDown, onStep }: { label: string; id:
 /** Between two items: a "+" that inserts a lesson, test or resource right there. */
 function InsertSlot({ onPick, label }: { onPick: (k: Kind) => void; label: string }) {
   return (
-    <div className="group/slot relative z-[1] h-2">
-      <div className="absolute inset-x-0 -top-1.5 -bottom-1.5 flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover/slot:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden">
-        <span className="absolute inset-x-10 h-0.5 rounded-full bg-blue/50" aria-hidden />
-        <DropdownMenu
-          label={label}
-          align="start"
-          width={220}
-          trigger={<Icon name="plus" className="size-3.5" strokeWidth={3} />}
-          triggerClassName="relative grid size-6 place-items-center rounded-full bg-blue text-white shadow-soft"
-          items={[
-            { label: "Video lesson here", icon: "video", onSelect: () => onPick("video") },
-            { label: "Test here", icon: "quiz", onSelect: () => onPick("quiz") },
-            { label: "Resource here", icon: "file", onSelect: () => onPick("resource") },
-          ]}
-        />
+    <div className="group/slot relative z-[1] h-0">
+      <div className="absolute inset-x-0 -top-1.5 h-3 opacity-0 transition-opacity duration-150 group-hover/slot:opacity-100 focus-within:opacity-100 [@media(hover:none)]:hidden">
+        <span className="absolute inset-x-0 top-1/2 h-px bg-red" aria-hidden />
+        <span className="absolute top-1/2 left-[100px] -translate-y-1/2 md:left-[108px]">
+          <DropdownMenu
+            label={label}
+            align="start"
+            width={220}
+            trigger={<Icon name="plus" className="size-3.5" strokeWidth={2.4} />}
+            triggerClassName="relative grid size-6 place-items-center bg-red text-white"
+            items={[
+              { label: "Video lesson here", icon: "video", onSelect: () => onPick("video") },
+              { label: "Test here", icon: "quiz", onSelect: () => onPick("quiz") },
+              { label: "Resource here", icon: "file", onSelect: () => onPick("resource") },
+            ]}
+          />
+        </span>
       </div>
     </div>
   );
@@ -1016,7 +1065,7 @@ export function InlineEdit({
           if (done.current) return;
           onDone(draft.trim() || null);
         }}
-        className={clsx("-mx-1.5 w-full rounded-[10px] bg-white px-1.5 py-0.5 ring-2 ring-blue focus:outline-none", className)}
+        className={clsx("-mx-1.5 block w-full border-0 border-b-2 border-red bg-paper px-1.5 py-0.5 text-fg focus:outline-none", className)}
       />
     );
   }
@@ -1028,10 +1077,10 @@ export function InlineEdit({
         onStart();
       }}
       title="Click to rename"
-      className={clsx("group/ie -mx-1.5 flex max-w-full items-center gap-1.5 rounded-[10px] px-1.5 py-0.5 text-left hf:bg-ink/[0.05] hit", className)}
+      className={clsx("group/ie -mx-1.5 flex max-w-full items-center gap-2 px-1.5 py-0.5 text-left transition-colors hf:bg-cream-2 hit focus-visible:outline-2 focus-visible:outline-red", className)}
     >
-      <span className={clsx("line-clamp-2 min-w-0 break-words", !value && "text-ink/40")}>{value || placeholder}</span>
-      <Icon name="pen" className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/ie:opacity-50 group-focus-visible/ie:opacity-50" />
+      <span className={clsx("line-clamp-2 min-w-0 break-words", !value && "text-muted")}>{value || placeholder}</span>
+      <Icon name="pen" strokeWidth={1.6} className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/ie:opacity-60 group-focus-visible/ie:opacity-60" />
       <span className="sr-only">(rename)</span>
     </button>
   );

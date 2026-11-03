@@ -22,7 +22,7 @@ import { Icon } from "./icons";
 
 type HeadingTag = "h2" | "h3" | "h4";
 
-const sectionTitle = "mb-1.5 t-micro text-ink/60 uppercase";
+const sectionTitle = "mb-2.5 text-[10.5px] font-semibold tracking-[0.16em] text-muted uppercase";
 
 export function ApplicationFacts({
   app,
@@ -40,20 +40,20 @@ export function ApplicationFacts({
   return (
     <section className={className}>
       <H className={sectionTitle}>{title}</H>
-      <dl className="divide-y divide-ink/[0.07] rounded-tag bg-cream px-3.5">
+      <dl className="divide-y divide-line border-y border-line">
         {facts.map((f) => (
           <div key={f.label} className="flex items-start justify-between gap-4 py-2.5">
-            <dt className="shrink-0 t-small text-ink/65">{f.label}</dt>
-            <dd className="min-w-0 text-right t-small font-semibold [overflow-wrap:anywhere]">
+            <dt className="shrink-0 t-small text-muted">{f.label}</dt>
+            <dd className="min-w-0 text-right t-small font-medium [overflow-wrap:anywhere]">
               {f.href ? (
                 <a
                   href={f.href}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1 rounded-sm underline decoration-ink/25 underline-offset-2 hf:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+                  className="inline-flex items-center gap-1 rounded-sm underline decoration-ink/25 underline-offset-2 hf:decoration-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red"
                 >
                   {f.value}
-                  <Icon name="external" className="size-3.5 shrink-0 text-ink/45" />
+                  <Icon name="external" className="size-3.5 shrink-0 text-ink/45" strokeWidth={1.7} />
                   <span className="sr-only">(opens in a new tab)</span>
                 </a>
               ) : (
@@ -92,9 +92,9 @@ export function ApplicationHistory({
   return (
     <section className={className}>
       <H className={sectionTitle}>
-        {title} <span className="text-ink/45">({rounds.length})</span>
+        {title} <span className="font-mono text-ink/45">({rounds.length})</span>
       </H>
-      <p className="mb-3 t-small text-ink/70">
+      <p className="mb-3 t-small text-muted">
         This is round {nth}. They resubmitted on {formatDate(app.submittedAt)} after{" "}
         {last.status === "changes_requested" ? "being asked for changes" : `a “${ROUND_VERB[last.status]?.toLowerCase() ?? last.status}” decision`}
         {last.decidedAt ? ` on ${formatDate(last.decidedAt)}` : ""}. Check the earlier ask was answered.
@@ -103,15 +103,15 @@ export function ApplicationHistory({
         {rounds.map((r, i) => {
           const by = r.decidedBy ? (getUser(r.decidedBy, db)?.name ?? "An admin") : null;
           return (
-            <li key={`${r.submittedAt}-${i}`} className="rounded-tag bg-cream p-3.5">
+            <li key={`${r.submittedAt}-${i}`} className="border-l-2 border-line-strong py-1 pl-4">
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                <span className="text-[13px] font-bold text-ink/70">
+                <span className="font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
                   Round {i + 1} · applied {formatDate(r.submittedAt)}
                 </span>
                 <StatusPill status={r.status} size="sm" />
               </div>
               {r.decisionNote ? (
-                <p className="mt-2 text-[14.5px] leading-relaxed">“{r.decisionNote}”</p>
+                <p className="mt-2 font-heading text-[16px] leading-snug tracking-[-0.015em]">“{r.decisionNote}”</p>
               ) : (
                 <p className="mt-2 t-small text-ink/60">No note was left.</p>
               )}

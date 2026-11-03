@@ -7,10 +7,8 @@ import {
   Avatar,
   Badge,
   Button,
-  Card,
   ConfirmDialog,
   EmptyState,
-  Icon,
   PageHeader,
   Rating,
   StatusPill,
@@ -29,22 +27,27 @@ import {
   timeAgo,
   type Report,
 } from "@/lib/mock";
-import { toneBg } from "@/lib/landing-data";
+import { Idx, LineIcon, MonoMeta } from "@/components/tutor/editorial";
 import { wasLive } from "./reviewKit";
 import { CourseCell } from "./shared";
+
+/* =============================================================================
+   /admin/reports (design system v2): the moderation queue as a ruled list.
+   Each report is one Mobius row: a left label column (mono index, what was
+   flagged, status, when) and the right column with the reason set as a quote,
+   who flagged it, the flagged content on a hairline rule, and the actions.
+   Red marks only open reports.
+   ============================================================================= */
 
 type Tab = Report["status"] | "all";
 const TABS: Tab[] = ["open", "resolved", "dismissed", "all"];
 /** URL tabs like the other admin queues: the tab survives a reload or a shared link */
 const tabHref = (t: Tab) =>
   t === "open" ? "/admin/reports" : `/admin/reports?status=${t}`;
-const KIND: Record<
-  Report["kind"],
-  { label: string; noun: string; icon: IconName; tone: "blush" | "cyan" | "butter" }
-> = {
-  review: { label: "Review", noun: "review", icon: "star", tone: "butter" },
-  comment: { label: "Q&A comment", noun: "Q&A comment", icon: "chat", tone: "cyan" },
-  course: { label: "Course", noun: "course", icon: "layers", tone: "blush" },
+const KIND: Record<Report["kind"], { label: string; noun: string; icon: IconName }> = {
+  review: { label: "Review", noun: "review", icon: "star" },
+  comment: { label: "Q&A comment", noun: "Q&A comment", icon: "chat" },
+  course: { label: "Course", noun: "course", icon: "layers" },
 };
 
 export function ReportsView() {
@@ -75,9 +78,12 @@ export function ReportsView() {
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Moderation"
-        eyebrowTone="purple"
-        title="Keep it kind in here."
+        eyebrow="Control room · Moderation"
+        title={
+          <>
+            Keep it <em>kind</em> in here.
+          </>
+        }
         description="Things learners flagged: reviews, Q&A replies and courses. Fix what's wrong, dismiss what isn't."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
@@ -85,7 +91,7 @@ export function ReportsView() {
         ]}
         meta={
           counts.open ? (
-            <Badge tone="butter" dot>
+            <Badge tone="flame" dot>
               {counts.open} open
             </Badge>
           ) : (
@@ -98,7 +104,7 @@ export function ReportsView() {
       <Tabs
         label="Report status"
         value={tab}
-        className="mb-5"
+        className="mb-8 md:mb-10"
         items={[
           { id: "open", label: "Open", count: counts.open, href: tabHref("open") },
           {
@@ -118,7 +124,10 @@ export function ReportsView() {
       />
 
       {list.length ? (
-        <ul className="space-y-4">
+        <ol
+          aria-label={`${tab === "all" ? "All" : tab[0].toUpperCase() + tab.slice(1)} reports`}
+          className="border-t border-fg"
+        >
           {list.map((r, i) => {
             const k = KIND[r.kind];
             const course = getCourseById(r.courseId, db);
@@ -143,72 +152,78 @@ export function ReportsView() {
             const gone =
               (r.kind === "review" && !review) ||
               (r.kind === "comment" && !comment);
+            const open = r.status === "open";
             return (
               <li
                 key={r.id}
-                className="app-enter"
+                className="app-enter grid gap-x-8 gap-y-4 border-b border-line py-6 md:py-8 lg:grid-cols-12"
                 style={{ animationDelay: `${i * 30}ms` }}
               >
-                <Card>
-                  <div className="flex flex-wrap items-start gap-3">
-                    <span
-                      className={`grid size-10 shrink-0 place-items-center rounded-full ${toneBg[k.tone]}`}
-                      aria-hidden
-                    >
-                      <Icon name={k.icon} className="size-[18px]" />
+                {/* label column */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:col-span-3 lg:flex-col lg:items-start">
+                  <span className="flex items-center gap-3">
+                    <Idx n={i + 1} />
+                    <span className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] uppercase">
+                      <LineIcon name={k.icon} className="size-4" />
+                      {k.label}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge tone="neutral" size="sm">
-                          {k.label}
-                        </Badge>
-                        <StatusPill status={r.status} size="sm" />
-                        <span className="text-[13px] font-semibold text-ink/50">
-                          <time
-                            dateTime={r.createdAt}
-                            title={formatDate(r.createdAt, "datetime")}
-                          >
-                            {timeAgo(r.createdAt)}
-                          </time>
-                        </span>
-                      </div>
-                      <h2 className="mt-2 t-app-h3">“{r.reason}”</h2>
-                      <p className="mt-1 t-small text-ink/60">
-                        Flagged by{" "}
-                        {reporter ? (
-                          <Link
-                            href={`/admin/users/${reporter.id}`}
-                            className="font-bold text-ink underline-offset-2 hf:underline"
-                          >
-                            {reporter.name}
-                          </Link>
-                        ) : (
-                          "a learner"
-                        )}
-                        {course && (
-                          <>
-                            {" "}
-                            on{" "}
-                            <Link
-                              href={`/admin/courses/${course.id}`}
-                              className="font-bold text-ink underline-offset-2 hf:underline"
-                            >
-                              {course.title}
-                            </Link>
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </div>
+                  </span>
+                  <StatusPill status={r.status} size="sm" variant="text" />
+                  <MonoMeta as="span">
+                    <time
+                      dateTime={r.createdAt}
+                      title={formatDate(r.createdAt, "datetime")}
+                    >
+                      {timeAgo(r.createdAt)}
+                    </time>
+                  </MonoMeta>
+                </div>
 
-                  <div className="mt-4 rounded-tag bg-cream p-4">
+                {/* body */}
+                <div className="min-w-0 lg:col-span-9">
+                  <h2 className="font-heading text-[clamp(1.25rem,1.1rem+0.6vw,1.625rem)] leading-[1.12] font-semibold tracking-[-0.03em] [overflow-wrap:anywhere]">
+                    {open && (
+                      <span
+                        aria-hidden
+                        className="mr-2.5 mb-[0.2em] inline-block size-[9px] bg-red align-middle"
+                      />
+                    )}
+                    “{r.reason}”
+                  </h2>
+                  <p className="t-small mt-2 text-muted">
+                    Flagged by{" "}
+                    {reporter ? (
+                      <Link
+                        href={`/admin/users/${reporter.id}`}
+                        className="font-medium text-fg underline-offset-[3px] hf:underline"
+                      >
+                        {reporter.name}
+                      </Link>
+                    ) : (
+                      "a learner"
+                    )}
+                    {course && (
+                      <>
+                        {" "}
+                        on{" "}
+                        <Link
+                          href={`/admin/courses/${course.id}`}
+                          className="font-medium text-fg underline-offset-[3px] hf:underline"
+                        >
+                          {course.title}
+                        </Link>
+                      </>
+                    )}
+                  </p>
+
+                  <div className="mt-5 border-l-2 border-line-strong pl-4 md:pl-5">
                     {gone ? (
-                      <p className="t-small text-ink/55">
+                      <p className="t-small text-muted">
                         This {k.noun} has already been removed.
                       </p>
                     ) : review ? (
                       <div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                           {author && (
                             <Avatar
                               name={author.name}
@@ -218,7 +233,7 @@ export function ReportsView() {
                               decorative
                             />
                           )}
-                          <span className="text-[14px] font-bold">
+                          <span className="text-[14px] font-semibold">
                             {author?.name ?? "Learner"}
                           </span>
                           <Rating
@@ -227,23 +242,23 @@ export function ReportsView() {
                             showValue={false}
                           />
                           {review.hidden && (
-                            <Badge tone="lilac" size="sm">
+                            <Badge tone="neutral" size="sm">
                               Hidden from the course page
                             </Badge>
                           )}
                         </div>
                         {review.title && (
-                          <p className="mt-2 text-[15px] font-bold">
+                          <p className="mt-3 text-[15px] font-semibold tracking-[-0.01em]">
                             {review.title}
                           </p>
                         )}
-                        <p className="mt-1 t-small text-ink/80">
+                        <p className="t-small mt-1 text-fg/80">
                           {review.comment}
                         </p>
                       </div>
                     ) : comment ? (
                       <div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                           {author && (
                             <Avatar
                               name={author.name}
@@ -253,19 +268,19 @@ export function ReportsView() {
                               decorative
                             />
                           )}
-                          <span className="text-[14px] font-bold">
+                          <span className="text-[14px] font-semibold">
                             {author?.name ?? "Learner"}
                           </span>
                           {item && course && (
                             <Link
                               href={`/learn/${course.slug}/${item.id}`}
-                              className="text-[13px] font-semibold text-ink/55 underline-offset-2 hf:underline"
+                              className="font-mono text-[11px] tracking-[0.04em] text-muted uppercase underline-offset-[3px] hf:text-fg hf:underline"
                             >
                               in “{itemTitle(item)}”
                             </Link>
                           )}
                         </div>
-                        <p className="mt-1.5 t-small text-ink/80">
+                        <p className="t-small mt-2 text-fg/80">
                           {comment.body}
                         </p>
                       </div>
@@ -287,8 +302,8 @@ export function ReportsView() {
 
                   {/* phones: 44px buttons share each row with 12px gaps; the
                       destructive action keeps its own row (it comes first) */}
-                  <div className="mt-4 flex flex-wrap gap-2 max-sm:gap-3 max-sm:[&>*]:flex-[1_1_auto] max-sm:[&>.btn-danger-row]:basis-full">
-                    {r.status === "open" ? (
+                  <div className="mt-5 flex flex-wrap gap-2 max-sm:gap-3 max-sm:[&>*]:flex-[1_1_auto] max-sm:[&>.btn-danger-row]:basis-full">
+                    {open ? (
                       <>
                         {review && !review.hidden && (
                           <Button
@@ -318,7 +333,7 @@ export function ReportsView() {
                         {r.kind === "course" && course && (
                           <Button
                             size="sm"
-                            variant="secondary"
+                            variant="outline"
                             href={`/admin/courses/${course.id}`}
                             icon="eye"
                           >
@@ -327,7 +342,7 @@ export function ReportsView() {
                         )}
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="outline"
                           icon="check"
                           onClick={() => resolve(r, "Marked as resolved.")}
                         >
@@ -373,26 +388,26 @@ export function ReportsView() {
                       </>
                     )}
                   </div>
-                </Card>
+                </div>
               </li>
             );
           })}
-        </ul>
+        </ol>
       ) : (
-        <Card>
-          <EmptyState
-            art="tami"
-            tone="mint"
-            title={
-              tab === "open" ? "Nothing flagged. Lovely." : "Nothing here."
-            }
-            body={
-              tab === "open"
-                ? "When a learner reports a review, comment or course, it shows up here."
-                : "Reports move here once they're handled."
-            }
-          />
-        </Card>
+        <EmptyState
+          align="start"
+          art="none"
+          eyebrow={tab === "open" ? "Queue empty" : "Nothing here"}
+          title={
+            tab === "open" ? "Nothing flagged. Lovely." : "Nothing here."
+          }
+          body={
+            tab === "open"
+              ? "When a learner reports a review, comment or course, it shows up here."
+              : "Reports move here once they're handled."
+          }
+          className="border-t border-fg px-0!"
+        />
       )}
 
       <ConfirmDialog

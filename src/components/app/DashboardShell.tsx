@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
@@ -10,8 +11,7 @@ import { getNotifications, getPlatformStats, getTutor, getTutorQuestions, getUse
 import { useDb, demo, useStoreHydrated } from "@/lib/demo/store";
 import { useDemoAuth, useDemoSession } from "@/lib/demo/session-client";
 import { DEMO_USERS } from "@/lib/demo/session";
-import { BrandLockup } from "@/components/landing/Header";
-import { Mascot } from "@/components/decor/Mascot";
+import { LOGO, LOGO_SRC } from "@/lib/brand";
 import { AREAS, isActive, navBadgeSr, type AreaKey, type NavBadge, type NavItem } from "./nav";
 import { Icon } from "./icons";
 import { Avatar } from "./Display";
@@ -19,19 +19,25 @@ import { DemoPill } from "./Badge";
 import { ConfirmDialog, DropdownMenu, useIsClient } from "./Overlay";
 import { toast } from "./Toast";
 import { AppDock, AppTopBar } from "./AppChrome";
+import { AppClock } from "./Clock";
+import { INK_SURFACE } from "./surfaces";
 import { useIsShortLandscape, useScrollHide } from "./mobile";
 
 /* =============================================================================
-   DashboardShell: the app frame for /dashboard, /tutor and /admin.
-   - Desktop: floating white sidebar (collapsible, remembered per browser) with
-     the brand lockup, area pill, nav (active = area colour), live badges,
-     "Demo data" pill. Tablet (640-1023px): the collapsed sidebar as a 72px icon rail.
-     Phones (< 640px): AppTopBar (area mark, search / bell / avatar sheets) + AppDock
-     (5-slot bottom nav, More sheet) from AppChrome.tsx; main pads for --bottom-ui.
-   - Top bar: search (Enter goes to the area's search page with ?q=), demo role
-     switcher, notifications (live from the demo store), avatar menu
-     (area home, public site, settings, reset demo data, log out).
-   - Content: <main id="main"> on the cream canvas, max 1280px, 16/24/32px gutters.
+   DashboardShell (design system v2): the editorial workspace for /dashboard, /tutor
+   and /admin.
+   - Desktop (>= 1024px): a slim INK sidebar flush to the left edge (the theatre):
+     light logo, the area slate, an "Index" of numbered nav items (Inter Tight, mono
+     index, a red marker on the active one, red mono badges), "Shortcuts", and a
+     footer with the live IST timecode, the Demo data slate and the collapse toggle.
+     Collapsed (remembered per browser) = a 72px icon rail.
+     Tablet (640-1023px): the 72px icon rail, always.
+     Phones (< 640px): AppTopBar (area name, search / bell / avatar sheets) + AppDock
+     (an ink bar flush to the bottom, 5 slots, More sheet) from AppChrome.tsx.
+   - Top bar: hairline-ruled cream bar. Search (Enter goes to the area's search page with
+     ?q=, "/" focuses it), demo role switch, notifications (live from the demo store),
+     avatar menu (area home, public site, settings, reset demo data, log out).
+   - Content: <main id="main"> on the cream canvas, max 1320px, 20/32/40px gutters.
    - Sidebar offset: the width is --sb on the shell wrapper and --app-sb on <html>;
      fixed bars portalled to <body> use left: var(--app-main-left) (0 below lg,
      the sidebar width from lg; see globals.css APP UI).
@@ -40,6 +46,8 @@ import { useIsShortLandscape, useScrollHide } from "./mobile";
    ============================================================================= */
 
 const COLLAPSE_KEY = "tm-sidebar-collapsed";
+const SB_OPEN = 248;
+const SB_RAIL = 72;
 const sidebarSubs = new Set<() => void>();
 function readCollapsed() {
   try {
@@ -75,7 +83,35 @@ function useAreaBadges(area: AreaKey, userId: string): Partial<Record<NavBadge, 
   }, [area, userId, db, hydrated]);
 }
 
-function NavLink({ item, active, collapsed, badge, activeClass, onNavigate }: { item: NavItem; active: boolean; collapsed?: boolean; badge?: number; activeClass: string; onNavigate?: () => void }) {
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Red mono count (sidebar, rail, dock). */
+function Count({ n, className }: { n: number; className?: string }) {
+  return (
+    <span className={clsx("app-fade grid h-[18px] min-w-[18px] place-items-center bg-red px-1 font-mono text-[10px] leading-none font-medium text-white tabular-nums", className)}>
+      {n}
+    </span>
+  );
+}
+
+function NavLink({
+  item,
+  index,
+  active,
+  collapsed,
+  badge,
+  external,
+  onNavigate,
+}: {
+  item: NavItem;
+  index?: number;
+  active: boolean;
+  collapsed?: boolean;
+  badge?: number;
+  /** shortcuts: an arrow instead of the index */
+  external?: boolean;
+  onNavigate?: () => void;
+}) {
   return (
     <Link
       href={item.href}
@@ -83,24 +119,38 @@ function NavLink({ item, active, collapsed, badge, activeClass, onNavigate }: { 
       aria-current={active ? "page" : undefined}
       title={collapsed ? item.label : undefined}
       className={clsx(
-        "group/nav relative flex h-11 shrink-0 items-center gap-3 rounded-full short:h-10 text-[15px] font-semibold transition-colors duration-150",
-        collapsed ? "w-11 justify-center short:w-10" : "px-3.5",
-        active ? activeClass : "text-ink/75 hf:bg-cream hf:text-ink",
+        "group/nav relative flex shrink-0 items-center transition-colors duration-200",
+        collapsed ? "mx-auto h-11 w-11 justify-center short:h-10" : "h-10 gap-3.5 pr-4 pl-6 short:h-9",
+        active ? "text-cream" : "text-cream/60 hf:text-cream",
+        collapsed && (active ? "bg-white/[0.08]" : "hf:bg-white/[0.05]"),
       )}
     >
-      <Icon name={item.icon} className="size-[19px]" strokeWidth={active ? 2.3 : 2} />
-      <span className={collapsed ? "sr-only" : "min-w-0 flex-1 truncate"}>{item.label}</span>
-      {!!badge && (
-        <span
-          className={clsx(
-            "app-fade grid min-w-5 place-items-center rounded-full px-1.5 text-[11.5px] leading-5 font-bold",
-            active ? "bg-white text-ink" : "bg-ink text-cream",
-            collapsed && "absolute -top-1 -right-1 ring-2 ring-white",
-          )}
-        >
-          <span aria-hidden>{badge}</span>
-          <span className="sr-only">, {item.badge ? navBadgeSr(item.badge, badge) : badge}</span>
+      {/* the red marker */}
+      <span
+        aria-hidden
+        className={clsx(
+          "absolute bg-red transition-[opacity,scale] duration-300 ease-expo",
+          collapsed ? "inset-x-2 -bottom-px h-[2px]" : "inset-y-2 left-0 w-[2px]",
+          active ? "opacity-100" : "scale-y-50 opacity-0",
+        )}
+      />
+      {collapsed ? (
+        <Icon name={item.icon} className="size-[19px]" strokeWidth={1.6} />
+      ) : (
+        <span aria-hidden className={clsx("w-5 shrink-0 font-mono text-[10.5px] tabular-nums transition-colors", active ? "text-red-lite" : "text-cream/35 group-hover/nav:text-cream/60")}>
+          {external ? (
+            <Icon name="arrow-right" className="size-3 -rotate-45 transition-transform duration-300 group-hover/nav:rotate-0" strokeWidth={1.8} />
+          ) : index !== undefined ? (
+            pad2(index)
+          ) : null}
         </span>
+      )}
+      <span className={collapsed ? "sr-only" : "min-w-0 flex-1 truncate font-heading text-[15px] font-medium tracking-[-0.015em]"}>{item.label}</span>
+      {!!badge && (
+        <>
+          <Count n={badge} className={collapsed ? "absolute top-0.5 right-0.5" : ""} />
+          <span className="sr-only">, {item.badge ? navBadgeSr(item.badge, badge) : badge}</span>
+        </>
       )}
     </Link>
   );
@@ -146,22 +196,46 @@ function useScrollFade<T extends HTMLElement>(dep?: unknown) {
   return ref;
 }
 
+function SectionLabel({ children, collapsed }: { children: React.ReactNode; collapsed?: boolean }) {
+  if (collapsed) return <div aria-hidden className="mx-auto my-3 h-px w-6 bg-white/15 short:my-2" />;
+  return <p className="px-6 pt-5 pb-2 text-[10px] font-semibold tracking-[0.22em] text-cream/50 uppercase short:pt-3">{children}</p>;
+}
+
 function SidebarNav({ area, userId, collapsed, badges, onNavigate }: { area: AreaKey; userId: string; collapsed?: boolean; badges: Partial<Record<NavBadge, number>>; onNavigate?: () => void }) {
   const pathname = usePathname();
   const cfg = AREAS[area];
   const secondary = useSecondaryNav(area, userId);
   return (
-    <nav aria-label={`${cfg.name} navigation`} className="flex flex-col gap-1 short:gap-0.5">
-      {cfg.nav.map((item) => (
-        <NavLink key={item.href} item={item} active={isActive(item, pathname)} collapsed={collapsed} badge={item.badge ? badges[item.badge] : undefined} activeClass={cfg.activeClass} onNavigate={onNavigate} />
-      ))}
-      <div className={clsx("my-3 h-px shrink-0 bg-ink/[0.07] short:my-2", collapsed ? "mx-2" : "mx-3")} />
-      {secondary.map((item) => (
-        <NavLink key={item.href} item={item} active={false} collapsed={collapsed} activeClass={cfg.activeClass} onNavigate={onNavigate} />
-      ))}
+    <nav aria-label={`${cfg.name} navigation`} className="flex flex-col">
+      <SectionLabel collapsed={collapsed}>Index</SectionLabel>
+      <div className={clsx("flex flex-col", collapsed ? "gap-1" : "gap-0.5 short:gap-0")}>
+        {cfg.nav.map((item, i) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            index={i + 1}
+            active={isActive(item, pathname)}
+            collapsed={collapsed}
+            badge={item.badge ? badges[item.badge] : undefined}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+      {secondary.length > 0 && (
+        <>
+          <SectionLabel collapsed={collapsed}>Shortcuts</SectionLabel>
+          <div className={clsx("flex flex-col", collapsed ? "gap-1" : "gap-0.5 short:gap-0")}>
+            {secondary.map((item) => (
+              <NavLink key={item.href} item={item} active={false} external collapsed={collapsed} onNavigate={onNavigate} />
+            ))}
+          </div>
+        </>
+      )}
     </nav>
   );
 }
+
+const topBtn = "tap relative grid size-10 shrink-0 place-items-center text-ink ring-1 ring-ink/15 ring-inset transition-[box-shadow,color,background-color] duration-200 hf:ring-ink";
 
 function RoleSwitcher({ current, compact, userId }: { current: Role; compact?: boolean; userId?: string }) {
   const { loginAs } = useDemoAuth();
@@ -171,26 +245,24 @@ function RoleSwitcher({ current, compact, userId }: { current: Role; compact?: b
   return (
     <DropdownMenu
       label={`Demo role: ${DEMO_USERS[current].label}. Switch role`}
-      width={260}
-      triggerClassName="tap inline-flex h-10 items-center gap-2 rounded-full bg-white pr-1.5 pl-1.5 sm:pr-3 sm:pl-2 text-[14px] font-bold shadow-soft hf:bg-butter"
+      width={280}
+      triggerClassName="tap inline-flex h-10 items-center gap-2.5 px-3 text-ink ring-1 ring-ink/15 ring-inset transition-shadow duration-200 hf:ring-ink"
       trigger={
         <>
-          <span className="grid size-7 place-items-center rounded-full bg-butter" aria-hidden>
-            <Icon name="switch" className="size-4" strokeWidth={2.4} />
-          </span>
+          <Icon name="switch" className="size-4 opacity-70" strokeWidth={1.7} />
           {!compact && (
-            <span className="max-sm:hidden">
-              <span className="font-semibold text-ink/65">Viewing as </span>
+            <span className="text-[10.5px] font-semibold tracking-[0.16em] whitespace-nowrap uppercase max-md:hidden">
+              <span className="text-ink/60">Viewing as </span>
               {DEMO_USERS[current].label}
             </span>
           )}
-          <Icon name="chevron-down" className="size-4 opacity-60 max-sm:hidden" />
+          <Icon name="chevron-down" className="size-3.5 opacity-55 max-md:hidden" strokeWidth={1.8} />
         </>
       }
       header={
         <div>
-          <p className="text-[13px] font-bold">Switch demo role</p>
-          <p className="mt-0.5 text-[12px] leading-snug text-ink/60">
+          <p className="t-label text-ink">Switch demo role</p>
+          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
             {own ? <>You&apos;re signed in as {own.name}. </> : null}Jump between the three demo accounts. No passwords, all sample data.
           </p>
         </div>
@@ -214,19 +286,21 @@ function Notifications({ userId }: { userId: string }) {
   return (
     <DropdownMenu
       label={unread ? `Notifications, ${unread} unread` : "Notifications"}
-      width={340}
-      triggerClassName="tap relative grid size-10 place-items-center rounded-full bg-white shadow-soft hf:bg-butter"
+      width={360}
+      triggerClassName={topBtn}
       trigger={
         <>
-          <Icon name="bell" className="size-[19px]" />
-          {unread > 0 && <span className="absolute top-1.5 right-1.5 grid size-4 place-items-center rounded-full bg-hotpink-deep text-[10px] font-bold text-white ring-2 ring-white">{unread}</span>}
+          <Icon name="bell" className="size-[18px]" strokeWidth={1.6} />
+          {unread > 0 && <span className="absolute -top-1.5 -right-1.5 grid h-[18px] min-w-[18px] place-items-center bg-red px-1 font-mono text-[10px] leading-none font-medium text-white">{unread}</span>}
         </>
       }
       header={
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[14px] font-bold">Notifications</p>
+          <p className="t-label text-ink">
+            Notifications {unread > 0 && <span className="font-mono text-red-deep">· {pad2(unread)}</span>}
+          </p>
           {unread > 0 && (
-            <button type="button" onClick={() => demo.markNotificationsRead(userId)} className="text-[12.5px] font-bold text-blue hf:underline">
+            <button type="button" onClick={() => demo.markNotificationsRead(userId)} className="text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase hf:text-red">
               Mark all read
             </button>
           )}
@@ -236,13 +310,13 @@ function Notifications({ userId }: { userId: string }) {
         items.length
           ? items.slice(0, 6).map((n) => ({
               label: (
-                <span className="block py-1 whitespace-normal">
-                  <span className="flex items-center gap-1.5 text-[13.5px] leading-snug font-bold">
-                    {!n.read && <span className="size-2 shrink-0 rounded-full bg-hotpink" aria-label="Unread" />}
+                <span className="block py-1.5 whitespace-normal">
+                  <span className="flex items-center gap-2 text-[13.5px] leading-snug font-medium">
+                    {!n.read && <span className="size-[6px] shrink-0 bg-red" aria-label="Unread" />}
                     <span className="line-clamp-1">{n.title}</span>
                   </span>
-                  <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-snug font-medium text-ink/60">{n.body}</span>
-                  <span className="mt-0.5 block text-[11.5px] font-semibold text-ink/65">{timeAgo(n.createdAt)}</span>
+                  <span className="mt-0.5 line-clamp-2 block text-[12.5px] leading-snug text-muted">{n.body}</span>
+                  <span className="mt-1 block font-mono text-[10.5px] tracking-[0.06em] text-ink/50 uppercase">{timeAgo(n.createdAt)}</span>
                 </span>
               ),
               onSelect: () => {
@@ -252,7 +326,7 @@ function Notifications({ userId }: { userId: string }) {
             }))
           : [{ label: "You're all caught up.", disabled: true }]
       }
-      menuClassName="[&_[role=menuitem]]:h-auto [&_[role=menuitem]]:py-1.5"
+      menuClassName="[&_[role=menuitem]]:h-auto [&_[role=menuitem]]:py-1 [&_[role=menuitem]]:items-start"
     />
   );
 }
@@ -266,46 +340,46 @@ function AccountMenu({ area, userId }: { area: AreaKey; userId: string }) {
   if (!user) return null;
   return (
     <>
-    <DropdownMenu
-      label="Account menu"
-      width={250}
-      triggerClassName="tap grid size-10 place-items-center rounded-full bg-white shadow-soft hf:ring-2 hf:ring-ink/10"
-      trigger={<Avatar name={user.name} src={user.avatar} tone={user.tone} size="sm" decorative eager />}
-      header={
-        <div className="flex items-center gap-2.5">
-          <Avatar name={user.name} src={user.avatar} tone={user.tone} size="md" decorative />
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-bold">{user.name}</p>
-            <p className="truncate text-[12px] text-ink/65">{user.email}</p>
+      <DropdownMenu
+        label="Account menu"
+        width={260}
+        triggerClassName="tap grid size-10 shrink-0 place-items-center rounded-full ring-1 ring-transparent ring-offset-2 ring-offset-cream transition-shadow duration-200 hf:ring-ink"
+        trigger={<Avatar name={user.name} src={user.avatar} tone={user.tone} size="md" decorative />}
+        header={
+          <div className="flex items-center gap-3">
+            <Avatar name={user.name} src={user.avatar} tone={user.tone} size="md" decorative />
+            <div className="min-w-0">
+              <p className="truncate font-heading text-[15px] font-semibold tracking-[-0.015em]">{user.name}</p>
+              <p className="truncate text-[12px] text-muted">{user.email}</p>
+            </div>
           </div>
-        </div>
-      }
-      items={[
-        { label: cfg.name, icon: "home", href: cfg.home },
-        { label: "Settings", icon: "settings", href: cfg.settingsHref },
-        { label: "View the public site", icon: "globe", href: "/" },
-        { divider: true },
-        {
-          label: "Reset demo data",
-          icon: "refresh",
-          onSelect: () => setResetOpen(true),
-        },
-        { label: "Log out", icon: "logout", danger: true, onSelect: () => logout({ redirectTo: "/" }) },
-      ]}
-    />
-    <ConfirmDialog
-      open={resetOpen}
-      onClose={() => setResetOpen(false)}
-      onConfirm={() => {
-        // demo.reset() also clears the per-browser demo extras (settings, tutor profile, admin notes...)
-        demo.reset();
-        toast.success("Demo data reset", { description: "Everything is back to the starting sample data." });
-      }}
-      title="Reset all demo data?"
-      description="Purchases, progress, wishlist changes and settings made in this browser go back to the original sample data."
-      confirmLabel="Reset demo data"
-      tone="danger"
-    />
+        }
+        items={[
+          { label: cfg.name, icon: "home", href: cfg.home },
+          { label: "Settings", icon: "settings", href: cfg.settingsHref },
+          { label: "View the public site", icon: "globe", href: "/" },
+          { divider: true },
+          {
+            label: "Reset demo data",
+            icon: "refresh",
+            onSelect: () => setResetOpen(true),
+          },
+          { label: "Log out", icon: "logout", danger: true, onSelect: () => logout({ redirectTo: "/" }) },
+        ]}
+      />
+      <ConfirmDialog
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        onConfirm={() => {
+          // demo.reset() also clears the per-browser demo extras (settings, tutor profile, admin notes...)
+          demo.reset();
+          toast.success("Demo data reset", { description: "Everything is back to the starting sample data." });
+        }}
+        title="Reset all demo data?"
+        description="Purchases, progress, wishlist changes and settings made in this browser go back to the original sample data."
+        confirmLabel="Reset demo data"
+        tone="danger"
+      />
     </>
   );
 }
@@ -321,29 +395,65 @@ function TopSearch({ area }: { area: AreaKey }) {
   const cfg = AREAS[area].search;
   const router = useTransitionRouter();
   const [q, setQ] = useState("");
+  const input = useRef<HTMLInputElement>(null);
   // the field is narrow between md and lg: use the short placeholder there so it never clips
   const wide = useSyncExternalStore(subscribeLg, () => window.matchMedia(LG).matches, () => false);
   const placeholder = wide || !cfg.short ? cfg.placeholder : cfg.short;
+  // "/" focuses the search (unless you're already typing somewhere)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (!input.current || input.current.offsetParent === null) return;
+      e.preventDefault();
+      input.current.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
   return (
     <form
       role="search"
-      className="relative hidden min-w-0 flex-1 md:block md:max-w-[420px]"
+      className="group/search relative hidden min-w-0 flex-1 md:block md:max-w-[400px]"
       onSubmit={(e) => {
         e.preventDefault();
         const v = q.trim();
         router.push(v ? `${cfg.href}?q=${encodeURIComponent(v)}` : cfg.href);
       }}
     >
-      <Icon name="search" className="pointer-events-none absolute top-1/2 left-3.5 size-[18px] -translate-y-1/2 text-ink/45" />
+      <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 z-[1] size-4 -translate-y-1/2 text-ink/50" strokeWidth={1.7} />
       <input
+        ref={input}
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder}
         aria-label={cfg.placeholder}
-        className="h-10 w-full rounded-full bg-white pr-4 pl-10 text-[14px] font-medium shadow-soft placeholder:text-ink/45 focus:ring-2 focus:ring-blue focus:outline-none"
+        aria-keyshortcuts="/"
+        className="peer h-10 w-full rounded-none border-0 border-b border-ink/20 bg-cream-2 pr-10 pl-9 text-[14px] text-ink transition-[background-color,border-color,box-shadow] duration-200 placeholder:text-ink/45 hf:border-ink/50 focus:border-red focus:bg-paper focus:shadow-[inset_0_-1px_0_var(--color-red)] focus:outline-none"
       />
+      <kbd
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 right-2.5 grid h-5 min-w-5 -translate-y-1/2 place-items-center px-1 font-mono text-[10.5px] text-ink/45 ring-1 ring-ink/15 ring-inset peer-focus:opacity-0"
+      >
+        /
+      </kbd>
     </form>
+  );
+}
+
+function SidebarLogo({ collapsed, href = "/", label = "Tamada Media home" }: { collapsed?: boolean; href?: string; label?: string }) {
+  return (
+    <Link href={href} aria-label={label} className={clsx("tap flex items-center", collapsed ? "size-11 justify-center" : "")}>
+      {collapsed ? (
+        <span aria-hidden className="font-display text-[22px] leading-none tracking-[0.02em] text-cream">
+          TM<span className="text-red">.</span>
+        </span>
+      ) : (
+        <Image src={LOGO_SRC.light} alt="Tamada Media" width={LOGO.w} height={LOGO.h} sizes="120px" loading="eager" draggable={false} className="block h-auto w-[120px] select-none" />
+      )}
+    </Link>
   );
 }
 
@@ -367,7 +477,7 @@ export function DashboardShell({ area, children }: { area: AreaKey; children: Re
   const land = useIsShortLandscape();
   const landHidden = useScrollHide({ enabled: land });
   const navScrollRef = useScrollFade<HTMLDivElement>(collapsed);
-  const sb = collapsed ? "92px" : "272px";
+  const sb = `${collapsed ? SB_RAIL : SB_OPEN}px`;
 
   // Mirror the sidebar width on <html> as --app-sb, so bars portalled to <body> can line up
   // with the content column via var(--app-main-left) (0 below lg) without measuring #main.
@@ -384,50 +494,75 @@ export function DashboardShell({ area, children }: { area: AreaKey; children: Re
 
   return (
     <div className="min-h-dvh" data-shell="" style={{ "--sb": sb } as React.CSSProperties}>
-      <a href="#main" className="sr-only z-[400] rounded-full bg-ink px-4 py-2 font-bold text-cream focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
+      <a href="#main" className="sr-only z-[400] bg-ink px-4 py-2.5 text-[11px] font-semibold tracking-[0.16em] text-cream uppercase focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
         Skip to content
       </a>
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar: the ink theatre */}
       <aside
+        data-field="dark"
         className={clsx(
-          "fixed inset-y-3 left-3 z-40 hidden flex-col rounded-card-lg bg-white shadow-soft transition-[width] duration-300 ease-ui lg:flex",
-          collapsed ? "w-[72px] items-center px-3" : "w-[252px] px-4",
+          "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.07] transition-[width] duration-300 ease-ui lg:flex",
+          INK_SURFACE,
+          collapsed ? "w-[72px]" : "w-[248px]",
         )}
       >
-        <div className={clsx("flex h-[72px] shrink-0 items-center short:h-16", collapsed ? "justify-center" : "justify-between px-1")}>
-          <Link href="/" aria-label="Tamada Media home" className="group tap flex items-center [--lw:112px]">
-            {collapsed ? <Mascot title="" interactive className="w-9" style={{ transform: "rotate(-6deg)" }} /> : <BrandLockup interactive sizes="112px" />}
-          </Link>
+        <div className={clsx("flex h-[72px] shrink-0 items-center short:h-16", collapsed ? "justify-center" : "px-6")}>
+          <SidebarLogo collapsed={collapsed} />
         </div>
-        <div className={clsx("mb-4 shrink-0 short:mb-2", collapsed && "hidden")}>
-          <span className={clsx("inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-bold tracking-[0.04em] uppercase", cfg.activeClass)}>{cfg.name}</span>
+        {/* the area slate */}
+        <div className={clsx("shrink-0 border-y border-white/[0.08]", collapsed ? "py-2.5 text-center" : "flex items-center justify-between gap-2 px-6 py-3")}>
+          {collapsed ? (
+            <span className="block font-mono text-[10px] tracking-[0.1em] text-red-lite uppercase" title={cfg.name}>
+              {cfg.short.slice(0, 3)}
+            </span>
+          ) : (
+            <>
+              <span className="truncate text-[10.5px] font-semibold tracking-[0.18em] text-cream uppercase">{cfg.name}</span>
+              <span aria-hidden className="size-[6px] shrink-0 animate-rec rounded-full bg-red" />
+            </>
+          )}
         </div>
-        <div ref={navScrollRef} className="app-scroll scroll-fade -mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-3" data-lenis-prevent="">
+        <div
+          ref={navScrollRef}
+          className="scroll-fade min-h-0 flex-1 overflow-y-auto pb-4 [scrollbar-color:rgb(253_248_238/0.2)_transparent] [scrollbar-width:thin]"
+          data-lenis-prevent=""
+        >
           <SidebarNav area={area} userId={userId} collapsed={collapsed} badges={badges} />
         </div>
-        <div className={clsx("flex shrink-0 items-center gap-2 border-t border-ink/[0.07] py-3 short:py-2", collapsed ? "flex-col" : "justify-between")}>
-          {!collapsed && <DemoPill />}
-          <button
-            type="button"
-            onClick={() => writeCollapsed(!collapsed)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-pressed={collapsed}
-            className="tap grid size-9 place-items-center rounded-full text-ink/60 hf:bg-cream hf:text-ink"
-          >
-            <Icon name="panel-left" className="size-[18px]" />
-          </button>
+        <div className={clsx("shrink-0 border-t border-white/[0.08]", collapsed ? "flex flex-col items-center gap-2 py-3" : "px-6 pt-4 pb-4 short:pt-3 short:pb-3")}>
+          {!collapsed && (
+            <div className="mb-3 flex items-center justify-between gap-2 short:mb-2">
+              <AppClock className="text-cream/80" />
+            </div>
+          )}
+          <div className={clsx("flex items-center", collapsed ? "flex-col gap-2" : "justify-between gap-2")}>
+            {!collapsed && <DemoPill tone="dark" />}
+            <button
+              type="button"
+              onClick={() => writeCollapsed(!collapsed)}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-pressed={collapsed}
+              className="tap grid size-9 place-items-center text-cream/55 transition-colors hf:text-cream"
+            >
+              <Icon name="panel-left" className="size-[18px]" strokeWidth={1.6} />
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Tablet icon rail (640-1023px): the collapsed sidebar, always on */}
-      <aside className="fixed inset-y-3 left-[max(12px,var(--sal))] z-40 hidden w-[72px] flex-col items-center rounded-card-lg bg-white px-3 shadow-soft sm:flex lg:hidden">
-        <div className="flex h-[72px] shrink-0 items-center justify-center land:h-14">
-          <Link href={cfg.home} aria-label={`${cfg.name} home`} className="group tap grid size-11 place-items-center">
-            <Mascot title="" interactive className="w-9" style={{ transform: "rotate(-6deg)" }} />
-          </Link>
+      <aside
+        data-field="dark"
+        className={clsx("fixed inset-y-0 left-0 z-40 hidden w-[calc(72px+var(--sal))] flex-col border-r border-white/[0.07] pl-[var(--sal)] sm:flex lg:hidden", INK_SURFACE)}
+      >
+        <div className="flex h-16 shrink-0 items-center justify-center land:h-14">
+          <SidebarLogo collapsed href={cfg.home} label={`${cfg.name} home`} />
         </div>
-        <div className="app-scroll -mx-1 min-h-0 w-[calc(100%+8px)] flex-1 overflow-y-auto px-1 pb-3" data-lenis-prevent="">
+        <div className="shrink-0 border-y border-white/[0.08] py-2.5 text-center">
+          <span className="block font-mono text-[10px] tracking-[0.1em] text-red-lite uppercase">{cfg.short.slice(0, 3)}</span>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto pb-3 [scrollbar-width:none]" data-lenis-prevent="">
           <SidebarNav area={area} userId={userId} collapsed badges={badges} />
         </div>
       </aside>
@@ -436,17 +571,18 @@ export function DashboardShell({ area, children }: { area: AreaKey; children: Re
       <AppTopBar area={area} userId={userId} />
 
       {/* Content column */}
-      <div className="transition-[padding] duration-300 ease-ui sm:pl-[calc(92px+var(--sal))] lg:pl-[var(--sb)]">
-        <header data-hidden={landHidden || undefined} className="app-topbar sticky top-0 z-30 bg-cream/85 backdrop-blur-md max-sm:hidden">
-          <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center gap-1.5 px-4 sm:gap-2 sm:px-6 md:h-[72px] land:h-14 lg:px-8">
-            {/* tablet: the sidebar (and its Demo data pill) is hidden, so show it here */}
+      <div className="transition-[padding] duration-300 ease-ui sm:pl-[calc(72px+var(--sal))] lg:pl-[var(--sb)]">
+        <header data-hidden={landHidden || undefined} className="app-topbar sticky top-0 z-30 border-b border-line bg-cream/[0.92] backdrop-blur-md max-sm:hidden">
+          <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center gap-2 px-6 land:h-14 lg:px-10">
+            {/* tablet: the sidebar (and its Demo data slate) is hidden, so show it here */}
             <span className="shrink-0 lg:hidden">
               <DemoPill />
             </span>
             <TopSearch area={area} />
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <RoleSwitcher current={area} userId={userId} />
               <Notifications userId={userId} />
+              <span aria-hidden className="mx-1 h-6 w-px bg-line" />
               <AccountMenu area={area} userId={userId} />
             </div>
           </div>
@@ -454,7 +590,7 @@ export function DashboardShell({ area, children }: { area: AreaKey; children: Re
         <main
           id="main"
           tabIndex={-1}
-          className="mx-auto w-full max-w-[1280px] px-4 pt-3 pb-[calc(var(--bottom-ui)+24px)] sm:px-6 sm:pt-4 sm:pb-16 md:pt-6 lg:px-8 lg:pb-20 max-sm:pr-[max(16px,var(--sar))] max-sm:pl-[max(16px,var(--sal))]"
+          className="mx-auto w-full max-w-[1400px] px-5 pt-5 pb-[calc(var(--bottom-ui)+32px)] sm:px-6 sm:pt-8 sm:pb-20 md:pt-10 lg:px-10 lg:pt-12 lg:pb-24 max-sm:pr-[max(20px,var(--sar))] max-sm:pl-[max(20px,var(--sal))]"
         >
           {children}
         </main>

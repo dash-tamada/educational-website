@@ -23,7 +23,6 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Badge,
   Button,
-  Card,
   ConfirmDialog,
   EmptyState,
   Field,
@@ -37,28 +36,19 @@ import {
   type IconName,
 } from "@/components/app";
 import { demo, useDb } from "@/lib/demo/store";
-import { toneBg, toneText, type Tone } from "@/lib/landing-data";
+import type { Tone } from "@/lib/tone";
 import { getCategories, plural, type Category, type Db } from "@/lib/mock";
+import {
+  EDITORIAL_TONES,
+  Idx,
+  MonoMeta,
+  TonePalette,
+  editorialTone,
+  toneSurface,
+} from "@/components/tutor/editorial";
+import { PanelLabel, WideSection } from "./ledgerKit";
 import { catIcon } from "./shared";
 
-const TONES: Tone[] = [
-  "sun",
-  "tangerine",
-  "flame",
-  "hotpink",
-  "magenta",
-  "bubblegum",
-  "blush",
-  "cyan",
-  "aqua",
-  "turquoise",
-  "blue",
-  "lilac",
-  "purple",
-  "green",
-  "mint",
-  "butter",
-];
 const ICONS: IconName[] = [
   "code",
   "pen",
@@ -82,25 +72,7 @@ const ICONS: IconName[] = [
   "layers",
 ];
 
-/** Screen-reader / hover names for the picker tokens. */
-const TONE_LABELS: Record<Tone, string> = {
-  sun: "Sunshine yellow",
-  butter: "Butter yellow",
-  tangerine: "Tangerine",
-  flame: "Flame red",
-  hotpink: "Hot pink",
-  magenta: "Magenta",
-  bubblegum: "Bubblegum pink",
-  blush: "Blush pink",
-  cyan: "Cyan",
-  aqua: "Aqua",
-  turquoise: "Turquoise",
-  blue: "Blue",
-  lilac: "Lilac",
-  purple: "Purple",
-  green: "Green",
-  mint: "Mint green",
-} as Record<Tone, string>;
+/** Screen-reader / hover names for the icon picker. */
 const ICON_LABELS: Partial<Record<IconName, string>> = {
   code: "Code brackets",
   pen: "Pen",
@@ -123,7 +95,10 @@ const ICON_LABELS: Partial<Record<IconName, string>> = {
   award: "Award ribbon",
   layers: "Stacked layers",
 };
-const toneLabel = (t: Tone) => TONE_LABELS[t] ?? t;
+/** The editorial swatch a stored tone shows as ("Charcoal" for a legacy "blue"). */
+const swatchOf = (t: Tone) =>
+  EDITORIAL_TONES.find((x) => x.value === editorialTone(t)) ?? EDITORIAL_TONES[4];
+const toneLabel = (t: Tone) => swatchOf(t).label;
 const iconLabel = (i: IconName) => ICON_LABELS[i] ?? i;
 
 const slugify = (s: string) =>
@@ -195,10 +170,13 @@ export function CategoriesView() {
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Categories"
-        eyebrowTone="purple"
-        title="Keep the rabbit holes tidy."
-        description="Categories shape the catalogue filters and the course pages. Drag to reorder; the catalogue follows this order."
+        eyebrow="Control room · Catalogue"
+        title={
+          <>
+            Keep the <em>shelves</em> tidy.
+          </>
+        }
+        description="Categories shape the catalogue filters and the course pages. The catalogue follows the order below."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
           { label: "Categories" },
@@ -218,7 +196,7 @@ export function CategoriesView() {
         }
         actions={
           <Button
-            variant="accent"
+            variant="red"
             icon="plus"
             onClick={() => setEditing("new")}
           >
@@ -227,38 +205,49 @@ export function CategoriesView() {
         }
       />
 
-      {cats.length > 1 && (
-        <div className="mb-3 flex items-center justify-between gap-3 sm:hidden">
-          <p className="min-w-0 t-small text-ink/60" aria-live="polite">
-            {reorder
-              ? "Tap the arrows to move a category."
-              : "In catalogue order."}
-          </p>
-          <Button
-            variant={reorder ? "primary" : "secondary"}
-            icon={reorder ? "check" : "sort"}
-            className="h-11 shrink-0"
-            aria-pressed={reorder}
-            onClick={() => setReorder((r) => !r)}
-          >
-            {reorder ? "Done" : "Reorder"}
-          </Button>
-        </div>
-      )}
+      <WideSection
+        index="01"
+        label="Shelves"
+        note={
+          <>
+            <span className="max-sm:hidden">
+              Drag a handle to reorder. Keyboard: focus a handle, press Space,
+              then the arrow keys.
+            </span>
+            <span className="sm:hidden" aria-live="polite">
+              {reorder
+                ? "Tap the arrows to move a category."
+                : "Tap Reorder, then the arrows, to move one."}
+            </span>
+          </>
+        }
+        title="In catalogue order"
+        action={
+          cats.length > 1 && (
+            <Button
+              variant={reorder ? "primary" : "outline"}
+              size="sm"
+              icon={reorder ? "check" : "sort"}
+              className="sm:hidden"
+              aria-pressed={reorder}
+              onClick={() => setReorder((r) => !r)}
+            >
+              {reorder ? "Done" : "Reorder"}
+            </Button>
+          )
+        }
+      >
       {cats.length ? (
-        <Card padding="none" className="overflow-hidden">
-          <div className="hidden grid-cols-[40px_minmax(0,1fr)_120px_150px] items-center gap-4 bg-cream/70 px-4 py-3 md:grid md:px-5">
-            {/* a real element so the 40px track exists (sr-only alone takes no grid cell) */}
-            <span className="t-micro text-ink/55 uppercase">
-              <span className="sr-only">Order</span>
-            </span>
-            <span className="t-micro text-ink/55 uppercase">Category</span>
-            <span className="text-right t-micro text-ink/55 uppercase">
-              Courses
-            </span>
-            <span className="text-right t-micro text-ink/55 uppercase">
-              Actions
-            </span>
+        <div className="border-t border-fg">
+          <div
+            aria-hidden
+            className="hidden grid-cols-[44px_28px_minmax(0,1fr)_140px_172px] items-center gap-4 border-b border-line py-3 text-[10.5px] font-semibold tracking-[0.14em] text-muted uppercase md:grid"
+          >
+            <span />
+            <span>No.</span>
+            <span>Category</span>
+            <span className="text-right">Courses</span>
+            <span className="text-right">Actions</span>
           </div>
           <DndContext
             id="admin-categories"
@@ -317,24 +306,23 @@ export function CategoriesView() {
               </ol>
             </SortableContext>
           </DndContext>
-        </Card>
+        </div>
       ) : (
-        <Card>
-          <EmptyState
-            title="No categories yet."
-            body="Add the first one so learners can browse by topic."
-            action={
-              <Button icon="plus" onClick={() => setEditing("new")}>
-                Add category
-              </Button>
-            }
-          />
-        </Card>
+        <EmptyState
+          align="start"
+          art="none"
+          eyebrow="No shelves"
+          title="No categories yet."
+          body="Add the first one so learners can browse by topic."
+          className="border-t border-fg px-0!"
+          action={
+            <Button icon="plus" onClick={() => setEditing("new")}>
+              Add category
+            </Button>
+          }
+        />
       )}
-      <p className="mt-3 t-small text-ink/55 max-sm:hidden">
-        Tip: focus a drag handle and use Space, then the arrow keys, to move a
-        category with the keyboard.
-      </p>
+      </WideSection>
 
       <CategoryModal
         editing={editing}
@@ -388,8 +376,8 @@ function CategoryRow({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={clsx(
-        "relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t sm:grid-cols-[40px_minmax(0,1fr)_auto] border-ink/[0.06] bg-white px-4 py-3.5 first:border-t-0 md:grid-cols-[40px_minmax(0,1fr)_120px_150px] md:gap-4 md:px-5",
-        isDragging && "z-10 shadow-lift",
+        "relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-line bg-cream py-4 sm:grid-cols-[44px_28px_minmax(0,1fr)_auto] md:grid-cols-[44px_28px_minmax(0,1fr)_140px_172px] md:gap-4",
+        isDragging && "z-10 bg-paper shadow-lift",
       )}
     >
       <button
@@ -398,27 +386,34 @@ function CategoryRow({
         {...attributes}
         {...listeners}
         aria-label={`Reorder ${cat.name} (position ${index + 1})`}
-        className="grid size-10 cursor-grab touch-none place-items-center rounded-full max-sm:hidden text-ink/40 transition-colors active:cursor-grabbing hf:bg-cream hf:text-ink"
+        className="grid size-11 cursor-grab touch-none place-items-center text-muted transition-colors focus-visible:outline-2 focus-visible:outline-red active:cursor-grabbing hf:text-fg max-sm:hidden"
       >
-        <Icon name="drag" className="size-5" />
+        <Icon name="drag" strokeWidth={1.6} className="size-5" />
       </button>
+      <Idx n={index + 1} className="max-sm:hidden" />
 
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-4">
         <span
-          className={clsx(
-            "grid size-11 shrink-0 place-items-center rounded-full",
-            toneBg[cat.tone],
-            toneText[cat.tone],
-          )}
+          className="grid size-11 shrink-0 place-items-center ring-1 ring-line ring-inset"
           aria-hidden
         >
-          <Icon name={catIcon(cat.icon)} className="size-5" strokeWidth={2.2} />
+          <Icon name={catIcon(cat.icon)} strokeWidth={1.5} className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="text-[15px] font-bold">{cat.name}</span>
-            <span className="font-mono text-[12.5px] text-ink/50">
+          <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+            <span className="font-heading text-[17px] font-semibold tracking-[-0.02em]">{cat.name}</span>
+            <span className="font-mono text-[11px] tracking-[0.02em] text-muted">
               /{cat.slug}
+            </span>
+            <span
+              className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] text-muted uppercase"
+              title="Card colour"
+            >
+              <span
+                aria-hidden
+                className={clsx("size-2.5 ring-1 ring-line ring-inset", swatchOf(cat.tone).swatch)}
+              />
+              {toneLabel(cat.tone)}
             </span>
             {parent && (
               <Badge tone="neutral" size="sm">
@@ -426,24 +421,24 @@ function CategoryRow({
               </Badge>
             )}
           </p>
-          <p className="mt-0.5 line-clamp-1 t-small text-ink/60 max-sm:hidden">
+          <p className="t-small mt-0.5 line-clamp-1 text-muted max-sm:hidden">
             {cat.description || "No description yet."}
           </p>
-          <p className="mt-0.5 text-[13px] font-semibold text-ink/60 md:hidden">
+          <MonoMeta className="mt-0.5 md:hidden">
             {count.published} live · {count.total} total
-          </p>
+          </MonoMeta>
         </div>
       </div>
 
       <Link
         href={`/courses?category=${cat.slug}`}
-        className="hidden text-right underline-offset-2 md:block hf:underline"
+        className="hidden text-right underline-offset-[3px] md:block hf:underline"
         title="See it in the catalogue"
       >
-        <span className="block text-[15px] font-bold">
+        <span className="block font-heading text-[17px] font-semibold tracking-[-0.02em] tabular-nums">
           {count.published} live
         </span>
-        <span className="block text-[12.5px] font-semibold text-ink/50">
+        <span className="block font-mono text-[10.5px] tracking-[0.04em] text-muted uppercase">
           {count.total} total
         </span>
       </Link>
@@ -485,7 +480,7 @@ function CategoryRow({
           icon="trash"
           aria-label={`Delete ${cat.name}`}
           onClick={onDelete}
-          className={clsx("text-[#c13500]! hf:bg-[#ffe1d4]!", reorder && "max-sm:hidden")}
+          className={clsx("text-red-deep", reorder && "max-sm:hidden")}
         />
       </div>
     </li>
@@ -527,6 +522,8 @@ function CategoryForm({
   const [slug, setSlug] = useState(base?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(!isNew);
   const [description, setDescription] = useState(base?.description ?? "");
+  // legacy tones show (and save) as their nearest editorial swatch once touched;
+  // untouched, the stored value is kept as it is
   const [tone, setTone] = useState<Tone>(base?.tone ?? "sun");
   const [icon, setIcon] = useState<IconName>(catIcon(base?.icon ?? "spark"));
   // a parent that was deleted leaves a dangling id: treat that as top level
@@ -583,14 +580,15 @@ function CategoryForm({
       open
       onClose={onClose}
       size="lg"
+      eyebrow={isNew ? "Category · new" : `Category · /${base?.slug}`}
       title={isNew ? "Add a category" : `Edit ${base?.name}`}
       description="Short, friendly names work best. Learners see these in the catalogue filters."
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="category-form" icon="check">
+          <Button type="submit" form="category-form" variant="red" icon="check">
             {isNew ? "Add category" : "Save changes"}
           </Button>
         </>
@@ -600,9 +598,9 @@ function CategoryForm({
         id="category-form"
         onSubmit={submit}
         noValidate
-        className="grid gap-5 md:grid-cols-[minmax(0,1fr)_220px]"
+        className="grid gap-8 md:grid-cols-[minmax(0,1fr)_220px]"
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Field label="Name" required error={errors.name}>
             <Input
               value={name}
@@ -629,7 +627,7 @@ function CategoryForm({
               slugTouched && (
                 <button
                   type="button"
-                  className="underline-offset-2 hf:underline"
+                  className="underline-offset-[3px] hf:underline"
                   onClick={() => {
                     setSlugTouched(false);
                     setErrors((x) => ({ ...x, slug: undefined }));
@@ -691,54 +689,21 @@ function CategoryForm({
             />
           </Field>
 
-          <fieldset>
-            <legend className="mb-2 text-[14px] font-bold">Colour</legend>
-            <div className="flex flex-wrap gap-2">
-              {TONES.map((t) => (
-                <label
-                  key={t}
-                  className="relative cursor-pointer"
-                  title={toneLabel(t)}
-                >
-                  <input
-                    type="radio"
-                    name="tone"
-                    value={t}
-                    checked={tone === t}
-                    onChange={() => setTone(t)}
-                    className="peer sr-only"
-                  />
-                  <span className="sr-only">{toneLabel(t)}</span>
-                  <span
-                    aria-hidden
-                    className={clsx(
-                      "block size-9 rounded-full ring-offset-2 transition-shadow peer-focus-visible:ring-2 peer-focus-visible:ring-blue",
-                      toneBg[t],
-                      tone === t ? "ring-[3px] ring-ink" : "ring-1 ring-ink/10",
-                    )}
-                  />
-                  {tone === t && (
-                    <Icon
-                      name="check"
-                      className={clsx(
-                        "pointer-events-none absolute inset-0 m-auto size-4",
-                        toneText[t],
-                      )}
-                      strokeWidth={3}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <TonePalette
+            name="category-tone"
+            legend="Colour"
+            hint="The editorial palette. Older categories show their nearest swatch."
+            value={tone}
+            onChange={setTone}
+          />
 
           <fieldset>
-            <legend className="mb-2 text-[14px] font-bold">Icon</legend>
-            <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+            <legend className="mb-2 text-[11.5px] leading-[1.4] font-semibold tracking-[0.12em] uppercase">Icon</legend>
+            <div className="grid grid-cols-5 border-t border-l border-line sm:grid-cols-10">
               {ICONS.map((ic) => (
                 <label
                   key={ic}
-                  className="relative cursor-pointer"
+                  className="relative cursor-pointer border-r border-b border-line"
                   title={iconLabel(ic)}
                 >
                   <input
@@ -753,13 +718,13 @@ function CategoryForm({
                   <span
                     aria-hidden
                     className={clsx(
-                      "grid aspect-square place-items-center rounded-tag transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-blue",
+                      "grid aspect-square place-items-center transition-colors peer-focus-visible:outline-2 peer-focus-visible:-outline-offset-2 peer-focus-visible:outline-red",
                       icon === ic
                         ? "bg-ink text-cream"
-                        : "bg-cream text-ink/70 hf:bg-butter",
+                        : "text-fg/75 hf:bg-cream-2 hf:text-fg",
                     )}
                   >
-                    <Icon name={ic} className="size-5" />
+                    <Icon name={ic} strokeWidth={1.5} className="size-5" />
                   </span>
                 </label>
               ))}
@@ -771,35 +736,28 @@ function CategoryForm({
           aria-label="Preview"
           className="md:sticky md:top-0 md:self-start"
         >
-          <p className="mb-2 t-micro text-ink/55 uppercase">Preview</p>
-          <div
-            className={clsx("rounded-card p-5", toneBg[tone], toneText[tone])}
-          >
-            <span
-              className="grid size-12 place-items-center rounded-full bg-white/60 text-ink"
-              aria-hidden
-            >
-              <Icon name={icon} className="size-6" />
-            </span>
-            <p className="mt-4 t-chunky-card break-words">
+          <PanelLabel as="p">Preview</PanelLabel>
+          <div className={clsx("flex aspect-[4/5] flex-col p-5", toneSurface(tone))}>
+            <Icon name={icon} strokeWidth={1.5} className="size-6" />
+            <p className="mt-auto font-heading text-[22px] leading-[1.05] font-semibold tracking-[-0.03em] break-words">
               {name.trim() || "Category name"}
             </p>
-            <p className="mt-1.5 text-[13px] leading-snug font-medium opacity-80">
+            <p className="mt-2 text-[13px] leading-snug opacity-80">
               {description.trim() || "A one-line description goes here."}
             </p>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <span
               className={clsx(
-                "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-bold",
-                toneBg[tone],
-                toneText[tone],
+                "inline-flex h-8 items-center gap-1.5 px-3 text-[11px] font-semibold tracking-[0.12em] uppercase",
+                toneSurface(tone),
               )}
             >
-              <Icon name={icon} className="size-4" />
+              <Icon name={icon} strokeWidth={1.6} className="size-3.5" />
               {name.trim() || "Filter chip"}
             </span>
           </div>
+          <MonoMeta className="mt-2">Swatch: {toneLabel(tone)}</MonoMeta>
         </aside>
       </form>
     </Modal>
@@ -887,9 +845,10 @@ function MoveAndDelete({ cat, onClose }: { cat: Category; onClose: () => void })
       size="sm"
       title={`${cat.name} still has courses`}
       description={`Move its ${plural(list.length, "course")} to another category, so nobody's course ends up homeless. Then ${cat.name} is deleted.`}
+      eyebrow={`Category · /${cat.slug}`}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" form="move-delete-form" variant="danger" icon="trash">
@@ -899,21 +858,21 @@ function MoveAndDelete({ cat, onClose }: { cat: Category; onClose: () => void })
       }
     >
       <form id="move-delete-form" onSubmit={submit} noValidate className="space-y-4">
-        <ul className="space-y-1.5" aria-label={`Courses in ${cat.name}`}>
+        <ul className="divide-y divide-line border-y border-line border-t-fg" aria-label={`Courses in ${cat.name}`}>
           {list.slice(0, 6).map((c) => (
             <li key={c.id}>
               <Link
                 href={`/admin/courses/${c.id}`}
-                className="flex items-center justify-between gap-3 rounded-tag bg-cream px-3 py-2 text-[14px] font-semibold hf:bg-butter"
+                className="group flex min-h-11 items-center justify-between gap-3 py-2.5 text-[14px] font-medium transition-colors hf:bg-cream-2/60"
               >
                 <span className="truncate">{c.title}</span>
-                <Icon name="chevron-right" className="size-4 shrink-0 text-ink/40" />
+                <Icon name="arrow-right" strokeWidth={1.6} className="size-4 shrink-0 text-muted group-hf:text-fg" />
               </Link>
             </li>
           ))}
         </ul>
         {list.length > 6 && (
-          <p className="-mt-2 t-small text-ink/55">and {list.length - 6} more</p>
+          <p className="-mt-2 t-small text-muted">and {list.length - 6} more</p>
         )}
         <Field
           label="Move them to"

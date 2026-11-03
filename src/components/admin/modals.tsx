@@ -19,10 +19,12 @@ import {
   getUser,
   isEnrolled,
   plural,
+  timeAgo,
   type OrderRow,
   type Role,
 } from "@/lib/mock";
 import { refundContext, useAdminId } from "./shared";
+import { MonoMeta, RuleNote } from "@/components/tutor/editorial";
 
 /* =============================================================================
    Admin action dialogs reused across pages: grant course access, change role,
@@ -96,6 +98,7 @@ export function GrantCourseModal({
     <Modal
       open={open}
       onClose={close}
+      eyebrow="Access · Admin grant"
       title="Grant course access"
       description={
         single
@@ -104,7 +107,7 @@ export function GrantCourseModal({
       }
       footer={
         <>
-          <Button variant="secondary" onClick={close}>
+          <Button variant="outline" onClick={close}>
             Cancel
           </Button>
           <Button type="submit" form="grant-form" icon="unlock">
@@ -134,21 +137,19 @@ export function GrantCourseModal({
           />
         </Field>
         {!single && users.length > 1 && (
-          <div className="rounded-tag bg-cream p-3 text-[14px]">
-            <p className="font-bold">
-              {plural(users.length, "person", "people")} selected
-            </p>
-            <p className="mt-1 text-ink/65">
-              {users
-                .slice(0, 6)
-                .map((u) => u.name)
-                .join(", ")}
-              {users.length > 6 ? ` and ${users.length - 6} more` : ""}
-            </p>
-          </div>
+          <RuleNote
+            tone="quiet"
+            label={`${plural(users.length, "person", "people")} selected`}
+          >
+            {users
+              .slice(0, 6)
+              .map((u) => u.name)
+              .join(", ")}
+            {users.length > 6 ? ` and ${users.length - 6} more` : ""}
+          </RuleNote>
         )}
         {already.length > 0 && (
-          <p className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-ink/65">
+          <p className="flex flex-wrap items-center gap-2 text-[13px] text-muted">
             <Badge tone="butter" size="sm">
               Heads up
             </Badge>
@@ -216,11 +217,12 @@ export function ChangeRoleModal({
     <Modal
       open={open}
       onClose={close}
+      eyebrow={`Access · ${user.name}`}
       title="Change role"
       description={`What should ${user.name} be able to do on Tamada Media?`}
       footer={
         <>
-          <Button variant="secondary" onClick={close}>
+          <Button variant="outline" onClick={close}>
             Cancel
           </Button>
           <Button onClick={save} disabled={value === user.role}>
@@ -239,11 +241,11 @@ export function ChangeRoleModal({
         options={ROLE_OPTIONS}
       />
       {user.role === "tutor" && value !== "tutor" && liveCourses > 0 && (
-        <p className="mt-4 rounded-tag bg-[#ffe1d4] p-3 text-[14px] font-semibold text-[#8a2600]">
+        <RuleNote tone="red" className="mt-5" label="Live courses">
           {user.name.split(" ")[0]} has{" "}
           {plural(liveCourses, "published course")}. They stay live, but{" "}
           {user.name.split(" ")[0]} loses studio access until you switch back.
-        </p>
+        </RuleNote>
       )}
     </Modal>
   );
@@ -307,6 +309,7 @@ export function SuspendModal({
       open={open}
       onClose={close}
       size="sm"
+      eyebrow={next === "suspended" ? "Access · Suspend" : "Access · Reactivate"}
       title={
         next === "suspended"
           ? single
@@ -323,11 +326,12 @@ export function SuspendModal({
       }
       footer={
         <>
-          <Button variant="secondary" onClick={close}>
+          <Button variant="outline" onClick={close}>
             Cancel
           </Button>
           <Button
-            variant={next === "suspended" ? "danger" : "success"}
+            variant={next === "suspended" ? "danger" : "primary"}
+            icon={next === "suspended" ? "lock" : "refresh"}
             onClick={go}
           >
             {next === "suspended" ? "Suspend" : "Reactivate"}
@@ -426,6 +430,7 @@ export function RefundModal({
     <Modal
       open={!!order}
       onClose={close}
+      eyebrow={order ? `${order.refundRequest ? "Refund request" : "Refund"} · ${order.user?.name ?? order.number}` : "Refund"}
       title={order ? `Refund ${order.number}?` : "Refund"}
       description={
         order
@@ -434,7 +439,7 @@ export function RefundModal({
       }
       footer={
         <>
-          <Button variant="secondary" onClick={close}>
+          <Button variant="outline" onClick={close}>
             Keep the order
           </Button>
           <Button
@@ -449,18 +454,20 @@ export function RefundModal({
       }
     >
       <form id="refund-form" onSubmit={submit} className="space-y-4" noValidate>
+        {/* the learner's request as a pull quote (same grammar as the refund queue row) */}
         {order?.refundRequest && (
-          <div className="rounded-tag bg-butter p-3 text-[14px]">
-            <p className="font-bold">The learner wrote:</p>
-            <p className="mt-1">“{order.refundRequest.reason}”</p>
-          </div>
+          <blockquote className="border-l border-line-strong pl-4">
+            <p className="font-heading text-[16px] leading-snug font-medium tracking-[-0.015em] [overflow-wrap:anywhere]">
+              “{order.refundRequest.reason}”
+            </p>
+            <MonoMeta className="mt-1.5">Asked {timeAgo(order.refundRequest.requestedAt)}</MonoMeta>
+          </blockquote>
         )}
         {ctx && (
-          <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-ink/65">
-            <span>
-              Bought {ctx.boughtDaysAgo === 0 ? "today" : plural(ctx.boughtDaysAgo, "day") + " ago"} ·{" "}
-              {ctx.progress}% done
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <MonoMeta as="span">
+              Bought {ctx.boughtDaysAgo === 0 ? "today" : plural(ctx.boughtDaysAgo, "day") + " ago"} · {ctx.progress}% done
+            </MonoMeta>
             {ctx.flags.map((f) => (
               <Badge key={f} tone="flame" size="sm">
                 {f}
@@ -474,18 +481,18 @@ export function RefundModal({
           </div>
         )}
         {ctx?.duplicateOf ? (
-          <p className="rounded-tag bg-[#dfe8ff] p-3 text-[14px] font-semibold text-blue-deep">
+          <RuleNote label="Second charge found">
             Also paid: {ctx.duplicateOf.number},{" "}
             {formatDate(ctx.duplicateOf.createdAt, "short")} ·{" "}
             {formatINR(ctx.duplicateOf.amount)} via {ctx.duplicateOf.method}.
             Looks like a genuine second charge.
-          </p>
+          </RuleNote>
         ) : (
           ctx?.claimsDuplicate && (
-            <p className="rounded-tag bg-cream p-3 text-[14px] font-semibold text-ink/75">
+            <RuleNote tone="quiet" label="No second charge found">
               No second charge for this course found. Check the payment
               provider before calling it a duplicate.
-            </p>
+            </RuleNote>
           )
         )}
         <Field

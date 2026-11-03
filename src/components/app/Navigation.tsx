@@ -6,7 +6,10 @@ import clsx from "clsx";
 import { Icon } from "./icons";
 
 /* =============================================================================
-   Tabs (state or URL driven) and Pagination.
+   Tabs (state or URL driven) and Pagination, design system v2.
+   Tabs default to the editorial UNDERLINE row: Inter labels on a hairline, the active
+   tab in ink with a 2px red rule under it, counts in mono. variant="pill" gives Mobius
+   chips (outlined pills, the active one filled ink) for filter rows.
 
      const [tab, setTab] = useState("progress");
      <Tabs label="Your courses" value={tab} onChange={setTab}
@@ -90,7 +93,7 @@ export function Tabs({
   value,
   onChange,
   label,
-  variant = "pill",
+  variant = "underline",
   size = "md",
   className,
   idBase,
@@ -101,7 +104,8 @@ export function Tabs({
   onChange?: (id: string) => void;
   /** accessible name of the tab list */
   label: string;
-  /** pill: white track + ink active pill. underline: text tabs with a bar. */
+  /** underline (default): text tabs on a hairline, red rule under the active one.
+   *  pill: Mobius chips (outlined pills, active filled ink). */
   variant?: "pill" | "underline";
   size?: "sm" | "md";
   className?: string;
@@ -149,11 +153,11 @@ export function Tabs({
       className={clsx(
         "flex max-w-full",
         layout === "wrap" ? "flex-wrap" : "no-scrollbar overflow-x-auto overscroll-x-contain max-sm:snap-x max-sm:snap-proximity",
-        variant === "pill" ? "w-fit gap-1 rounded-full bg-white p-1 shadow-soft" : "gap-x-5 border-b border-ink/[0.1]",
-        layout === "wrap" && variant === "pill" && "rounded-[22px]",
+        variant === "pill" ? "w-fit gap-1.5" : "gap-x-6 border-b border-line md:gap-x-8",
+        layout === "wrap" && variant === "pill" && "gap-y-1.5",
         layout === "grid-sm" &&
           (variant === "pill"
-            ? "max-sm:grid max-sm:w-full max-sm:grid-cols-2 max-sm:rounded-[22px] max-sm:[&>*]:justify-center max-sm:[&>*:last-child:nth-child(odd)]:col-span-2"
+            ? "max-sm:grid max-sm:w-full max-sm:grid-cols-2 max-sm:[&>*]:justify-center max-sm:[&>*:last-child:nth-child(odd)]:col-span-2"
             : "max-sm:grid max-sm:grid-cols-2 max-sm:gap-x-4 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2"),
         className,
       )}
@@ -162,25 +166,34 @@ export function Tabs({
       {items.map((t, i) => {
         const active = t.id === value;
         const cls = clsx(
-          "relative inline-flex shrink-0 items-center gap-1.5 font-bold whitespace-nowrap transition-colors duration-150 disabled:opacity-40",
+          "relative inline-flex shrink-0 items-center gap-2 whitespace-nowrap transition-colors duration-200 disabled:opacity-40 max-sm:snap-start",
           variant === "pill"
             ? [
-                // phones: 44px tabs (thumb targets), desktop keeps 32/36px
-                size === "sm" ? "h-11 px-3.5 text-[14px] sm:h-8 sm:px-3 sm:text-[13px]" : "h-11 px-4 text-[14px] sm:h-9",
-                "rounded-full max-sm:snap-start",
-                active ? "bg-ink text-cream" : "text-ink/65 hf:text-ink",
+                // phones: 44px chips (thumb targets), desktop keeps 32/36px
+                size === "sm" ? "h-11 px-3.5 text-[13.5px] sm:h-8 sm:px-3.5 sm:text-[13px]" : "h-11 px-4 text-[14px] sm:h-9",
+                "rounded-full font-medium ring-1 ring-inset",
+                active ? "bg-fg text-surface ring-fg" : "text-fg ring-line-strong hf:ring-fg",
               ]
-            : ["h-11 text-[15px]", active ? "text-ink" : "text-ink/65 hf:text-ink"],
+            : [
+                size === "sm" ? "h-11 text-[14px] sm:h-10" : "h-11 text-[15px] sm:h-12",
+                "font-medium tracking-[-0.01em]",
+                active ? "text-fg" : "text-muted hf:text-fg",
+              ],
         );
         const inner = (
           <>
             {t.label}
             {t.count !== undefined && (
-              <span className={clsx("rounded-full px-1.5 py-px text-[11.5px] font-bold", active ? (variant === "pill" ? "bg-white/20" : "bg-ink text-cream") : "bg-ink/[0.07]")}>
-                {t.count}
+              <span
+                className={clsx(
+                  "font-mono text-[11px] font-medium tabular-nums",
+                  variant === "pill" ? (active ? "opacity-70" : "text-muted") : active ? "text-red-deep on-dark:text-red-lite" : "opacity-70",
+                )}
+              >
+                {variant === "underline" ? String(t.count).padStart(2, "0") : t.count}
               </span>
             )}
-            {variant === "underline" && active && <span aria-hidden className="absolute inset-x-0 -bottom-px h-[3px] rounded-full bg-ink" />}
+            {variant === "underline" && active && <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] bg-red" />}
           </>
         );
         if (t.href)
@@ -235,7 +248,7 @@ export function TabPanel({ id, active, idBase, children, className }: { id: stri
       id={`${idBase}-panel-${id}`}
       aria-labelledby={`${idBase}-tab-${id}`}
       tabIndex={hasFocusable ? -1 : 0}
-      className={clsx("app-fade rounded-card focus-visible:outline-offset-4", className)}
+      className={clsx("app-fade focus-visible:outline-offset-4", className)}
     >
       {children}
     </div>
@@ -276,9 +289,9 @@ export function Pagination({
   if (pageCount <= 1 && total === undefined) return null;
   const btn = (p: number, label: React.ReactNode, opts: { current?: boolean; disabled?: boolean; aria?: string } = {}) => {
     const cls = clsx(
-      "grid h-11 min-w-11 place-items-center rounded-full px-2 text-[14px] font-bold transition-colors sm:h-9 sm:min-w-9",
-      opts.current ? "bg-ink text-cream" : "text-ink/75 hf:bg-ink/[0.06] hf:text-ink",
-      opts.disabled && "pointer-events-none opacity-35",
+      "grid h-11 min-w-11 place-items-center px-2 font-mono text-[12.5px] font-medium tabular-nums transition-colors sm:h-9 sm:min-w-9",
+      opts.current ? "bg-fg text-surface" : "text-fg/75 hf:text-red",
+      opts.disabled && "pointer-events-none opacity-30",
     );
     if (hrefFor && !opts.disabled)
       return (
@@ -295,22 +308,22 @@ export function Pagination({
   return (
     <nav aria-label="Pagination" className={clsx("flex flex-wrap items-center justify-between gap-3", className)}>
       {total !== undefined && pageSize ? (
-        <p className="text-[13px] font-semibold text-ink/65">
-          {total === 0 ? "No results" : `Showing ${(page - 1) * pageSize + 1}–${Math.min(total, page * pageSize)} of ${total}`}
+        <p className="font-mono text-[11px] font-medium tracking-[0.06em] text-muted uppercase tabular-nums">
+          {total === 0 ? "No results" : `${(page - 1) * pageSize + 1}–${Math.min(total, page * pageSize)} of ${total}`}
         </p>
       ) : (
         <span />
       )}
       {pageCount > 1 && (
         <div className="flex items-center gap-1 max-sm:ml-auto">
-          {btn(page - 1, <Icon name="chevron-left" className="size-4" />, { disabled: page <= 1, aria: "Previous page" })}
+          {btn(page - 1, <Icon name="arrow-left" className="size-4" strokeWidth={1.7} />, { disabled: page <= 1, aria: "Previous page" })}
           {/* phones: "Page 2 of 6" between 44px arrows (the numbered strip overflows at 320) */}
-          <span className="px-2 text-[14px] font-bold whitespace-nowrap text-ink/80 sm:hidden">
-            Page {page} of {pageCount}
+          <span className="px-2 font-mono text-[12px] font-medium whitespace-nowrap text-fg/80 uppercase sm:hidden">
+            Page {page} / {pageCount}
           </span>
           {pages(page, pageCount).map((p, i) =>
             p === "…" ? (
-              <span key={`e${i}`} className="px-1 text-ink/55 max-sm:hidden" aria-hidden>
+              <span key={`e${i}`} className="px-1 font-mono text-muted max-sm:hidden" aria-hidden>
                 …
               </span>
             ) : (
@@ -319,7 +332,7 @@ export function Pagination({
               </span>
             ),
           )}
-          {btn(page + 1, <Icon name="chevron-right" className="size-4" />, { disabled: page >= pageCount, aria: "Next page" })}
+          {btn(page + 1, <Icon name="arrow-right" className="size-4" strokeWidth={1.7} />, { disabled: page >= pageCount, aria: "Next page" })}
         </div>
       )}
     </nav>

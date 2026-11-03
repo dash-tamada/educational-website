@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import clsx from "clsx";
@@ -9,7 +8,6 @@ import {
   Badge,
   Button,
   Card,
-  CardHeader,
   Checkbox,
   DescriptionList,
   DropdownMenu,
@@ -18,6 +16,7 @@ import {
   Icon,
   PageHeader,
   Rating,
+  Section,
   Select,
   Skeleton,
   StatusPill,
@@ -29,8 +28,6 @@ import {
   type MenuItem,
 } from "@/components/app";
 import { demo, useDb, useStoreHydrated } from "@/lib/demo/store";
-import { cropSrc } from "@/lib/img";
-import { toneBg } from "@/lib/landing-data";
 import {
   formatDate,
   formatDuration,
@@ -62,11 +59,21 @@ import {
   type CourseAction,
 } from "./reviewKit";
 import { STRETCH, useNoneInView } from "./shared";
+import {
+  CheckRow,
+  Idx,
+  MonoMeta,
+  Poster,
+  RuleNote,
+  RuledList,
+  SquareTick,
+} from "@/components/tutor/editorial";
 
-const ITEM_ICON: Record<ModuleItem["type"], IconName> = {
-  video: "play-circle",
-  quiz: "quiz",
-  resource: "file",
+/** item types as mono caps words (no coloured icons) */
+const ITEM_WORD: Record<ModuleItem["type"], string> = {
+  video: "Video",
+  quiz: "Test",
+  resource: "File",
 };
 
 export function CourseReview({ courseId }: { courseId: string }) {
@@ -104,17 +111,21 @@ export function CourseReview({ courseId }: { courseId: string }) {
             { label: "Not found" },
           ]}
           eyebrow="Course review"
-          eyebrowTone="purple"
-          title="Course not found."
+          title={
+            <>
+              Course not <em>found</em>.
+            </>
+          }
         />
-        <Card>
-          <EmptyState
-            art="tami"
-            title="We can't find that course."
-            body={`Nothing matches “${courseId}”. It may have been deleted, or the link is off by a letter.`}
-            action={<Button href="/admin/courses?tab=all">All courses</Button>}
-          />
-        </Card>
+        <EmptyState
+          art="none"
+          align="start"
+          eyebrow={`Error 404 · ${courseId}`}
+          title="We can't find that course."
+          body={`Nothing matches “${courseId}”. It may have been deleted, or the link is off by a letter.`}
+          action={<Button href="/admin/courses?tab=all" variant="outline" iconRight="arrow-right">All courses</Button>}
+          className="border-t border-fg !px-0"
+        />
       </div>
     );
   }
@@ -179,7 +190,7 @@ export function CourseReview({ courseId }: { courseId: string }) {
     <DropdownMenu
       label="More course actions"
       trigger={<Icon name="more" className="size-5" />}
-      triggerClassName={buttonClass({ variant: "secondary", iconOnly: true })}
+      triggerClassName={buttonClass({ variant: "outline", iconOnly: true })}
       items={moreItems}
     />
   );
@@ -188,7 +199,7 @@ export function CourseReview({ courseId }: { courseId: string }) {
     <>
       <Button
         size="sm"
-        variant="secondary"
+        variant="outline"
         icon="user"
         href={`/admin/users/${tutorUser.id}`}
       >
@@ -197,8 +208,7 @@ export function CourseReview({ courseId }: { courseId: string }) {
       {tutor && (
         <Button
           size="sm"
-          variant="ghost"
-          icon="external"
+          variant="arrow"
           href={`/tutors/${tutor.slug}`}
         >
           Public profile
@@ -213,27 +223,23 @@ export function CourseReview({ courseId }: { courseId: string }) {
         return (
           <>
             <Button
-              variant={allPass ? "success" : "secondary"}
-              icon="check"
-              onClick={publish}
-            >
-              {allPass ? "Publish" : "Publish…"}
-            </Button>
-            <Button
-              variant={allPass ? "secondary" : "primary"}
+              variant="outline"
               icon="arrow-left"
               onClick={() => setAction({ kind: "send_back", course })}
             >
               Send back
             </Button>
-            {moreMenu}
+            <Button variant="red" icon="check" onClick={publish}>
+              {allPass ? "Publish" : "Publish…"}
+            </Button>
+            {moreMenu && <span className="inline-flex max-sm:!flex-none">{moreMenu}</span>}
           </>
         );
       case "published":
         return (
           <>
             <Button
-              variant="secondary"
+              variant="outline"
               icon="external"
               href={`/courses/${course.slug}`}
             >
@@ -241,24 +247,25 @@ export function CourseReview({ courseId }: { courseId: string }) {
             </Button>
             <Button
               variant="ghost"
+              icon="eye-off"
               onClick={() => setAction({ kind: "send_back", course })}
             >
               Unpublish…
             </Button>
-            {moreMenu}
+            {moreMenu && <span className="inline-flex max-sm:!flex-none">{moreMenu}</span>}
           </>
         );
       case "archived":
         return (
           <>
             <Button
-              variant="secondary"
+              variant="primary"
               icon="refresh"
               onClick={() => setAction({ kind: "restore", course })}
             >
               Restore to catalogue
             </Button>
-            {moreMenu}
+            {moreMenu && <span className="inline-flex max-sm:!flex-none">{moreMenu}</span>}
           </>
         );
       default:
@@ -266,22 +273,32 @@ export function CourseReview({ courseId }: { courseId: string }) {
           <>
             {unpublished ? (
               <Button
-                variant="secondary"
+                variant="primary"
                 icon="refresh"
                 onClick={() => setAction({ kind: "publish", course })}
               >
                 Republish
               </Button>
             ) : (
-              <Button variant="secondary" icon="check" onClick={publish}>
+              <Button variant="outline" icon="check" onClick={publish}>
                 Publish anyway
               </Button>
             )}
-            {moreMenu}
+            {moreMenu && <span className="inline-flex max-sm:!flex-none">{moreMenu}</span>}
           </>
         );
     }
   })();
+
+  const failing = checks.length - passed;
+  const slate: { label: string; value: React.ReactNode }[] = [
+    { label: "Modules", value: pad2(stats.modules) },
+    { label: "Videos", value: pad2(stats.videos) },
+    { label: "Tests", value: pad2(stats.quizzes) },
+    { label: "Files", value: pad2(stats.resources) },
+    { label: "Runtime", value: formatDuration(stats.totalSec) },
+    { label: "Price", value: formatINR(course.price) },
+  ];
 
   return (
     <div className="app-enter">
@@ -298,22 +315,31 @@ export function CourseReview({ courseId }: { courseId: string }) {
           { label: course.title },
         ]}
         eyebrow={
-          course.status === "in_review" ? "Course review" : "Course details"
+          course.status === "in_review"
+            ? `Course review · sent ${course.submittedAt ? timeAgo(course.submittedAt) : "recently"}`
+            : "Course details"
         }
-        eyebrowTone="purple"
-        title={course.title}
+        size="sm"
+        title={
+          <>
+            {course.title}
+            <em>.</em>
+          </>
+        }
         description={course.promise || "No promise written yet."}
         meta={
           <>
             <CourseStatusPill course={course} />
             {course.featured && course.status === "published" && (
-              <Badge tone="sun" dot>
+              <Badge tone="ink" dot>
                 Featured
               </Badge>
             )}
-            {cat && <Badge tone="neutral">{cat.name}</Badge>}
-            <Badge tone="neutral">{course.level}</Badge>
-            <Badge tone="neutral">{course.language}</Badge>
+            <MonoMeta as="span" className="ml-1">
+              {[cat?.name, course.level, course.language]
+                .filter(Boolean)
+                .join(" · ")}
+            </MonoMeta>
           </>
         }
         actions={actions}
@@ -321,399 +347,385 @@ export function CourseReview({ courseId }: { courseId: string }) {
       <div ref={headActionsRef} aria-hidden className="-mt-5 mb-5 h-px sm:hidden" />
 
       {course.status === "rejected" && course.reviewNote && (
-        <div className="mb-6 rounded-card bg-[#ffe1d4] px-5 py-4 text-[#8a2600]">
-          <p className="text-[13px] font-bold tracking-wide uppercase">
-            {unpublished
+        <RuleNote
+          tone="red"
+          className="mb-10 md:mb-14"
+          label={
+            unpublished
               ? `Unpublished ${timeAgo(course.updatedAt)} · ${plural(course.learners, "learner")} keep access`
-              : `Sent back ${timeAgo(course.updatedAt)}`}
-          </p>
-          <p className="mt-1 text-[15px] font-semibold">
-            “{course.reviewNote}”
-          </p>
-        </div>
+              : `Sent back ${timeAgo(course.updatedAt)}`
+          }
+        >
+          <span className="text-[15px] text-fg">“{course.reviewNote}”</span>
+        </RuleNote>
       )}
 
-      <div className="grid gap-4 md:gap-6 xl:grid-cols-3">
-        <div className="min-w-0 space-y-4 md:space-y-6 xl:col-span-2">
-          <Card padding="none" className="overflow-hidden">
-            <div
-              className={clsx("relative aspect-[16/7]", toneBg[course.tone])}
-            >
-              <Image
-                src={cropSrc(course.thumbnail, 7 / 16)}
-                alt={`Cover image for ${course.title}`}
-                fill
-                sizes="(min-width: 1280px) 60vw, (min-width: 1024px) 70vw, 100vw"
-                className="object-cover"
-                preload
-              />
-            </div>
-            <div className="p-5 md:p-6">
-              <h2 className="t-app-h2">About the course</h2>
-              <p className="mt-3 t-body text-ink/80">
+      {/* Slate: the course's vital numbers in one ruled strip */}
+      <dl className="mb-12 grid grid-cols-3 gap-px border-y border-line bg-line md:mb-16 lg:grid-cols-6">
+        {slate.map((f) => (
+          <div
+            key={f.label}
+            className="min-w-0 bg-surface px-3 py-4 max-lg:[&:nth-child(3n+1)]:pl-0 md:px-5 lg:first:pl-0"
+          >
+            <dt className="font-mono text-[10.5px] tracking-[0.1em] text-muted uppercase">
+              {f.label}
+            </dt>
+            <dd className="mt-2 truncate font-heading text-[clamp(1.25rem,1.05rem+0.6vw,1.625rem)] leading-none font-semibold tracking-[-0.03em] tabular-nums">
+              {f.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="space-y-14 md:space-y-20">
+        <Section
+          index="01"
+          label="Review checklist"
+          note={`${passed} of ${checks.length} automatic checks pass. Click a problem to jump to it in the curriculum.`}
+          title={allPass ? "Ready for the catalogue." : `${plural(failing, "check")} to look at.`}
+          action={
+            <span className="t-display-s tabular-nums" aria-hidden>
+              {passed}
+              <span className="text-muted">/{checks.length}</span>
+            </span>
+          }
+        >
+          <ul
+            aria-label="Review checklist"
+            className="grid border-t border-fg md:grid-cols-2 md:gap-x-10"
+          >
+            {checks.map((c) => (
+              <CheckRow
+                key={c.id}
+                state={c.ok ? "done" : "fail"}
+                className="border-b border-line py-3.5"
+                hint={
+                  <>
+                    <span className="break-words">{c.detail}</span>
+                    {!c.ok && c.issues && c.issues.length > 0 && (
+                      <span className="mt-1.5 block space-y-1">
+                        {(showAll[c.id] ? c.issues : c.issues.slice(0, 5)).map(
+                          (x) => (
+                            <button
+                              key={x.itemId}
+                              type="button"
+                              onClick={() => showItem(x.moduleId, x.itemId)}
+                              className="block text-left text-[12.5px] font-medium break-words text-fg underline decoration-line-strong underline-offset-[3px] hf:decoration-red"
+                            >
+                              {x.label}
+                            </button>
+                          ),
+                        )}
+                        {c.issues.length > 5 && !showAll[c.id] && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowAll((s) => ({ ...s, [c.id]: true }))
+                            }
+                            className="block text-left text-[12.5px] text-muted underline-offset-[3px] hf:underline"
+                          >
+                            and {c.issues.length - 5} more
+                          </button>
+                        )}
+                      </span>
+                    )}
+                  </>
+                }
+              >
+                <span className="font-semibold">{c.label}</span>
+                <span className="sr-only">
+                  {c.ok ? ": passes" : ": needs work"}
+                </span>
+              </CheckRow>
+            ))}
+          </ul>
+
+          {reviewing && (
+            /* the page's one ink moment: the decision */
+            <Card variant="ink" className="mt-8" padding="lg">
+              <p className="t-label text-ash">Your call</p>
+              <p className="mt-3 max-w-[30ch] font-heading text-[clamp(1.375rem,1.15rem+0.7vw,1.875rem)] leading-[1.08] font-semibold tracking-[-0.035em]">
+                {allPass
+                  ? "Every check passes. Watch the preview, then publish."
+                  : "Some checks fail. Send it back with a note, or publish anyway."}
+              </p>
+              <div className="mt-7 flex flex-col gap-6 border-t border-line pt-6 xl:flex-row xl:items-end xl:justify-between">
+                <div className="min-w-0 max-w-[44ch]">
+                  <Checkbox
+                    label="I watched the free preview"
+                    description="Sound, picture and pace feel right for a first impression. We remind you before publishing if this isn’t ticked."
+                    checked={watched}
+                    onChange={(e) => setWatched(e.target.checked)}
+                  />
+                  {previewHref && (
+                    <Button variant="arrow" href={previewHref} className="mt-2 ml-9 max-w-full">
+                      <span className="truncate">{previewLabel}</span>
+                    </Button>
+                  )}
+                </div>
+                <div
+                  ref={checklistActionsRef}
+                  className="flex shrink-0 flex-wrap gap-2 max-sm:[&>*]:flex-[1_1_auto]"
+                >
+                  {course.status === "in_review" && (
+                    <Button
+                      variant="outline"
+                      icon="arrow-left"
+                      onClick={() => setAction({ kind: "send_back", course })}
+                    >
+                      Send back
+                    </Button>
+                  )}
+                  <Button variant="red" icon="check" onClick={publish}>
+                    {course.status === "in_review"
+                      ? allPass
+                        ? "Publish course"
+                        : "Publish…"
+                      : "Publish anyway"}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+        </Section>
+
+        <Section
+          index="02"
+          label="The course"
+          note="What learners read on the course page."
+        >
+          <div className="grid gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-10">
+            <Poster
+              src={course.thumbnail}
+              alt={`Cover image for ${course.title}`}
+              ratio={4 / 5}
+              sizes="(min-width: 1280px) 340px, (min-width: 768px) 38vw, 100vw"
+              eager
+              className="aspect-[4/3] w-full md:aspect-[4/5]"
+            />
+            <div className="min-w-0">
+              <p className="font-heading text-[clamp(1.125rem,1rem+0.45vw,1.375rem)] leading-[1.32] font-medium tracking-[-0.02em]">
                 {course.description || "No description yet."}
               </p>
               {course.outcomes.length > 0 && (
                 <>
-                  <h3 className="mt-6 t-app-h3">Learners will be able to</h3>
-                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {course.outcomes.map((o) => (
-                      <li
-                        key={o}
-                        className="flex gap-2 text-[14px] leading-snug"
-                      >
-                        <Icon
-                          name="check"
-                          className="mt-0.5 size-4 shrink-0 text-green"
-                          strokeWidth={2.6}
-                        />
-                        {o}
+                  <p className="mt-8 mb-1 t-label text-muted">
+                    Learners will be able to
+                  </p>
+                  <RuledList as="ol" strong={false}>
+                    {course.outcomes.map((o, i) => (
+                      <li key={o} className="flex gap-4 py-3 text-[14.5px] leading-snug">
+                        <Idx n={i + 1} className="mt-[3px]" />
+                        <span className="min-w-0">{o}</span>
                       </li>
                     ))}
-                  </ul>
+                  </RuledList>
                 </>
               )}
               {course.tags.length > 0 && (
-                <div className="mt-5 flex flex-wrap gap-1.5">
-                  {course.tags.map((t) => (
-                    <Badge key={t} tone="neutral" size="sm">
-                      #{t}
-                    </Badge>
-                  ))}
-                </div>
+                <MonoMeta className="mt-5">
+                  {course.tags.map((t) => `#${t}`).join("   ")}
+                </MonoMeta>
               )}
             </div>
-          </Card>
+          </div>
+        </Section>
 
-          <Card as="section" aria-labelledby="curr-title">
-            <CardHeader
-              id="curr-title"
-              title="Curriculum"
-              description={`${plural(stats.modules, "module")} · ${plural(stats.videos, "video")} · ${plural(stats.quizzes, "test")} · ${plural(stats.resources, "resource")} · ${formatDuration(stats.totalSec, "long")}`}
-              action={
-                mods.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      setOpenMods(
-                        Object.fromEntries(
-                          mods.map((m) => [
-                            m.id,
-                            !mods.every((mm, i) => isOpen(mm.id, i)),
-                          ]),
-                        ),
-                      )
-                    }
-                  >
-                    {mods.every((m, i) => isOpen(m.id, i))
-                      ? "Collapse all"
-                      : "Expand all"}
-                  </Button>
-                )
-              }
-            />
-            {mods.length ? (
-              <ol className="space-y-3">
-                {mods.map((m, mi) => {
-                  const open = isOpen(m.id, mi);
-                  const secs = m.items.reduce(
-                    (s, it) =>
-                      s + (it.type === "video" ? it.lesson.durationSec : 0),
-                    0,
-                  );
-                  return (
-                    <li
-                      key={m.id}
-                      className="overflow-hidden rounded-card bg-cream"
+        <Section
+          index="03"
+          label="Curriculum"
+          id="curr-title"
+          note={`${plural(stats.modules, "module")} · ${plural(stats.videos, "video")} · ${plural(stats.quizzes, "test")} · ${plural(stats.resources, "resource")} · ${formatDuration(stats.totalSec, "long")}`}
+          action={
+            mods.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setOpenMods(
+                    Object.fromEntries(
+                      mods.map((m) => [
+                        m.id,
+                        !mods.every((mm, i) => isOpen(mm.id, i)),
+                      ]),
+                    ),
+                  )
+                }
+              >
+                {mods.every((m, i) => isOpen(m.id, i))
+                  ? "Collapse all"
+                  : "Expand all"}
+              </Button>
+            )
+          }
+          title="Every lesson, in order."
+        >
+          {mods.length ? (
+            <ol className="border-b border-line">
+              {mods.map((m, mi) => {
+                const open = isOpen(m.id, mi);
+                const secs = m.items.reduce(
+                  (s, it) =>
+                    s + (it.type === "video" ? it.lesson.durationSec : 0),
+                  0,
+                );
+                return (
+                  <li key={m.id} className="border-t border-fg">
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() =>
+                        setOpenMods((s) => ({ ...s, [m.id]: !open }))
+                      }
+                      className="group flex w-full items-center gap-4 py-4 text-left transition-colors hf:bg-cream-2/60 md:gap-5"
                     >
-                      <button
-                        type="button"
-                        aria-expanded={open}
-                        onClick={() =>
-                          setOpenMods((s) => ({ ...s, [m.id]: !open }))
-                        }
-                        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hf:bg-butter/50"
-                      >
-                        <span className="font-display text-[22px] leading-none font-black text-ink/35">
-                          {pad2(m.position)}
+                      <span className="t-display-s w-10 shrink-0 text-muted tabular-nums group-aria-expanded:text-fg">
+                        {pad2(m.position)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block t-app-h3 [overflow-wrap:anywhere]">
+                          {m.title}
                         </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-bold">
-                            {m.title}
-                          </span>
-                          <span className="block text-[13px] font-medium text-ink/55">
-                            {plural(m.items.length, "item")} ·{" "}
-                            {formatDuration(secs)}
-                          </span>
-                        </span>
-                        <Icon
-                          name="chevron-down"
-                          className={clsx(
-                            "size-5 shrink-0 transition-transform duration-200",
-                            open && "rotate-180",
-                          )}
-                        />
-                      </button>
-                      {open && (
-                        <ul className="app-fade space-y-1 px-2 pb-2">
-                          {m.items.length === 0 && (
-                            <li className="px-3 py-2 text-[14px] text-ink/55">
-                              Empty module.
-                            </li>
-                          )}
-                          {m.items.map((it) => {
-                            const quizOpen =
-                              it.type === "quiz" && !!openQuiz[it.id];
-                            const problems =
-                              it.type === "quiz" ? quizProblems(it.quiz) : [];
-                            return (
+                        <MonoMeta as="span" className="mt-1 block">
+                          {plural(m.items.length, "item")} · {formatDuration(secs)}
+                        </MonoMeta>
+                      </span>
+                      <Icon
+                        name={open ? "minus" : "plus"}
+                        strokeWidth={1.5}
+                        className="size-5 shrink-0"
+                      />
+                    </button>
+                    {open && (
+                      <ul className="app-fade divide-y divide-line border-t border-line">
+                        {m.items.length === 0 && (
+                          <li className="py-3 pl-14 text-[14px] text-muted md:pl-[60px]">
+                            Empty module.
+                          </li>
+                        )}
+                        {m.items.map((it) => {
+                          const quizOpen =
+                            it.type === "quiz" && !!openQuiz[it.id];
+                          const problems =
+                            it.type === "quiz" ? quizProblems(it.quiz) : [];
+                          return (
                             <li
                               key={it.id}
                               id={`item-${it.id}`}
-                              className="scroll-mt-24 rounded-tag bg-white"
+                              className="scroll-mt-24"
                             >
-                            <div className="relative flex items-start gap-3 px-3 py-2.5 coarse:min-h-12">
-                              <Icon
-                                name={ITEM_ICON[it.type]}
-                                className={clsx(
-                                  "mt-px size-[18px] shrink-0",
-                                  it.type === "quiz"
-                                    ? "text-purple"
-                                    : it.type === "resource"
-                                      ? "text-tangerine"
-                                      : "text-blue",
-                                )}
-                              />
-                              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
-                                <Link
-                                  href={`/learn/${course.slug}/${it.id}`}
-                                  className={clsx("max-w-full min-w-0 text-[14px] font-semibold break-words underline-offset-2 hf:underline", STRETCH)}
-                                  title={
-                                    it.type === "video"
-                                      ? "Watch in the player"
-                                      : it.type === "quiz"
-                                        ? "Open the test in the player"
-                                        : "Open in the player"
-                                  }
-                                >
-                                  {itemTitle(it)}
-                                </Link>
-                                {it.type === "video" &&
-                                  it.lesson.isFreePreview && (
-                                    <Badge tone="mint" size="sm">
-                                      Free preview
-                                    </Badge>
-                                  )}
-                                {it.type === "video" &&
-                                  !it.lesson.hasCaptions && (
-                                    <Badge tone="flame" size="sm">
-                                      No captions
-                                    </Badge>
-                                  )}
-                                {it.type === "quiz" && (
-                                  <span className="flex flex-wrap items-center gap-1.5">
-                                    {it.quiz.isGating && (
-                                      <Badge tone="lilac" size="sm">
-                                        <Icon name="lock" className="size-3" />{" "}
-                                        Gates next
+                              <div className="relative flex items-start gap-4 py-3 transition-colors hf:bg-cream-2/50 coarse:min-h-12 md:gap-5">
+                                <span className="w-10 shrink-0 pt-[3px] font-mono text-[10px] tracking-[0.1em] text-muted uppercase">
+                                  {ITEM_WORD[it.type]}
+                                </span>
+                                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+                                  <Link
+                                    href={`/learn/${course.slug}/${it.id}`}
+                                    className={clsx("max-w-full min-w-0 text-[14.5px] font-medium break-words underline-offset-[3px] hf:underline", STRETCH)}
+                                    title={
+                                      it.type === "video"
+                                        ? "Watch in the player"
+                                        : it.type === "quiz"
+                                          ? "Open the test in the player"
+                                          : "Open in the player"
+                                    }
+                                  >
+                                    {itemTitle(it)}
+                                  </Link>
+                                  {it.type === "video" &&
+                                    it.lesson.isFreePreview && (
+                                      <Badge tone="ink" size="sm">
+                                        Free preview
                                       </Badge>
                                     )}
-                                    {problems.length > 0 && (
-                                      <Badge tone="flame" size="sm">
-                                        {plural(problems.length, "issue")}
+                                  {it.type === "video" &&
+                                    !it.lesson.hasCaptions && (
+                                      <Badge tone="flame" size="sm" dot>
+                                        No captions
                                       </Badge>
                                     )}
-                                    <span className="text-[12.5px] font-semibold text-ink/55">
-                                      {plural(
-                                        it.quiz.questions.length,
-                                        "question",
-                                      )}{" "}
-                                      · pass {it.quiz.passPercentage}%
+                                  {it.type === "quiz" && (
+                                    <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                                      {it.quiz.isGating && (
+                                        <Badge tone="neutral" size="sm">
+                                          <Icon name="lock" className="size-3" strokeWidth={1.8} />
+                                          Gates next
+                                        </Badge>
+                                      )}
+                                      {problems.length > 0 && (
+                                        <Badge tone="flame" size="sm" dot>
+                                          {plural(problems.length, "issue")}
+                                        </Badge>
+                                      )}
+                                      <MonoMeta as="span">
+                                        {plural(it.quiz.questions.length, "question")}{" "}
+                                        · pass {it.quiz.passPercentage}%
+                                      </MonoMeta>
+                                      <button
+                                        type="button"
+                                        aria-expanded={quizOpen}
+                                        aria-controls={`quiz-${it.id}`}
+                                        onClick={() =>
+                                          setOpenQuiz((s) => ({
+                                            ...s,
+                                            [it.id]: !quizOpen,
+                                          }))
+                                        }
+                                        className="hit relative z-[1] inline-flex h-7 items-center gap-1.5 px-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase ring-1 ring-line-strong transition-colors ring-inset hf:bg-fg hf:text-surface coarse:h-9 coarse:px-3.5"
+                                      >
+                                        {quizOpen ? "Hide answers" : "Check answers"}
+                                        <Icon
+                                          name="chevron-down"
+                                          strokeWidth={1.8}
+                                          className={clsx(
+                                            "size-3.5 transition-transform duration-200",
+                                            quizOpen && "rotate-180",
+                                          )}
+                                        />
+                                      </button>
                                     </span>
-                                    <button
-                                      type="button"
-                                      aria-expanded={quizOpen}
-                                      aria-controls={`quiz-${it.id}`}
-                                      onClick={() =>
-                                        setOpenQuiz((s) => ({
-                                          ...s,
-                                          [it.id]: !quizOpen,
-                                        }))
-                                      }
-                                      className="hit relative z-[1] inline-flex h-7 items-center gap-1 rounded-full bg-cream px-2.5 text-[12.5px] font-bold transition-colors hf:bg-butter coarse:h-9 coarse:px-3.5"
-                                    >
-                                      {quizOpen ? "Hide answers" : "Check answers"}
-                                      <Icon
-                                        name="chevron-down"
-                                        className={clsx(
-                                          "size-3.5 transition-transform duration-200",
-                                          quizOpen && "rotate-180",
-                                        )}
-                                      />
-                                    </button>
-                                  </span>
+                                  )}
+                                </div>
+                                {it.type === "resource" && (
+                                  <MonoMeta as="span" className="mt-0.5 shrink-0">
+                                    {it.resource.fileType}
+                                  </MonoMeta>
+                                )}
+                                {it.type === "video" && (
+                                  <MonoMeta as="span" className="mt-0.5 w-12 shrink-0 text-right whitespace-nowrap">
+                                    {formatDuration(it.lesson.durationSec, "clock")}
+                                  </MonoMeta>
                                 )}
                               </div>
-                              {it.type === "resource" && (
-                                <span className="mt-0.5 shrink-0 text-[12.5px] font-semibold text-ink/55 uppercase">
-                                  {it.resource.fileType}
-                                </span>
+                              {it.type === "quiz" && quizOpen && (
+                                <QuizAnswers id={`quiz-${it.id}`} quiz={it.quiz} />
                               )}
-                              {it.type === "video" && (
-                                <span className="mt-0.5 w-12 shrink-0 text-right text-[12.5px] font-semibold whitespace-nowrap text-ink/55 tabular-nums">
-                                  {formatDuration(
-                                    it.lesson.durationSec,
-                                    "clock",
-                                  )}
-                                </span>
-                              )}
-                            </div>
-                            {it.type === "quiz" && quizOpen && (
-                              <QuizAnswers id={`quiz-${it.id}`} quiz={it.quiz} />
-                            )}
                             </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : (
-              <EmptyState
-                compact
-                art="buddy"
-                title="No lessons yet."
-                body="The tutor hasn't added anything to this course."
-              />
-            )}
-          </Card>
-        </div>
-
-        {/* md–lg: full-width cards, each laid out in two columns inside (no ragged
-            half-empty columns whatever the checklist's height); xl: one column
-            beside the curriculum */}
-        <div className="grid min-w-0 content-start items-start gap-4 md:gap-6">
-          <Card
-            as="section"
-            tone={passed === checks.length ? "mint" : "butter"}
-            aria-labelledby="check-title"
-          >
-            <CardHeader
-              id="check-title"
-              title="Review checklist"
-              description={`${passed} of ${checks.length} automatic checks pass.`}
-            />
-            <ul className="grid gap-3 md:grid-cols-2 md:gap-x-8 xl:grid-cols-1">
-              {checks.map((c) => (
-                <li key={c.id} className="flex gap-3">
-                  <span
-                    className={clsx(
-                      "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full",
-                      c.ok ? "bg-green text-white" : "bg-flame text-white",
-                    )}
-                    aria-hidden
-                  >
-                    <Icon
-                      name={c.ok ? "check" : "x"}
-                      className="size-3.5"
-                      strokeWidth={3}
-                    />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-bold">
-                      {c.label}
-                      <span className="sr-only">
-                        {c.ok ? ": passes" : ": needs work"}
-                      </span>
-                    </p>
-                    <p className="mt-0.5 t-small break-words opacity-75">
-                      {c.detail}
-                    </p>
-                    {!c.ok && c.issues && c.issues.length > 0 && (
-                      <ul className="mt-1.5 space-y-1">
-                        {(showAll[c.id] ? c.issues : c.issues.slice(0, 5)).map(
-                          (x) => (
-                            <li key={x.itemId}>
-                              <button
-                                type="button"
-                                onClick={() => showItem(x.moduleId, x.itemId)}
-                                className="text-left text-[13px] font-bold break-words underline underline-offset-2"
-                              >
-                                {x.label}
-                              </button>
-                            </li>
-                          ),
-                        )}
-                        {c.issues.length > 5 && !showAll[c.id] && (
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setShowAll((s) => ({ ...s, [c.id]: true }))
-                              }
-                              className="text-left text-[13px] font-semibold opacity-75 underline-offset-2 hf:underline"
-                            >
-                              and {c.issues.length - 5} more
-                            </button>
-                          </li>
-                        )}
+                          );
+                        })}
                       </ul>
                     )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {reviewing && (
-              <div className="mt-5 rounded-tag bg-white/70 p-3">
-                <Checkbox
-                  label="I watched the free preview"
-                  description="Sound, picture and pace feel right for a first impression. We remind you before publishing if this isn’t ticked."
-                  checked={watched}
-                  onChange={(e) => setWatched(e.target.checked)}
-                />
-                {previewHref && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon="play"
-                    href={previewHref}
-                    className="mt-3 max-w-full"
-                  >
-                    <span className="truncate">{previewLabel}</span>
-                  </Button>
-                )}
-              </div>
-            )}
-            {course.status === "in_review" && (
-              <div ref={checklistActionsRef} className="mt-4 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant={allPass ? "success" : "secondary"}
-                  icon="check"
-                  onClick={publish}
-                >
-                  {allPass ? "Publish course" : "Publish…"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setAction({ kind: "send_back", course })}
-                >
-                  Send back
-                </Button>
-              </div>
-            )}
-          </Card>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <EmptyState
+              compact
+              art="none"
+              align="start"
+              eyebrow="Curriculum"
+              title="No lessons yet."
+              body="The tutor hasn't added anything to this course."
+            />
+          )}
+        </Section>
 
-          <Card as="section" aria-labelledby="tutor-title">
-            <CardHeader id="tutor-title" as="h3" title="Tutor" />
-            {tutorUser ? (
-              <div className="md:grid md:grid-cols-2 md:gap-x-8 xl:block">
-                <div className="min-w-0">
-                <div className="flex items-center gap-3">
+        <Section index="04" label="Tutor" note="Who made it, and how they're doing.">
+          {tutorUser ? (
+            <div className="grid gap-6 md:grid-cols-2 md:gap-10">
+              <div className="min-w-0">
+                <div className="flex items-center gap-4">
                   <Avatar
                     name={tutorUser.name}
                     src={tutorUser.avatar}
@@ -723,11 +735,11 @@ export function CourseReview({ courseId }: { courseId: string }) {
                   <div className="min-w-0">
                     <Link
                       href={`/admin/users/${tutorUser.id}`}
-                      className="t-app-h3 underline-offset-2 hf:underline"
+                      className="t-app-h2 underline-offset-[3px] hf:underline"
                     >
                       {tutorUser.name}
                     </Link>
-                    <p className="t-small text-ink/60">
+                    <p className="mt-1 t-small text-muted">
                       {tutor?.headline ?? tutorUser.city}
                     </p>
                     {tutor && tutor.rating > 0 && (
@@ -735,51 +747,45 @@ export function CourseReview({ courseId }: { courseId: string }) {
                         value={tutor.rating}
                         count={tutor.reviewCount}
                         size="sm"
-                        className="mt-1"
+                        className="mt-1.5"
                       />
                     )}
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-4 max-md:hidden xl:hidden">
-                  {tutorActions}
-                </div>
-                </div>
-                <DescriptionList
-                  className="mt-4 md:mt-0 xl:mt-4"
-                  items={[
-                    {
-                      label: "Courses",
-                      value: `${tutorCourses.filter((c) => c.status === "published").length} published · ${tutorCourses.length} total`,
-                    },
-                    {
-                      label: "Learners",
-                      value: formatNumber(tutor?.learners ?? 0),
-                    },
-                    {
-                      label: "On Tamada since",
-                      value: formatDate(tutorUser.joinedAt),
-                    },
-                    {
-                      label: "Account",
-                      value: <StatusPill status={tutorUser.status} size="sm" />,
-                    },
-                  ]}
-                />
-                <div className="flex flex-wrap gap-2 pt-5 md:hidden xl:flex">
-                  {tutorActions}
-                </div>
+                <div className="mt-5 flex flex-wrap gap-2">{tutorActions}</div>
               </div>
-            ) : (
-              <p className="t-small text-ink/60">Tutor account not found.</p>
-            )}
-          </Card>
+              <DescriptionList
+                items={[
+                  {
+                    label: "Courses",
+                    value: `${tutorCourses.filter((c) => c.status === "published").length} published · ${tutorCourses.length} total`,
+                  },
+                  {
+                    label: "Learners",
+                    value: formatNumber(tutor?.learners ?? 0),
+                  },
+                  {
+                    label: "On Tamada since",
+                    value: formatDate(tutorUser.joinedAt),
+                  },
+                  {
+                    label: "Account",
+                    value: <StatusPill status={tutorUser.status} size="sm" />,
+                  },
+                ]}
+              />
+            </div>
+          ) : (
+            <p className="t-small text-muted">Tutor account not found.</p>
+          )}
+        </Section>
 
-          <Card
-            as="section"
-            aria-labelledby="details-title"
-          >
-            <CardHeader id="details-title" as="h3" title="Price and details" />
-            <div className="md:grid md:grid-cols-2 md:gap-x-8 xl:block">
+        <Section
+          index="05"
+          label="Listing"
+          note="Price, dates and where it sits in the catalogue."
+        >
+          <div className="grid gap-8 md:grid-cols-2 md:gap-10">
             <DescriptionList
               items={[
                 {
@@ -788,7 +794,7 @@ export function CourseReview({ courseId }: { courseId: string }) {
                     <span>
                       {formatINR(course.price)}
                       {course.compareAtPrice && (
-                        <span className="ml-1.5 text-ink/45 line-through">
+                        <span className="ml-1.5 text-muted line-through">
                           {formatINR(course.compareAtPrice)}
                         </span>
                       )}
@@ -831,32 +837,29 @@ export function CourseReview({ courseId }: { courseId: string }) {
                 },
               ]}
             />
-            <div className="min-w-0">
-            <div className="mt-5 border-t border-ink/[0.07] pt-4 md:mt-0 md:border-t-0 md:pt-0 xl:mt-5 xl:border-t xl:pt-4">
+            <div className="min-w-0 space-y-6">
               <CategoryMover key={course.categoryId} course={course} />
+              <div className="border-t border-line pt-5">
+                <Switch
+                  label="Mark as featured"
+                  description={
+                    course.status === "published"
+                      ? "Saved on the course. The homepage carousel will use it once the site reads live data (it’s static in this demo)."
+                      : "Only published courses can be featured."
+                  }
+                  checked={!!course.featured}
+                  disabled={course.status !== "published"}
+                  onChange={(v) => {
+                    demo.setCourseFeatured(course.id, v);
+                    toast.success(
+                      v ? "Marked as featured." : "No longer featured.",
+                    );
+                  }}
+                />
+              </div>
             </div>
-            <div className="mt-4 border-t border-ink/[0.07] pt-4">
-              <Switch
-                label="Mark as featured"
-                description={
-                  course.status === "published"
-                    ? "Saved on the course. The homepage carousel will use it once the site reads live data (it’s static in this demo)."
-                    : "Only published courses can be featured."
-                }
-                checked={!!course.featured}
-                disabled={course.status !== "published"}
-                onChange={(v) => {
-                  demo.setCourseFeatured(course.id, v);
-                  toast.success(
-                    v ? "Marked as featured." : "No longer featured.",
-                  );
-                }}
-              />
-            </div>
-            </div>
-            </div>
-          </Card>
-        </div>
+          </div>
+        </Section>
       </div>
 
       {course.status === "in_review" && (
@@ -864,21 +867,21 @@ export function CourseReview({ courseId }: { courseId: string }) {
           show={actionsAway}
           label="Review decision"
           context={
-            <span className="sr-only">
-              {passed} of {checks.length} checks pass
+            <span className="font-mono text-[12px] tracking-[0.06em] uppercase">
+              {passed}/{checks.length} checks
             </span>
           }
         >
           {moreMenu}
           <Button
-            variant="secondary"
+            variant="outline"
             className="h-12 px-4!"
             onClick={() => setAction({ kind: "send_back", course })}
           >
             Send back
           </Button>
           <Button
-            variant={allPass ? "success" : "primary"}
+            variant="red"
             icon="check"
             className="h-12 px-4! phone-s:[&_svg]:hidden"
             onClick={publish}
@@ -957,56 +960,56 @@ const Q_TYPE: Record<Quiz["questions"][number]["type"], string> = {
 /** Read-only answer key for a test: correct options ticked, broken questions flagged. */
 function QuizAnswers({ id, quiz }: { id: string; quiz: Quiz }) {
   return (
-    <div id={id} className="app-fade border-t border-ink/[0.06] px-3 pt-3 pb-3.5">
-      <p className="text-[12.5px] font-semibold text-ink/55">
-        Answer key, admins only. Learners never see the correct answers before
-        they submit.
+    <div id={id} className="app-fade pb-5 pl-14 md:pl-[60px]">
+      <MonoMeta>
+        Answer key, admins only.
         {quiz.maxAttempts > 0
           ? ` ${plural(quiz.maxAttempts, "attempt")} allowed.`
           : " Unlimited attempts."}
         {quiz.timeLimitMin ? ` ${quiz.timeLimitMin} min limit.` : ""}
+      </MonoMeta>
+      <p className="mt-1 text-[12.5px] text-muted">
+        Learners never see the correct answers before they submit.
       </p>
       {quiz.questions.length === 0 ? (
-        <p className="mt-2 rounded-tag bg-[#ffe1d4] p-2.5 text-[13px] font-bold text-[#7a2200]">
-          This test has no questions yet.
-        </p>
+        <RuleNote tone="red" className="mt-3" label="This test has no questions yet." />
       ) : (
-        <ol className="mt-3 space-y-3">
+        <ol className="mt-3 border-t border-line">
           {quiz.questions.map((q, i) => {
             const problem = questionProblem(q);
             return (
               <li
                 key={q.id}
                 className={clsx(
-                  "rounded-tag p-3",
-                  problem ? "bg-[#ffe1d4]" : "bg-cream",
+                  "border-b border-line py-3.5",
+                  problem && "border-l-2 border-l-red pl-3",
                 )}
               >
-                <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="text-[13px] font-black text-ink/45">
-                    Q{i + 1}
+                <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="font-mono text-[11px] text-red-deep tabular-nums">
+                    Q{pad2(i + 1)}
                   </span>
-                  <span className="min-w-0 flex-1 text-[14px] font-bold">
+                  <span className="min-w-0 flex-1 text-[14px] font-semibold">
                     {q.text}
                   </span>
-                  <span className="basis-full text-[12px] font-semibold text-ink/50 sm:basis-auto">
+                  <MonoMeta as="span" className="basis-full sm:basis-auto">
                     {Q_TYPE[q.type]} · {plural(q.points, "point")}
-                  </span>
+                  </MonoMeta>
                 </p>
                 {problem && (
-                  <p className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#9a2c00]">
-                    <Icon name="alert" className="size-4" />
+                  <p className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-red-deep">
+                    <Icon name="alert" className="size-3.5" strokeWidth={1.8} />
                     {problem}
                   </p>
                 )}
                 {q.type === "short" ? (
                   q.acceptedAnswers?.length ? (
                     <p className="mt-2 text-[13px]">
-                      <span className="font-semibold text-ink/60">Accepted: </span>
+                      <span className="text-muted">Accepted: </span>
                       {q.acceptedAnswers.map((a, j) => (
                         <span key={a}>
                           {j > 0 && ", "}
-                          <span className="rounded bg-white px-1.5 py-0.5 font-mono text-[12.5px] font-bold">
+                          <span className="bg-cream-2 px-1.5 py-0.5 font-mono text-[12.5px] font-medium">
                             {a}
                           </span>
                         </span>
@@ -1014,22 +1017,18 @@ function QuizAnswers({ id, quiz }: { id: string; quiz: Quiz }) {
                     </p>
                   ) : null
                 ) : (
-                  <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+                  <ul className="mt-2.5 grid gap-x-6 sm:grid-cols-2">
                     {q.options.map((o) => (
                       <li
                         key={o.id}
                         className={clsx(
-                          "flex items-start gap-2 rounded-[10px] px-2.5 py-1.5 text-[13px]",
-                          o.isCorrect ? "bg-mint font-bold" : "bg-white/80",
+                          "flex items-start gap-2.5 py-1 text-[13px] leading-snug",
+                          o.isCorrect ? "font-semibold text-fg" : "text-muted",
                         )}
                       >
-                        <Icon
-                          name={o.isCorrect ? "check-circle" : "x"}
-                          className={clsx(
-                            "mt-px size-4 shrink-0",
-                            o.isCorrect ? "text-[#00813a]" : "text-ink/30",
-                          )}
-                          strokeWidth={2.4}
+                        <SquareTick
+                          state={o.isCorrect ? "done" : "todo"}
+                          className="mt-px !size-4"
                         />
                         <span className="min-w-0">
                           {o.text}
@@ -1042,8 +1041,8 @@ function QuizAnswers({ id, quiz }: { id: string; quiz: Quiz }) {
                   </ul>
                 )}
                 {q.explanation && (
-                  <p className="mt-2 text-[12.5px] text-ink/65">
-                    <span className="font-bold">Why: </span>
+                  <p className="mt-2 text-[12.5px] text-muted">
+                    <span className="font-semibold text-fg">Why: </span>
                     {q.explanation}
                   </p>
                 )}

@@ -65,7 +65,14 @@ export function formatDuration(sec: number, style: "clock" | "short" | "long" = 
   // 0 stays 0 (empty course); anything else under a minute rounds up to 1.
   const mins = h ? m : s === 0 ? 0 : Math.max(1, Math.round(s / 60));
   if (style === "long") return h ? `${h} hr${m ? ` ${m} min` : ""}` : `${mins} min`;
-  return h ? `${h}h${m ? ` ${m}m` : ""}` : `${mins}m`;
+  return h ? `${h}h${m ? ` ${String(m).padStart(2, "0")}m` : ""}` : `${mins}m`;
+}
+
+/** "7h 01m": the runtime as the course page and home print it (minutes rounded, two digits). */
+export function runtimeShort(sec: number) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${Math.max(1, m)}m`;
 }
 
 function ist(iso: string) {

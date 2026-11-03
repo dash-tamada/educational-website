@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getFirstFreeItem } from "@/lib/mock";
 import { learnHref, useLearn } from "./context";
-import { Button, Card } from "@/components/app";
+import { Button } from "@/components/app";
 import { StageSkeleton } from "./LearnShell";
 import { LearnEmpty } from "./LearnEmpty";
 
@@ -38,12 +38,13 @@ export function ResumeRedirect() {
         </>
       )}
       {!target && hydrated ? (
-        <Card className="mx-auto max-w-[720px]">
+        <div className="mx-auto max-w-[1120px] border-t border-line">
           <LearnEmpty
+            eyebrow="00:00:00:00 · Empty reel"
             title="Nothing to watch here yet."
             body={
               courseAccess.owner
-                ? "This course has no lessons yet. Add a video, a tiny test or a download in the studio and it shows up here."
+                ? "This course has no lessons yet. Add a video, a checkpoint test or a download in the studio and it shows up here."
                 : "The tutor is still putting this course together. Check back soon."
             }
             action={
@@ -55,13 +56,13 @@ export function ResumeRedirect() {
                   Open the course studio
                 </Button>
               ) : (
-                <Button href="/courses" iconRight="arrow-right">
+                <Button href="/courses" variant="red" iconRight="arrow-right">
                   Browse courses
                 </Button>
               )
             }
           />
-        </Card>
+        </div>
       ) : (
         <StageSkeleton />
       )}

@@ -10,6 +10,7 @@ import {
   Textarea,
   toast,
 } from "@/components/app";
+import { CheckRow, RuleNote } from "@/components/tutor/editorial";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   formatINR,
@@ -222,35 +223,52 @@ export function CourseActionDialogs({
     close();
   };
 
+  const publishTitle = failing.length
+    ? republishing
+      ? "Republish with open issues?"
+      : "Publish with open issues?"
+    : republishing
+      ? "Republish this course?"
+      : unsubmitted
+        ? "Publish this draft?"
+        : "Publish this course?";
+  const publishLabel = failing.length
+    ? republishing
+      ? "Republish anyway"
+      : "Publish anyway"
+    : republishing
+      ? "Republish"
+      : "Publish course";
+  const confirmPublish = () => {
+    if (!c) return;
+    demo.setCourseStatus(c.id, "published");
+    toast.success(
+      republishing ? `${c.title} is live again.` : `${c.title} is live.`,
+      {
+        description: republishing
+          ? "It’s back in the catalogue and search, and the tutor sees it as published."
+          : "It’s in the catalogue now, and the tutor sees it as published.",
+      },
+    );
+    close();
+  };
   return (
     <>
+      {/* The publish decision is the cinematic moment: an ink panel, one red button. */}
       <ConfirmDialog
         open={action?.kind === "publish"}
         onClose={close}
-        onConfirm={() => {
-          if (!c) return;
-          demo.setCourseStatus(c.id, "published");
-          toast.success(
-            republishing ? `${c.title} is live again.` : `${c.title} is live.`,
-            {
-              description: republishing
-                ? "It’s back in the catalogue and search, and the tutor sees it as published."
-                : "It’s in the catalogue now, and the tutor sees it as published.",
-            },
-          );
-        }}
-        title={
-          failing.length
-            ? republishing
-              ? "Republish with open issues?"
-              : "Publish with open issues?"
-            : republishing
-              ? "Republish this course?"
-              : unsubmitted
-                ? "Publish this draft?"
-                : "Publish this course?"
+        onConfirm={confirmPublish}
+        tone={failing.length ? "danger" : "red"}
+        confirmIcon="check"
+        confirmLabel={publishLabel}
+        surface="ink"
+        eyebrow={
+          c
+            ? `${republishing ? "Republish" : "Publish"} · ${tutorName}`
+            : "Publish"
         }
-        tone={failing.length ? "danger" : "default"}
+        title={publishTitle}
         description={
           c
             ? failing.length
@@ -260,38 +278,29 @@ export function CourseActionDialogs({
                 : `${c.title} goes into the catalogue straight away. The first video stays free for everyone.`
             : undefined
         }
-        confirmLabel={
-          failing.length
-            ? republishing
-              ? "Republish anyway"
-              : "Publish anyway"
-            : republishing
-              ? "Republish"
-              : "Publish course"
-        }
       >
         {(failing.length > 0 || action?.watched === false || unsubmitted) && (
           <div className="space-y-3">
             {unsubmitted && (
-              <p className="rounded-tag bg-[#dfe8ff] p-3 text-[14px] font-semibold text-blue-deep">
+              <RuleNote tone="quiet" label="Not submitted yet">
                 {tutorName} hasn&apos;t submitted this yet. Publishing skips
                 their request for review, and it goes live as it is today.
-              </p>
+              </RuleNote>
             )}
             {failing.length > 0 && (
-              <ul className="space-y-2 rounded-tag bg-[#ffe1d4] p-3 text-[14px] text-[#7a2200]">
+              <ul className="divide-y divide-line border-y border-line">
                 {failing.map((f) => (
-                  <li key={f.id}>
-                    <span className="font-bold">{f.label}:</span> {f.detail}
-                  </li>
+                  <CheckRow key={f.id} state="fail" hint={f.detail}>
+                    {f.label}
+                  </CheckRow>
                 ))}
               </ul>
             )}
             {action?.watched === false && (
-              <p className="rounded-tag bg-butter p-3 text-[14px] font-semibold">
-                You haven&apos;t ticked “I watched the free preview” yet. It&apos;s
-                the first thing every learner sees.
-              </p>
+              <RuleNote tone="red" label="Free preview not ticked">
+                You haven&apos;t ticked “I watched the free preview” yet.
+                It&apos;s the first thing every learner sees.
+              </RuleNote>
             )}
           </div>
         )}
@@ -329,6 +338,13 @@ export function CourseActionDialogs({
       <Modal
         open={action?.kind === "send_back"}
         onClose={close}
+        eyebrow={
+          c
+            ? unpublishing
+              ? `Unpublish · ${tutorName}`
+              : `Send back · ${tutorName}`
+            : undefined
+        }
         title={
           unpublishing && c ? `Unpublish ${c.title}?` : "Send back with a note"
         }
@@ -341,7 +357,7 @@ export function CourseActionDialogs({
         }
         footer={
           <>
-            <Button variant="secondary" onClick={close}>
+            <Button variant="outline" onClick={close}>
               Cancel
             </Button>
             <Button
@@ -387,7 +403,10 @@ export function CourseActionDialogs({
               showCount
             />
           </Field>
-          <div className="flex flex-wrap gap-2" aria-label="Quick notes">
+          <p className="pt-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
+            Quick notes
+          </p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Quick notes">
             {quickNotes.map((s) => (
               <button
                 key={s}
@@ -396,9 +415,10 @@ export function CourseActionDialogs({
                   setNote((n) => (n.trim() ? `${n.trim()} ${s}` : s));
                   setError(null);
                 }}
-                className="rounded-full bg-cream px-3 py-1.5 text-left text-[13px] font-semibold text-ink/75 transition-colors hf:bg-butter"
+                className="tap min-h-9 px-3 py-2 text-left text-[13px] leading-snug text-fg ring-1 ring-line-strong transition-colors ring-inset hf:bg-fg hf:text-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red coarse:min-h-11"
               >
-                + {s}
+                <span aria-hidden className="mr-1.5 font-mono text-red-deep">+</span>
+                {s}
               </button>
             ))}
           </div>

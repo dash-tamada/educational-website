@@ -29,8 +29,8 @@ function Star({ filled, className }: { filled: boolean; className?: string }) {
     <svg viewBox="0 0 24 24" aria-hidden className={className}>
       <path
         d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"
-        fill={filled ? "#ffb703" : "none"}
-        stroke={filled ? "#e79d00" : "currentColor"}
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
@@ -195,9 +195,9 @@ function ReviewForm({
       className="space-y-5"
     >
       <fieldset aria-describedby={errors.rating ? `${name}-err` : undefined}>
-        <legend className="text-[14px] font-bold">
+        <legend className="text-[11px] font-semibold tracking-[0.14em] uppercase">
           Your rating{" "}
-          <span className="text-flame" aria-hidden>
+          <span className="text-red" aria-hidden>
             *
           </span>
         </legend>
@@ -226,11 +226,11 @@ function ReviewForm({
                 <span className="sr-only">
                   {n} star{n > 1 ? "s" : ""}, {WORDS[n]}
                 </span>
-                <span className="block rounded-full peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue">
+                <span className="block peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-red">
                   <Star
                     filled={n <= shown}
                     className={clsx(
-                      "size-9 text-ink/50 transition-transform duration-150",
+                      "size-9 text-fg transition-transform duration-150",
                       n <= shown && "scale-105",
                     )}
                   />
@@ -239,7 +239,7 @@ function ReviewForm({
             ))}
           </div>
           <span
-            className={clsx("text-[15px] font-bold", !shown && "text-ink/65")}
+            className={clsx("font-mono text-[12px] tracking-[0.06em] uppercase", !shown && "text-muted")}
             aria-hidden
           >
             {shown ? WORDS[shown] : "Tap a star"}
@@ -249,7 +249,7 @@ function ReviewForm({
           <p
             id={`${name}-err`}
             role="alert"
-            className="mt-1.5 flex items-start gap-1 text-[13px] leading-snug font-semibold text-[#c13500]"
+            className="mt-1.5 flex items-start gap-1 text-[13px] leading-snug font-medium text-red-deep"
           >
             <Icon name="alert" className="mt-px size-3.5" strokeWidth={2.4} />
             {errors.rating}
@@ -286,8 +286,8 @@ function ReviewForm({
       </Field>
 
       {existing?.reply && (
-        <div className="rounded-card bg-cream p-4">
-          <p className="text-[12px] font-bold tracking-[0.06em] text-ink/70 uppercase">
+        <div className="border-l-2 border-red py-1 pl-4">
+          <p className="font-mono text-[11px] tracking-[0.06em] text-muted uppercase">
             Tutor replied · {formatDate(existing.reply.createdAt, "short")}
           </p>
           <p className="mt-1.5 t-small">{existing.reply.body}</p>
@@ -295,19 +295,19 @@ function ReviewForm({
       )}
 
       {inlineActions ? (
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-ink/[0.07] pt-4">
-          <p className="mr-auto text-[12.5px] font-semibold text-ink/70">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
+          <p className="mr-auto t-small text-muted">
             Shown with your name and city.
           </p>
           <Button variant="ghost" onClick={onDone} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={busy} icon="star">
+          <Button type="submit" variant="red" loading={busy} icon="star">
             {existing ? "Update review" : "Post review"}
           </Button>
         </div>
       ) : (
-        <p className="text-[13px] font-semibold text-ink/70">
+        <p className="t-small text-muted">
           Shown with your name and city.
         </p>
       )}

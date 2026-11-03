@@ -4,18 +4,20 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Avatar,
-  Badge,
   Button,
   DataTable,
   DescriptionList,
   Drawer,
   PageHeader,
+  ProgressBar,
+  SampleNote,
   StatGrid,
   StatTile,
   StatusPill,
   Tabs,
   type MenuItem,
 } from "@/components/app";
+import { MonoMeta, RuleNote } from "@/components/tutor/editorial";
 import { useDb } from "@/lib/demo/store";
 import {
   formatCompact,
@@ -161,13 +163,16 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
   const compact = boxW != null && boxW < COMPACT_BOX;
   const coursesCell = (u: Profile) =>
     u.role === "admin" ? (
-      <span className="text-ink/40" title="Admins don't enrol or teach">
+      <span className="text-muted" title="Admins don't enroll or teach">
         —
       </span>
     ) : (
-      <span title={u.role === "tutor" ? "Courses taught" : "Courses enrolled"}>
+      <span
+        title={u.role === "tutor" ? "Courses taught" : "Courses enrolled"}
+        className="font-mono text-[13px] whitespace-nowrap tabular-nums"
+      >
         {courseCount(u, db)}
-        <span className="ml-1 text-[12px] font-semibold text-ink/45">
+        <span className="ml-1.5 text-[10.5px] tracking-[0.08em] text-muted uppercase">
           {u.role === "tutor" ? "teaching" : "enrolled"}
         </span>
       </span>
@@ -225,20 +230,20 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
         {
           key: "role",
           header: "Role",
-          cell: (u) => <StatusPill status={u.role} size="sm" />,
+          cell: (u) => <StatusPill status={u.role} size="sm" variant="text" />,
           sortValue: (u) => u.role,
         },
         {
           key: "status",
           header: "Status",
-          cell: (u) => <StatusPill status={u.status} size="sm" />,
+          cell: (u) => <StatusPill status={u.status} size="sm" variant="text" />,
           sortValue: (u) => u.status,
         },
         {
           key: "city",
           header: "City",
           minBox: 1180,
-          cell: (u) => <span className="text-ink/75">{u.city}</span>,
+          cell: (u) => <span className="text-muted">{u.city}</span>,
           sortValue: (u) => u.city,
         },
         {
@@ -253,7 +258,7 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
           header: "Joined",
           minBox: 760,
           cell: (u) => (
-            <span className="whitespace-nowrap text-ink/75">
+            <span className="whitespace-nowrap text-muted">
               {formatDate(u.joinedAt)}
             </span>
           ),
@@ -264,7 +269,7 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
           header: "Last active",
           minBox: 960,
           cell: (u) => (
-            <span className="whitespace-nowrap text-ink/75">
+            <span className="whitespace-nowrap text-muted">
               {timeAgo(u.lastActiveAt)}
             </span>
           ),
@@ -308,9 +313,12 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="People"
-        eyebrowTone="purple"
-        title="People on Tamada."
+        eyebrow="Control room · People"
+        title={
+          <>
+            People on <em>Tamada</em>.
+          </>
+        }
         description="Find anyone, change what they can do, and unlock courses when someone needs a hand."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
@@ -318,7 +326,7 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
         ]}
         actions={
           <Button
-            variant="secondary"
+            variant="outline"
             icon="download"
             onClick={() => exportCsv()}
           >
@@ -327,34 +335,31 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
         }
       />
 
-      <StatGrid className="mb-6">
+      <StatGrid className="mb-12 md:mb-16">
         <StatTile
+          index="01"
           label="Accounts (sample)"
           value={formatNumber(counts.all)}
-          tone="white"
-          icon="users"
           hint={`of ${formatCompact(learners)} learners platform-wide`}
         />
         <StatTile
+          index="02"
           label="Students (sample)"
           value={formatNumber(counts.student)}
-          tone="blush"
-          icon="book"
           hint={`${joinedThisMonth} joined in the last 30 days`}
         />
         <StatTile
+          index="03"
           label="Tutors"
           value={formatNumber(counts.tutor)}
-          tone="cyan"
-          icon="briefcase"
           href="/admin/tutors"
           hint="See applications"
         />
         <StatTile
+          index="04"
           label="Suspended"
           value={formatNumber(counts.suspended)}
-          tone={counts.suspended ? "butter" : "white"}
-          icon="lock"
+          hint={counts.suspended ? "Can't sign in or buy" : "Nobody right now"}
           href="/admin/users?filter=suspended"
         />
       </StatGrid>
@@ -362,7 +367,7 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
       <Tabs
         label="Filter people"
         value={filter}
-        className="mb-4"
+        className="mb-5"
         items={[
           {
             id: "all",
@@ -490,15 +495,10 @@ function UsersView({ initialQ, filter }: { initialQ: string; filter: Filter }) {
         className={compact ? COMPACT_TABLE : undefined}
       />
       </div>
-      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 t-small text-ink/60">
-        <Badge tone="neutral" size="sm">
-          Sample · {formatNumber(counts.all)} accounts
-        </Badge>
-        <span>
-          This list is a sample of {formatNumber(counts.all)} accounts. Platform
-          totals on the Overview count all {formatNumber(learners)} learners.
-        </span>
-      </p>
+      <SampleNote className="mt-5">
+        This list is a sample of {formatNumber(counts.all)} accounts. Platform
+        totals on the Overview count all {formatNumber(learners)} learners.
+      </SampleNote>
 
       <UserDrawer
         userId={drawer}
@@ -564,27 +564,50 @@ export function UserDrawer({
     ? db.tutorApplications.filter((a) => a.decidedBy === u.id).length
     : 0;
 
+  const figures = isAdmin
+    ? [
+        { label: "Role", value: "Admin" },
+        { label: "Decisions", value: decisions },
+        {
+          label: "Last seen",
+          value: timeAgo(u?.lastActiveAt ?? "").replace(" ago", ""),
+        },
+      ]
+    : [
+        {
+          label: u?.role === "tutor" ? "Teaching" : "Courses",
+          value: u?.role === "tutor" ? teaching.length : enrolled.length,
+        },
+        { label: "Spent", value: formatINR(spent, { compact: true }) },
+        { label: "Certificates", value: certs },
+      ];
+
   return (
     <Drawer
       open={!!u}
       onClose={onClose}
-      width={480}
+      width={500}
+      eyebrow={
+        u
+          ? `${u.role === "student" ? "Learner" : u.role === "tutor" ? "Tutor" : "Admin"} · ${u.city}`
+          : undefined
+      }
       title={u?.name ?? "Person"}
       description={u ? `${u.email}` : undefined}
       footer={
         u && (
           <>
             <Button
-              variant="ghost"
+              variant="arrow"
               size="sm"
               href={`/admin/users/${u.id}`}
-              icon="user"
+              className="mr-auto"
             >
               Full profile
             </Button>
             {!isAdmin && (
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 icon="unlock"
                 onClick={() => onGrant(u.id)}
@@ -594,7 +617,7 @@ export function UserDrawer({
             )}
             {!self && (
               <Button
-                variant={u.status === "suspended" ? "success" : "danger"}
+                variant={u.status === "suspended" ? "primary" : "danger"}
                 size="sm"
                 icon={u.status === "suspended" ? "refresh" : "lock"}
                 onClick={() => onSuspend(u.id)}
@@ -607,27 +630,23 @@ export function UserDrawer({
       }
     >
       {u && (
-        <div className="space-y-5">
-          <div className="flex items-center gap-4 rounded-card bg-cream p-4">
-            <PersonCell user={u} size="md" sub={u.headline ?? `${u.city}`} />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusPill status={u.role} />
-            <StatusPill status={u.status} />
-            {u.tutorStatus === "pending" && (
-              <StatusPill status="pending" label="Tutor application pending" />
-            )}
-            {!self && (
-              <Button
-                size="sm"
-                variant="ghost"
-                icon="switch"
-                onClick={() => onRole(u.id)}
-                className="ml-auto"
-              >
-                Change role
-              </Button>
-            )}
+        <div className="space-y-7">
+          <div className="flex items-center gap-4">
+            <Avatar name={u.name} src={u.avatar} tone={u.tone} size="lg" decorative />
+            <div className="min-w-0 flex-1">
+              {u.headline ? (
+                <p className="t-small text-muted">{u.headline}</p>
+              ) : (
+                <MonoMeta>{u.id}</MonoMeta>
+              )}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusPill status={u.role} size="sm" />
+                <StatusPill status={u.status} size="sm" />
+                {u.tutorStatus === "pending" && (
+                  <StatusPill status="pending" size="sm" label="Applied to teach" />
+                )}
+              </div>
+            </div>
           </div>
           {u.status === "suspended" && <SuspensionNote userId={u.id} />}
           <MetaRow
@@ -637,80 +656,85 @@ export function UserDrawer({
               { icon: "clock", label: `Active ${timeAgo(u.lastActiveAt)}` },
             ]}
           />
-          <div className="grid grid-cols-3 gap-2">
-            {(isAdmin
-              ? [
-                  { label: "Role", value: "Admin" },
-                  { label: "Decisions", value: decisions },
-                  { label: "Last seen", value: timeAgo(u.lastActiveAt).replace(" ago", "") },
-                ]
-              : [
-                  {
-                    label: u.role === "tutor" ? "Teaching" : "Courses",
-                    value: u.role === "tutor" ? teaching.length : enrolled.length,
-                  },
-                  { label: "Spent", value: formatINR(spent, { compact: true }) },
-                  { label: "Certificates", value: certs },
-                ]
-            ).map((s) => (
-              <div key={s.label} className="rounded-tag bg-cream px-3 py-2.5">
-                <p className="t-micro text-ink/55 uppercase">{s.label}</p>
-                <p className="mt-1 font-display text-[26px] leading-none font-black">
-                  {s.value}
-                </p>
+          <dl className="grid grid-cols-3 border-y border-line">
+            {figures.map((f, i) => (
+              <div
+                key={f.label}
+                className={i > 0 ? "border-l border-line py-4 pl-4" : "py-4 pr-4"}
+              >
+                <dt className="font-mono text-[10.5px] tracking-[0.1em] text-muted uppercase">
+                  {f.label}
+                </dt>
+                <dd className="mt-2 t-display-s tabular-nums">{f.value}</dd>
               </div>
             ))}
-          </div>
+          </dl>
+          {!self && (
+            <Button
+              size="sm"
+              variant="outline"
+              icon="switch"
+              onClick={() => onRole(u.id)}
+            >
+              Change role
+            </Button>
+          )}
 
           {isAdmin ? (
-            <p className="rounded-tag bg-lilac/40 p-3 t-small text-ink/75">
+            <RuleNote tone="quiet" label="Admins">
               Admins run the control room: they review tutor applications and
-              courses, issue refunds and manage people. They don&apos;t enrol
+              courses, issue refunds and manage people. They don&apos;t enroll
               in or teach courses.
-            </p>
+            </RuleNote>
           ) : u.role === "tutor" ? (
             <section>
-              <h3 className="mb-3 t-app-h3">Courses they teach</h3>
+              <DrawerHead>Courses they teach</DrawerHead>
               {teaching.length ? (
-                <ul className="space-y-3">
+                <ul className="divide-y divide-line border-b border-line">
                   {teaching.map((c) => (
                     <li
                       key={c.id}
-                      className="flex items-center justify-between gap-3"
+                      className="flex items-center justify-between gap-3 py-3"
                     >
                       <CourseCell
                         course={c}
                         href={`/admin/courses/${c.id}`}
                         sub={formatINR(c.price)}
                       />
-                      <StatusPill status={c.status} size="sm" />
+                      <StatusPill status={c.status} size="sm" variant="text" />
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="t-small text-ink/60">No courses yet.</p>
+                <p className="t-small text-muted">No courses yet.</p>
               )}
             </section>
           ) : (
             <section>
-              <h3 className="mb-3 t-app-h3">Learning</h3>
+              <DrawerHead>Learning</DrawerHead>
               {enrolled.length ? (
-                <ul className="space-y-3">
+                <ul className="divide-y divide-line border-b border-line">
                   {enrolled.slice(0, 6).map((e) => (
-                    <li
-                      key={e.enrollment.id}
-                      className="flex items-center justify-between gap-3"
-                    >
-                      <CourseCell
-                        course={e.course}
-                        sub={`${e.progress.percent}% done`}
-                      />
-                      <StatusPill status={e.enrollment.source} size="sm" />
+                    <li key={e.enrollment.id} className="py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <CourseCell course={e.course} />
+                        <StatusPill status={e.enrollment.source} size="sm" variant="text" />
+                      </div>
+                      <div className="mt-2.5 flex items-center gap-3 pl-14">
+                        <ProgressBar
+                          value={e.progress.percent}
+                          size="sm"
+                          label={`${e.course.title} progress`}
+                        />
+                        <span className="w-9 shrink-0 text-right font-mono text-[11.5px] tabular-nums">
+                          {e.progress.percent}%
+                        </span>
+                      </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="t-small text-ink/60">
+                <p className="t-small text-muted">
                   Not enrolled in anything yet. Window shopping, probably.
                 </p>
               )}
@@ -719,27 +743,30 @@ export function UserDrawer({
 
           {orders.length > 0 && (
             <section>
-              <h3 className="mb-2 t-app-h3">Orders</h3>
+              <DrawerHead>Orders</DrawerHead>
               <DescriptionList
                 items={orders.slice(0, 5).map((o) => ({
                   label: (
-                    <span>
+                    <span className="font-mono tracking-[0.06em]">
                       {o.number} · {smartDate(o.createdAt)}
                     </span>
                   ),
                   value: (
-                    <span className="inline-flex items-center gap-2">
-                      {o.provider === "admin" ? "₹0" : formatINR(o.amount)}
+                    <span className="inline-flex items-center gap-2.5">
+                      <span className="font-heading font-semibold tabular-nums">
+                        {o.provider === "admin" ? "₹0" : formatINR(o.amount)}
+                      </span>
                       <StatusPill
                         status={o.provider === "admin" ? "grant" : o.status}
                         size="sm"
+                        variant="text"
                       />
                     </span>
                   ),
                 }))}
               />
               {orders.length > 5 && (
-                <p className="mt-2 t-small text-ink/55">
+                <p className="mt-3 t-small text-muted">
                   and {plural(orders.length - 5, "more order")}
                 </p>
               )}
@@ -748,5 +775,14 @@ export function UserDrawer({
         </div>
       )}
     </Drawer>
+  );
+}
+
+/** Small section head inside the drawer: an ink rule and tiny caps. */
+function DrawerHead({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-1 border-b border-fg pb-2.5 text-[11px] font-semibold tracking-[0.16em] uppercase">
+      {children}
+    </h3>
   );
 }

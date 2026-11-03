@@ -1,217 +1,146 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import clsx from "clsx";
-import { SiteShell, Icon, DemoPill } from "@/components/app";
-import { Eyebrow, HandNote, HighlightBox } from "@/components/decor/Bits";
-import { Mascot } from "@/components/decor/Mascot";
+import { SiteShell } from "@/components/app";
+import { ArrowLink, Eyebrow } from "@/components/editorial";
 import { CertificateLookup } from "@/components/auth/CertificateView";
 import { CertificateSheet } from "@/components/auth/CertificateSheet";
 import { getCertificateByCode } from "@/lib/mock";
-import { toneBg, toneText, type Tone } from "@/lib/landing-data";
-import type { IconName } from "@/components/app/icons";
+import { FLAGSHIP } from "@/lib/content/site";
 
 export const metadata: Metadata = {
   title: "Verify a certificate",
-  description:
-    "Check a Tamada Media certificate code against our records. Every certificate is issued automatically when a learner finishes every lesson and test.",
+  description: `Check a Tamada Media ${FLAGSHIP.certificateTitle} certificate code against our records. Every certificate is issued automatically when a learner finishes the course.`,
 };
 
 const SAMPLE_CODES = ["TM-7QK4-M2XD", "TM-3HNP-8RVA"];
 
-const STEPS: { title: string; body: string; icon: IconName; tone: Tone }[] = [
-  {
-    title: "Find the code",
-    body: "It's printed top right on every certificate and looks like TM-7QK4-M2XD.",
-    icon: "search",
-    tone: "sun",
-  },
-  {
-    title: "Pop it in above",
-    body: "Dashes and capitals are optional. We tidy it up for you.",
-    icon: "edit",
-    tone: "cyan",
-  },
-  {
-    title: "See the record",
-    body: "Learner, course, tutor and issue date, straight from our records.",
-    icon: "check-circle",
-    tone: "mint",
-  },
+const STEPS = [
+  { title: "Find the code", body: "It's printed top right on every certificate and looks like TM-7QK4-M2XD." },
+  { title: "Enter it above", body: "Dashes and capitals are optional. We tidy it up for you." },
+  { title: "See the record", body: "Learner, course, director's signature and issue date, straight from our records." },
 ];
 
-const EARNED: string[] = [
-  "Watch at least 90% of every video in the course",
-  "Pass every required test (the ones that unlock the next lesson)",
+const EARNED = [
+  "Watch at least 90% of every lesson in the course",
+  "Pass every required checkpoint (the ones that unlock the next lesson)",
+  "Finish the 60-second capstone film",
   "That's it. The certificate is issued automatically, with a unique code",
 ];
 
-/** Landing for /certificates: lookup form, a sample sheet and how verification works. */
+/* =============================================================================
+   /certificates: the verification desk (dark theatre, like the record pages).
+   The lookup + two sample codes on the left, a sample certificate on the
+   right, then how checking works and how a certificate is earned, ruled.
+   ============================================================================= */
 export default function CertificatesIndexPage() {
   const sample = getCertificateByCode(SAMPLE_CODES[0]);
   return (
-    <SiteShell>
-      <div className="container-x pb-section">
-        {/* heading + lookup */}
-        <div className="grid gap-10 pt-6 md:pt-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-14">
-          <div className="flex flex-col items-start">
-            <Eyebrow tone="purple">Certificate check</Eyebrow>
-            <h1 className="mt-eyebrow t-display-l">
-              Verify a{" "}
-              <HighlightBox tone="sun" rotate={-2}>
-                certificate.
-              </HighlightBox>
-            </h1>
-            <p className="mt-sub max-w-[32rem] t-body-l text-ink/75">
-              Hiring someone, or proud of a friend? Every Tamada Media
-              certificate has a unique code. Pop it in and we&apos;ll check it
-              against our records.
-            </p>
-            <div className="mt-cta w-full max-w-[30rem] rounded-card-lg bg-white p-5 shadow-soft md:p-6">
-              <CertificateLookup compact label="Certificate code" size="lg" />
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-ink/[0.07] pt-4">
-                <span className="text-[13px] font-bold text-ink/70">
-                  Try a sample:
-                </span>
-                {SAMPLE_CODES.map((c) => (
-                  <Link
-                    key={c}
-                    href={`/certificates/${c}`}
-                    className="tap inline-flex items-center rounded-full bg-cream px-3 py-1.5 font-mono text-[13px] font-bold transition-colors coarse:min-h-11 coarse:px-4 hf:bg-ink hf:text-cream"
-                  >
-                    {c}
-                  </Link>
-                ))}
-                <DemoPill className="ml-auto" />
-              </div>
-            </div>
+    <SiteShell flush headerLight>
+      <div className="theatre relative isolate pt-[calc(var(--header-offset)+var(--sat)+28px)] pb-section md:pt-[calc(var(--header-offset)+var(--sat)+48px)]">
+        <div className="container-wide">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <Eyebrow index="09" className="text-cream">
+              Certificate check
+            </Eyebrow>
+            <p className="t-timecode text-ash">Verification desk</p>
           </div>
 
-          {sample && (
-            <div className="relative">
-              <div
-                className="pointer-events-none"
-                aria-hidden
-                style={{ transform: "rotate(1.5deg)" }}
-              >
-                <CertificateSheet
-                  data={{
-                    code: sample.certificate.code,
-                    learner: sample.user.name,
-                    course: sample.course.title,
-                    tutor: sample.tutor?.name ?? "the Tamada team",
-                    issuedAt: sample.certificate.issuedAt,
-                    hours: sample.certificate.hours,
-                  }}
-                />
+          <div className="edit-grid mt-12 items-center gap-y-14 md:mt-16">
+            <div className="col-span-12 lg:col-span-5">
+              <h1 className="t-headline-xl max-w-[9ch]">Verify a certificate.</h1>
+              <p className="t-body-l mt-6 max-w-[32rem] text-cream/80">
+                Hiring someone, or proud of a friend? Every {FLAGSHIP.certificateTitle} certificate has a unique code. Enter it and we&apos;ll
+                check it against our records.
+              </p>
+              <div className="mt-10 max-w-[30rem]">
+                <CertificateLookup label="Certificate code" size="lg" />
               </div>
-              <span className="absolute -top-3 left-4 rounded-full bg-ink px-3 py-1.5 t-tag text-cream shadow-soft">
-                Sample certificate
-              </span>
-              <div
-                className="absolute -top-12 right-6 hidden md:block"
-                aria-hidden
-              >
-                <HandNote rotate={-3} write={false}>
-                  the code lives here ↘
-                </HandNote>
+              <div className="mt-8 max-w-[30rem]">
+                <p className="t-label text-ash">Try a sample</p>
+                <ul className="mt-3 border-t border-line">
+                  {SAMPLE_CODES.map((c) => (
+                    <li key={c} className="border-b border-line">
+                      <Link href={`/certificates/${c}`} className="group flex min-h-12 items-center justify-between gap-4 py-2 font-mono text-[14px] tracking-[0.06em] transition-colors hf:text-red-lite">
+                        {c}
+                        <span className="t-label text-ash transition-colors group-hf:text-red-lite">Verify →</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* how it works */}
-        <section aria-labelledby="cert-how" className="mt-20 md:mt-28">
-          <h2 id="cert-how" className="t-chunky-card">
-            How checking works
-          </h2>
-          <ol className="mt-6 grid gap-4 md:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <li
-                key={s.title}
-                className={clsx(
-                  "flex flex-col rounded-card-lg p-6",
-                  toneBg[s.tone],
-                  toneText[s.tone],
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className="grid size-11 place-items-center rounded-full bg-white"
-                    aria-hidden
-                  >
-                    <Icon name={s.icon} className="size-5" />
-                  </span>
-                  {/* decorative step number drawn as ::before content, so it is not read as low-contrast text */}
-                  <span
-                    className="t-display-m opacity-30 before:content-[attr(data-n)]"
-                    data-n={`0${i + 1}`}
-                    aria-hidden
+            {sample && (
+              <figure className="col-span-12 lg:col-span-7 lg:col-start-6">
+                <div className="pointer-events-none" aria-hidden>
+                  <CertificateSheet
+                    data={{
+                      code: sample.certificate.code,
+                      learner: sample.user.name,
+                      course: sample.course.title,
+                      tutor: sample.tutor?.name ?? FLAGSHIP.director,
+                      issuedAt: sample.certificate.issuedAt,
+                      hours: sample.certificate.hours,
+                    }}
                   />
                 </div>
-                <h3 className="mt-6 t-app-h2">
-                  <span className="sr-only">Step {i + 1}: </span>
-                  {s.title}
-                </h3>
-                <p className="mt-1.5 t-small text-ink/75">{s.body}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+                <figcaption className="t-timecode mt-4 flex flex-wrap justify-between gap-x-6 gap-y-1 text-ash">
+                  <span>Sample · {sample.certificate.code}</span>
+                  <span>The code lives top right</span>
+                </figcaption>
+              </figure>
+            )}
+          </div>
 
-        {/* how earned */}
-        <section
-          aria-labelledby="cert-earned"
-          className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
-        >
-          <div className="rounded-card-lg bg-white p-6 shadow-soft md:p-8">
-            <h2 id="cert-earned" className="t-app-h2">
-              How a certificate is earned
-            </h2>
-            <ul className="mt-5 grid gap-3">
-              {EARNED.map((t) => (
-                <li key={t} className="flex gap-3 text-[15px] leading-snug">
-                  <span
-                    className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-mint text-forest"
-                    aria-hidden
-                  >
-                    <Icon name="check" className="size-3" strokeWidth={3.2} />
+          {/* how checking works */}
+          <section aria-labelledby="cert-how" className="mt-24 md:mt-32">
+            <Eyebrow as="h2" className="text-cream">
+              <span id="cert-how">How checking works</span>
+            </Eyebrow>
+            <ol className="mt-8 grid border-t border-line md:grid-cols-3">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="border-b border-line py-6 md:border-b-0 md:py-8 md:pr-10 md:[&:not(:first-child)]:border-l md:[&:not(:first-child)]:pl-8">
+                  <span className="t-timecode text-ash" aria-hidden>
+                    {String(i + 1).padStart(2, "0")}
                   </span>
-                  {t}
+                  <h3 className="mt-4 font-heading text-[clamp(1.375rem,1.1rem+0.9vw,1.875rem)] leading-tight font-semibold tracking-[-0.03em]">
+                    <span className="sr-only">Step {i + 1}: </span>
+                    {s.title}
+                  </h3>
+                  <p className="t-small mt-2 max-w-[30ch] text-cream/75">{s.body}</p>
                 </li>
               ))}
-            </ul>
-            <p className="mt-6 rounded-tag bg-cream px-4 py-3 t-small text-ink/70">
-              Nobody at Tamada hand-issues or sells certificates. If a code
-              doesn&apos;t verify here, it isn&apos;t one of ours.
-            </p>
-          </div>
-          <div
-            className="relative flex flex-col justify-between overflow-hidden rounded-card-lg bg-purple p-6 text-white md:p-8"
-            data-field="dark"
-          >
-            <div>
-              <h2 className="t-app-h2">Got a certificate of your own?</h2>
-              <p className="mt-2 max-w-[30ch] t-small text-white/85">
-                Find all of yours, with share links and PDF downloads, in your
-                student space.
+            </ol>
+          </section>
+
+          {/* how a certificate is earned */}
+          <section aria-labelledby="cert-earned" className="edit-grid mt-20 gap-y-10 md:mt-28">
+            <div className="col-span-12 lg:col-span-6">
+              <Eyebrow as="h2" className="text-cream">
+                <span id="cert-earned">How a certificate is earned</span>
+              </Eyebrow>
+              <ul className="mt-8 border-t border-line">
+                {EARNED.map((t) => (
+                  <li key={t} className="flex gap-3 border-b border-line py-3.5 text-[15px] leading-snug">
+                    <span aria-hidden className="mt-[7px] size-[6px] shrink-0 bg-red" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <p className="t-small mt-6 max-w-[48ch] text-ash">
+                Nobody at Tamada hand-issues or sells certificates. If a code doesn&apos;t verify here, it isn&apos;t one of ours.
               </p>
             </div>
-            <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-              <Link
-                href="/dashboard/certificates"
-                className="tap inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[15px] font-bold text-ink transition-colors hf:bg-butter"
-              >
-                My certificates{" "}
-                <Icon name="arrow-right" className="size-4" strokeWidth={2.4} />
-              </Link>
-              <Mascot
-                title=""
-                className="w-[72px] shrink-0"
-                style={{ transform: "rotate(8deg)" }}
-              />
+            <div className="col-span-12 flex flex-col justify-end lg:col-span-4 lg:col-start-9">
+              <p className="t-small max-w-[30ch] text-cream/75">Got a certificate of your own? Share links and PDF downloads live in your student space.</p>
+              <div className="mt-5">
+                <ArrowLink href="/dashboard/certificates" size="lg">
+                  My certificates
+                </ArrowLink>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </SiteShell>
   );

@@ -1,32 +1,100 @@
 import Link from "next/link";
-import Image from "next/image";
 import clsx from "clsx";
-import { Logo } from "@/components/landing/Header";
-import { Eyebrow, Sparkle, Sticker } from "@/components/decor/Bits";
-import { Mascot } from "@/components/decor/Mascot";
-import { Cloud } from "@/components/decor/Cloud";
-import { BlockBuddy } from "@/components/decor/BlockBuddy";
-import { DemoPill, Icon, ProgressBar } from "@/components/app";
-import {
-  getCourseBySlug,
-  getCourseProgress,
-  DEMO_STUDENT_ID,
-  formatDuration,
-} from "@/lib/mock";
-import { cropSrc } from "@/lib/img";
-import type { Tone } from "@/lib/landing-data";
+import { ArrowIcon, BrandMark, Eyebrow, GridLines, Photo, RedWords } from "@/components/editorial";
+import type { MediaKey } from "@/lib/media";
+import { Timecode } from "./Timecode";
 
 /* =============================================================================
-   Maxima split layout for the auth pages: an illustrated colour field (Tami,
-   clouds, a tiny scene) on the left, the form column on the cream canvas on the
-   right. Below 1024px the field becomes a banner above the form; on phones
-   (< 640px) a compact band (logo, Back, the headline) so the form starts in the
-   first screen. Short landscape phones get the split back: a sticky 5/12 field
-   beside the form. The field is sticky on desktop so long forms scroll past a
-   calm picture.
+   AUTH SPLIT (Marlowe). The auth pages (log in, sign up, reset, teach).
+   Left (lg+): a full-height theatre panel, sticky while the form scrolls: a
+   graded cinematic still, hairline thirds, the back link + a slate top row, a
+   short quote from the director in the right third, a giant Anton line at the
+   foot ("ROLL / CAMERA.") and a running mono timecode.
+   Right: the cream panel: the logo, the switch link ("New here? Create an
+   account"), an Inter Tight heading over the form, a tiny-caps legal row.
+   Below lg: a compact dark band (logo, Back, the Anton line, the slate) above
+   the form, so the form starts in the first screen on phones.
+
+   <AuthSplit scene="login" eyebrow="Log in" title="Welcome back." intro="…"
+              back={{ href: "/", label: "to site" }} topAction={<AuthSwitch … />}>
+     <LoginForm next={next} />
+   </AuthSplit>
    ============================================================================= */
 
-type Scene = "login" | "signup" | "forgot";
+export type AuthScene = "login" | "signup" | "forgot" | "tutor";
+
+type SceneArt = {
+  /** slate: scene + take */
+  scene: string;
+  take: string;
+  /** the giant Anton line, one entry per line */
+  lines: string[];
+  red: string[];
+  /** Anton size in cqw of the panel width (the longest line fills ~85%) */
+  fit: number;
+  quote: string;
+  by: string;
+  still: MediaKey;
+  pos?: string;
+  /** timecode the slate starts from (seconds) */
+  start: number;
+  /** brightness of the graded still (darker stills get more) */
+  lift?: number;
+};
+
+const SCENES: Record<AuthScene, SceneArt> = {
+  login: {
+    scene: "10",
+    take: "01",
+    lines: ["Roll", "camera."],
+    red: ["camera"],
+    fit: 26,
+    quote: "Every session starts the same way. Find the frame, check the light, then roll.",
+    by: "Arjun Rao, Director",
+    still: "director-on-set",
+    pos: "42% 42%",
+    start: 24 * 60 + 12,
+  },
+  signup: {
+    scene: "10",
+    take: "02",
+    lines: ["Your first", "take starts", "here."],
+    red: ["take"],
+    fit: 17.5,
+    quote: "You don't need a camera. You need a story worth a minute of someone's life.",
+    by: "Arjun Rao, Director",
+    still: "journal-sixty-seconds",
+    pos: "50% 55%",
+    start: 1,
+    lift: 0.8,
+  },
+  forgot: {
+    scene: "10",
+    take: "03",
+    lines: ["Cut.", "Go again."],
+    red: ["again"],
+    fit: 21.5,
+    quote: "Every good take had a bad one before it. Reset, breathe, roll again.",
+    by: "Arjun Rao, Director",
+    still: "bts-projector",
+    pos: "38% 55%",
+    start: 3 * 60 + 33,
+    lift: 0.68,
+  },
+  tutor: {
+    scene: "12",
+    take: "01",
+    lines: ["Teach what", "you shoot."],
+    red: ["shoot"],
+    fit: 19.5,
+    quote: "Finished work and the patience to explain it. That's the whole job description.",
+    by: "Arjun Rao, Director",
+    still: "bts-camera-rig",
+    pos: "40% 40%",
+    start: 12 * 60,
+    lift: 0.72,
+  },
+};
 
 const LEGAL_LINKS = [
   { label: "Terms", href: "/terms" },
@@ -34,65 +102,58 @@ const LEGAL_LINKS = [
   { label: "Help", href: "/contact" },
 ];
 
-/**
- * Field colours. The blobs are a local, slightly deeper variant of the shared
- * BlobSet tones: the big wave sits behind the heading copy on desktop, so it
- * stays dark enough for white text (WCAG AA) while the top-right lobe stays light.
- * [lobe (top right), wave (bottom), accents]
- */
-const FIELD: Record<
-  Scene,
-  { bg: string; blobs: [string, string, string]; eyebrow: Tone }
-> = {
-  login: {
-    bg: "bg-blue",
-    blobs: ["#5b8dff", "#1d57e6", "#1748c4"],
-    eyebrow: "sun",
-  },
-  // the deeper hotpink fill: at lg+ the heading copy sits on the field fill itself
-  // (the wave is below it), and white body text needs it for 4.5:1
-  signup: {
-    bg: "bg-hotpink-deep",
-    blobs: ["#ff3da6", "#bf0063", "#a30054"],
-    eyebrow: "sun",
-  },
-  // same blue as /login: the route curtain for /forgot-password is the blue "Log in" disc
-  forgot: {
-    bg: "bg-blue",
-    blobs: ["#5b8dff", "#1d57e6", "#1748c4"],
-    eyebrow: "sun",
-  },
-};
-
-export function FieldBlobs({
-  colors: [lobe, wave, accent],
-}: {
-  colors: [string, string, string];
-}) {
+/** "SC 10 · TK 01" + a red REC dot + the running timecode (`clock` = the dot + timecode only). */
+function Slate({ s, clock, className }: { s: SceneArt; clock?: boolean; className?: string }) {
   return (
-    <svg
-      viewBox="0 0 1000 1000"
-      preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-0 -z-10 h-full w-full"
-      aria-hidden
+    <p className={clsx("t-timecode flex items-center gap-3 whitespace-nowrap text-cream/70", className)} aria-hidden>
+      {!clock && (
+        <span>
+          SC {s.scene} · TK {s.take}
+        </span>
+      )}
+      <span className="flex items-center gap-2 text-cream">
+        <span className="size-[7px] animate-pulse rounded-full bg-red" />
+        <Timecode start={s.start} />
+      </span>
+    </p>
+  );
+}
+
+function BackLink({ back, className }: { back: { href: string; label: string }; className?: string }) {
+  return (
+    <Link
+      href={back.href}
+      className={clsx("group t-label inline-flex min-h-11 items-center gap-2.5 text-cream/85 transition-colors hf:text-cream", className)}
     >
-      <path
-        d="M600 0 H1000 V330 C940 400 850 380 800 310 C750 240 680 250 630 180 C590 120 560 50 600 0 Z"
-        fill={lobe}
-      />
-      <path
-        d="M0 640 C120 560 230 690 380 640 C520 594 600 470 760 520 C880 558 940 640 1000 610 V1000 H0 Z"
-        fill={wave}
-      />
-      <path
-        d="M0 300 C70 260 150 290 170 360 C192 440 120 500 50 500 C30 500 12 495 0 490 Z"
-        fill={accent}
-      />
-      <path
-        d="M760 1000 C770 905 860 845 940 862 C968 868 988 878 1000 888 V1000 Z"
-        fill={accent}
-      />
-    </svg>
+      <ArrowIcon dir="left" className="size-3.5 transition-[translate] duration-500 ease-expo group-hf:-translate-x-1" />
+      <span>
+        Back
+        {back.label && <span className="max-sm:hidden"> {back.label}</span>}
+      </span>
+    </Link>
+  );
+}
+
+/** The giant Anton line (red word), sized to the panel through container query units. */
+function AntonLines({ s, className, style }: { s: SceneArt; className?: string; style?: React.CSSProperties }) {
+  return (
+    <p className={clsx("font-display leading-[0.84] tracking-[-0.005em] uppercase", className)} style={style}>
+      {s.lines.map((l) => (
+        <span key={l} className="block whitespace-nowrap">
+          <RedWords text={l} red={s.red} />
+        </span>
+      ))}
+    </p>
+  );
+}
+
+/** The grade every auth still gets: black-and-white, a touch of contrast, kept dark for cream type
+    (a filter on the still's wrapper; `lift` brightens the darker stills a little). */
+function GradedStill({ s, sizes, preload }: { s: SceneArt; sizes: string; preload?: boolean }) {
+  return (
+    <div className="absolute inset-0" style={{ filter: `grayscale(1) contrast(1.12) brightness(${s.lift ?? 0.62})` }}>
+      <Photo k={s.still} fill sizes={sizes} preload={preload} alt="" pos={s.pos} />
+    </div>
   );
 }
 
@@ -100,133 +161,141 @@ export function AuthSplit({
   scene,
   eyebrow,
   title,
-  body,
+  intro,
   topAction,
   back = { href: "/", label: "to site" },
+  wide,
   children,
 }: {
-  scene: Scene;
+  scene: AuthScene;
+  /** tiny caps over the heading, e.g. "Log in" */
   eyebrow: string;
+  /** Inter Tight page heading (the h1) */
   title: React.ReactNode;
-  body: React.ReactNode;
-  /** right side of the form column's top row, e.g. "New here? Sign up" */
+  intro?: React.ReactNode;
+  /** top right of the form column, e.g. <AuthSwitch prompt="New here?" … /> */
   topAction?: React.ReactNode;
-  /** where "Back" goes (e.g. the course a visitor came from); label is the tail shown from sm, e.g. "to course" */
+  /** where "Back" goes (the course a visitor came from…); label is the tail shown from sm, e.g. "to course" */
   back?: { href: string; label: string };
+  /** a wider form column (the tutor application) */
+  wide?: boolean;
   children: React.ReactNode;
 }) {
-  const f = FIELD[scene];
+  const s = SCENES[scene];
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] land:grid land:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-      {/* ------------------------------------------------------------------ colour field */}
-      {/* top / left padding clear the notch and status bar (viewport-fit: cover) */}
-      <div className="p-inset pt-[max(var(--panel-inset),var(--sat))] lg:sticky lg:top-0 lg:h-dvh land:sticky land:top-0 land:h-dvh land:pl-[max(var(--panel-inset),var(--sal))]">
-        <section
-          data-field="dark"
-          aria-label="Welcome"
-          className={clsx(
-            "relative isolate flex h-full flex-col overflow-clip rounded-[clamp(1.75rem,3.5vw,3.5rem)] px-5 pt-4 pb-6 text-white phone-s:px-4 sm:px-8 sm:pb-7 md:pb-10 land:px-6 land:pt-4 land:pb-5 lg:px-10 lg:pt-8 lg:pb-10 xl:px-12 lg:[@media(max-height:760px)]:pt-6 lg:[@media(max-height:760px)]:pb-7",
-            f.bg,
-          )}
-        >
-          <FieldBlobs colors={f.blobs} />
-          <Cloud
-            size="m"
-            delay={-8}
-            className="absolute top-[22%] -right-6 -z-10 opacity-90 max-sm:top-auto max-sm:-right-10 max-sm:bottom-3 lg:top-[14%] lg:right-[8%] lg:[@media(max-height:760px)]:hidden land:hidden"
+    <div
+      className={clsx(
+        "ground-cream min-h-dvh lg:grid",
+        wide ? "lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
+      )}
+    >
+      {/* ------------------------------------------------------------------ desktop: the theatre panel */}
+      <aside
+        aria-label="Tamada Media"
+        className="theatre @container hidden overflow-hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col"
+      >
+        <div className="absolute inset-0 -z-10">
+          <GradedStill s={s} sizes="50vw" preload />
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to top, rgb(11 11 11 / 0.92) 0%, rgb(11 11 11 / 0.55) 34%, rgb(11 11 11 / 0.08) 62%, rgb(11 11 11 / 0.55) 100%), radial-gradient(ellipse 80% 70% at 50% 40%, transparent 40%, rgb(11 11 11 / 0.5) 100%)",
+            }}
           />
+        </div>
+        <GridLines bleed stops={[100 / 3, 200 / 3]} />
 
-          <div className="flex items-center justify-between gap-3">
-            <Logo light preload />
-            <Link
-              href={back.href}
-              className="tap inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-bold text-ink shadow-soft transition-colors coarse:h-11 hf:bg-butter"
-            >
-              <Icon name="arrow-left" className="size-4" strokeWidth={2.4} />
-              <span>
-                Back
-                {back.label && (
-                  <span className="hidden sm:inline land:hidden">
-                    {" "}
-                    {back.label}
-                  </span>
-                )}
-              </span>
+        <div className="relative z-10 grid h-full grid-cols-3 grid-rows-[auto_1fr_auto_auto] pt-[max(20px,var(--sat))]">
+          <div className="px-8 xl:px-10">
+            <BackLink back={back} className="whitespace-nowrap" />
+          </div>
+          <div className="col-start-3 flex justify-end px-8 pt-3.5 xl:px-10">
+            <Slate s={s} clock />
+          </div>
+
+          <figure className={clsx("row-start-2 self-center px-6 xl:px-8 [@media(max-height:760px)]:hidden", wide ? "col-span-2 col-start-2" : "col-start-3")}>
+            <blockquote className="t-body max-w-[19rem] text-cream/90">&ldquo;{s.quote}&rdquo;</blockquote>
+            <figcaption className="t-label mt-4 text-ash">{s.by}</figcaption>
+          </figure>
+
+          <div className="col-span-3 row-start-3 px-8 pb-6 xl:px-10">
+            <AntonLines s={s} style={{ fontSize: `min(${s.fit}cqw, ${s.fit * 0.72}dvh)` }} />
+          </div>
+
+          <div className="col-span-3 row-start-4 flex items-center justify-between gap-4 border-t border-line bg-ink px-8 py-4 xl:px-10">
+            <p className="t-label whitespace-nowrap text-ash">
+              Tamada Media<span className="max-xl:hidden"> · AI filmmaking school</span>
+            </p>
+            <p className="t-timecode whitespace-nowrap text-ash" aria-hidden>
+              SC {s.scene} · TK {s.take} · 24 FPS
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      {/* ------------------------------------------------------------------ below lg: the dark band */}
+      <header className="theatre overflow-hidden lg:hidden">
+        <div className="absolute inset-0 -z-10">
+          <GradedStill s={s} sizes="100vw" />
+          <div aria-hidden className="absolute inset-0 bg-[linear-gradient(to_top,rgb(11_11_11/0.94),rgb(11_11_11/0.45)_70%,rgb(11_11_11/0.7))]" />
+        </div>
+        <div className="px-gutter pt-[max(10px,var(--sat))] pb-5 sm:pb-7">
+          <div className="flex items-center justify-between gap-4">
+            <Link href="/" className="block w-[104px] py-2 sm:w-[118px]" aria-label="Tamada Media home">
+              <BrandMark tone="light" sizes="118px" preload />
             </Link>
+            <BackLink back={back} className="-mr-1" />
           </div>
+          <p className="mt-8 font-display text-[clamp(2.5rem,1.4rem+6vw,4.25rem)] leading-[0.86] tracking-[-0.005em] text-balance uppercase sm:mt-12 land:hidden">
+            <RedWords text={s.lines.join(" ")} red={s.red} />
+          </p>
+          <Slate s={s} className="mt-5 sm:mt-6 land:mt-3" />
+        </div>
+      </header>
 
-          {/* lg:mt-6 keeps the eyebrow clear of the logo row, lg:pb-8 keeps the copy clear
-              of the scene (Tami and the sparkle reach above the scene box) */}
-          {/* phones: no eyebrow and no body copy (the headline says it, the form is the point) */}
-          <div className="relative mt-5 flex flex-1 flex-col justify-center sm:mt-8 lg:mt-6 lg:pb-8 lg:[@media(max-height:760px)]:pb-6 land:mt-4">
-            <div className="app-enter max-w-[30rem] pr-14 sm:pr-24 lg:max-w-[34rem] lg:pr-0 land:pr-14">
-              <div className="max-sm:hidden">
-                <Eyebrow tone={f.eyebrow}>{eyebrow}</Eyebrow>
-              </div>
-              {/* capped so the highlighted second line ("curious human.") stays on one line in
-                  the column; at lg it also scales with the viewport height, so on short
-                  laptop screens copy + scene still fit the sticky field */}
-              <h1 className="t-display-l text-[clamp(1.625rem,15.15vw-22.7px,2.25rem)] sm:mt-eyebrow sm:text-[clamp(2.5rem,1.2rem+3.6vw,4.25rem)] lg:text-[max(2.25rem,min(clamp(2.5rem,1.2rem+3.6vw,4.25rem),8.5dvh))] land:text-[clamp(1.75rem,3.6vw,2.125rem)]">
-                {title}
-              </h1>
-              <p className="mt-sub t-body-l text-white max-sm:sr-only land:sr-only">
-                {body}
-              </p>
-            </div>
-            {/* phones / tablets: Tami peeks in beside the heading */}
-            <div
-              className="pointer-events-none absolute top-0 right-0 w-[48px] sm:top-1 sm:w-[88px] lg:hidden land:w-[52px]"
-              aria-hidden
-            >
-              <Mascot
-                title=""
-                className="w-full animate-float"
-                style={{ transform: "rotate(8deg)" }}
-              />
-            </div>
-          </div>
-
-          {/* the small cloud belongs to the scene, not the field: on tall fields the scene
-              reserves a strip above itself for it, so it can never land on the copy */}
-          <div className="relative hidden lg:block land:hidden [@media(min-height:860px)]:pt-16">
-            <Cloud
-              size="s"
-              delay={-3}
-              flip
-              className="absolute top-0 left-[3%] -z-10 hidden [@media(min-height:860px)]:block"
-            />
-            <SceneArt scene={scene} />
-          </div>
-        </section>
-      </div>
-
-      {/* ------------------------------------------------------------------ form column */}
+      {/* ------------------------------------------------------------------ the cream panel */}
       <main
         id="main"
-        className="flex min-w-0 flex-col px-gutter pt-3 pb-[max(1.5rem,calc(var(--sab)+0.75rem))] sm:pt-4 sm:pb-8 lg:px-10 lg:pt-8 xl:px-16 land:pt-4 land:pr-[max(var(--gutter),var(--sar))]"
+        tabIndex={-1}
+        className="flex min-w-0 flex-col px-gutter pt-4 pb-[max(1.25rem,calc(var(--sab)+0.75rem))] outline-none lg:min-h-dvh lg:px-12 lg:pt-7 xl:px-16"
       >
-        {topAction && (
-          <div className="mx-auto flex w-full max-w-[480px] justify-end text-[14px] font-semibold text-ink/70 coarse:min-h-11 coarse:items-center">
-            {topAction}
-          </div>
-        )}
-        <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-center pt-3 pb-6 sm:py-6 md:py-10 land:pt-3">
-          {children}
+        <div className="hidden min-h-11 items-center justify-between gap-4 lg:flex">
+          <Link href="/" className="block w-[116px]" aria-label="Tamada Media home">
+            <BrandMark tone="dark" sizes="116px" />
+          </Link>
+          {topAction && <div className="ml-auto text-right">{topAction}</div>}
         </div>
-        {/* touch: the legal links are 44px-tall targets (the row stays one line from 360px) */}
-        <footer className="mx-auto flex w-full max-w-[480px] flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-ink/[0.08] pt-5 text-[13px] font-semibold text-ink/70 coarse:pt-2">
-          <span>© 2026 Tamada Media</span>
-          <nav
-            aria-label="Legal"
-            className="flex items-center gap-4 coarse:-mr-2.5 coarse:gap-0"
-          >
+
+        <div className={clsx("mx-auto flex w-full flex-1 flex-col justify-center pt-5 pb-12 sm:pt-8 lg:py-14", wide ? "max-w-[620px]" : "max-w-[440px]")}>
+          {/* phones + tablets: the switch link shares the eyebrow row */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <Eyebrow index={s.scene} className="whitespace-nowrap">
+              {eyebrow}
+            </Eyebrow>
+            {topAction && <div className="-my-2 text-right lg:hidden">{topAction}</div>}
+          </div>
+          <h1 className="mt-5 font-heading text-[clamp(2.25rem,1.7rem+2.2vw,3.5rem)] leading-[0.98] font-bold tracking-[-0.045em] text-balance">
+            {title}
+          </h1>
+          {intro && <p className="t-body mt-4 max-w-[36ch] text-muted">{intro}</p>}
+          <div className="mt-9 sm:mt-10">{children}</div>
+        </div>
+
+        <footer
+          className={clsx(
+            "mx-auto flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line pt-3",
+            wide ? "max-w-[620px]" : "max-w-[440px]",
+          )}
+        >
+          <span className="t-label text-muted">
+            © 2026<span className="max-sm:hidden"> Tamada Media</span>
+          </span>
+          <nav aria-label="Legal" className="-mr-2 flex items-center">
             {LEGAL_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="link-draw hf:text-ink coarse:inline-flex coarse:min-h-11 coarse:items-center coarse:rounded-full coarse:px-2.5 coarse:active:bg-ink/[0.05]"
-              >
-                {l.label}
+              <Link key={l.href} href={l.href} className="t-label inline-flex min-h-11 items-center px-2 text-muted transition-colors hf:text-fg">
+                <span className="link-draw">{l.label}</span>
               </Link>
             ))}
           </nav>
@@ -236,150 +305,27 @@ export function AuthSplit({
   );
 }
 
-/* ----------------------------------------------------------------------------- scenes */
-function SceneArt({ scene }: { scene: Scene }) {
-  if (scene === "login") return <LoginScene />;
-  if (scene === "signup") return <SignupScene />;
-  return <ForgotScene />;
-}
-
-/** "Pick up where you left off": Priya's real resume point from the mock data. */
-function LoginScene() {
-  const course = getCourseBySlug("web-dev-from-zero");
-  const progress = course
-    ? getCourseProgress(DEMO_STUDENT_ID, course.id)
-    : null;
+/** Top-right switch: "New here?  CREATE AN ACCOUNT →". */
+export function AuthSwitch({ prompt, label, href }: { prompt: string; label: string; href: string }) {
   return (
-    <div className="relative flex items-end gap-4 xl:gap-6">
-      <div className="w-[110px] shrink-0 xl:w-[180px] lg:[@media(max-height:760px)]:w-[96px]!">
-        <div className="group">
-          <Mascot
-            interactive
-            title=""
-            className="w-full"
-            style={{ transform: "rotate(-6deg)" }}
-          />
-        </div>
-      </div>
-      {course && progress && (
-        <div
-          className="mb-3 w-full max-w-[330px] min-w-0 rounded-card bg-white p-3 text-ink shadow-photo"
-          style={{ transform: "rotate(2deg)" }}
-        >
-          <div className="flex gap-3">
-            <div className="relative size-14 shrink-0 overflow-hidden rounded-img xl:size-16">
-              <Image
-                src={cropSrc(course.thumbnail, 1)}
-                alt=""
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            </div>
-            <div className="min-w-0">
-              <p className="t-micro text-ink/70 uppercase">
-                Where you left off
-              </p>
-              <p className="mt-1 line-clamp-2 t-app-h3">{course.title}</p>
-              <p className="mt-0.5 t-small text-ink/70">
-                Module 04 ·{" "}
-                {formatDuration(progress.resumePositionSec, "clock")} in
-              </p>
-            </div>
-          </div>
-          <ProgressBar
-            value={progress.percent}
-            tone="blue"
-            size="sm"
-            className="mt-3"
-            label="Course progress"
-            showValue
-          />
-          <div className="mt-2 flex justify-end">
-            <DemoPill />
-          </div>
-        </div>
-      )}
-      {/* sits above the scene box: dropped on short screens where there is no air for it */}
-      <Sparkle
-        className="absolute -top-6 left-[46%] w-7 [@media(max-height:760px)]:hidden"
-        fill="#ffcf3f"
-      />
-    </div>
-  );
-}
-
-function SignupScene() {
-  return (
-    <div className="relative flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 items-end gap-2">
-        <BlockBuddy
-          body="#ffcf3f"
-          head="#2668fd"
-          hat="#fd4401"
-          wave
-          className="w-[46px] xl:w-[64px] lg:[@media(max-height:760px)]:w-[40px]!"
-        />
-        <div className="w-[116px] xl:w-[170px] lg:[@media(max-height:760px)]:w-[96px]!">
-          <div className="group">
-            <Mascot
-              interactive
-              title=""
-              className="w-full"
-              style={{ transform: "rotate(-4deg)" }}
-            />
-          </div>
-        </div>
-        <BlockBuddy
-          body="#3b308f"
-          head="#a7eb98"
-          className="w-[42px] xl:w-[58px] lg:[@media(max-height:760px)]:w-[36px]!"
-        />
-      </div>
-      <div className="mb-6 ml-auto flex flex-col items-end gap-3">
-        <Sticker tone="sun" size="sm" rotate={-6}>
-          1st video free
-        </Sticker>
-        <Sticker tone="white" size="sm" rotate={5}>
-          + certificate
-        </Sticker>
-      </div>
-    </div>
-  );
-}
-
-function ForgotScene() {
-  return (
-    <div className="relative flex items-end gap-6">
-      <div className="w-[140px] xl:w-[160px] lg:[@media(max-height:760px)]:w-[104px]!">
-        <Mascot
-          wink
-          title=""
-          className="w-full"
-          style={{ transform: "rotate(-8deg)" }}
-        />
-      </div>
-      <div className="mb-8">
-        <Sticker tone="sun" size="sm" rotate={-5} lines={2}>
-          happens to the best of us
-        </Sticker>
-      </div>
-    </div>
+    <p className="flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5">
+      <span className="t-small text-muted max-sm:hidden">{prompt}</span>
+      <Link href={href} className="group t-label inline-flex min-h-11 items-center gap-2 text-fg">
+        <span className="link-draw whitespace-nowrap">{label}</span>
+        <ArrowIcon className="size-3.5 shrink-0 transition-[translate] duration-500 ease-expo group-hf:translate-x-1" />
+      </Link>
+    </p>
   );
 }
 
 /* ----------------------------------------------------------------------------- bits */
-/** "or" divider between the email form and social / demo options. */
+/** "or" divider between the email form and the other ways in: a hairline with tiny caps. */
 export function OrDivider({ label = "or" }: { label?: string }) {
   return (
-    <div
-      className="my-5 flex items-center gap-3 text-[13px] font-bold text-ink/70 uppercase"
-      role="separator"
-      aria-label={label}
-    >
-      <span className="h-px flex-1 bg-ink/[0.1]" />
+    <div className="t-label my-7 flex items-center gap-4 text-muted" role="separator" aria-label={label}>
+      <span className="h-px flex-1 bg-line" />
       {label}
-      <span className="h-px flex-1 bg-ink/[0.1]" />
+      <span className="h-px flex-1 bg-line" />
     </div>
   );
 }
@@ -388,22 +334,20 @@ export function OrDivider({ label = "or" }: { label?: string }) {
 export function GoogleGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path
-        fill="#4285F4"
-        d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10l3.7-2.9Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4Z"
-      />
+      <path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z" />
+      <path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23Z" />
+      <path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10l3.7-2.9Z" />
+      <path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4Z" />
     </svg>
+  );
+}
+
+/** A ruled note above a form (where you'll land, a session that already exists…): hairlines + a red marker. */
+export function AuthNote({ children, className, live }: { children: React.ReactNode; className?: string; live?: boolean }) {
+  return (
+    <div aria-live={live ? "polite" : undefined} className={clsx("app-fade flex gap-3 border-y border-line py-3.5 text-[14px] leading-snug", className)}>
+      <span aria-hidden className="mt-[6px] size-[7px] shrink-0 bg-red" />
+      <div className="min-w-0">{children}</div>
+    </div>
   );
 }

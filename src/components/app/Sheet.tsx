@@ -8,6 +8,7 @@ import { Icon } from "./icons";
 import { useIsClient, useLayer } from "./overlay-core";
 import { isCoarse } from "./mobile";
 import type { MenuItem } from "./Overlay";
+import { CREAM_SURFACE, INK_SURFACE } from "./surfaces";
 
 /* =============================================================================
    Bottom sheets (MOBILE_SPEC §1.7): one primitive, three presets.
@@ -17,15 +18,16 @@ import type { MenuItem } from "./Overlay";
        …filters…
      </BottomSheet>
 
-     <ActionSheet open={o} onClose={…} title="Web Dev From Zero" items={menuItems} />
+     <ActionSheet open={o} onClose={…} title="AI Filmmaking: Prompt to Premiere" items={menuItems} />
        (MenuItem[] from DropdownMenu: 52px rows, danger rows in flame, dividers)
 
      <FullScreenSheet open={o} onClose={…} title="Edit lesson" footer={<Button fullWidth>Save</Button>}>
        …editor…
      </FullScreenSheet>
 
-   Anatomy: ink/45 scrim (tap closes) -> white panel, 28px top radius, grabber, sticky
-   header (title t-app-h2, optional description, 44px close), scrolling body
+   Anatomy (design system v2): ink/55 scrim (tap closes) -> square cream panel with a
+   hairline top edge, a thin grabber, sticky header (optional tiny-caps eyebrow, Inter
+   Tight title, optional description, 44px close), scrolling body
    (overscroll contained, data-lenis-prevent), sticky footer with the safe-area inset.
    Height: detent "auto" = content height, capped at min(92dvh, --vvh - 8px) so it stays
    above the iOS keyboard; "full" = that cap as a fixed height. FullScreenSheet = full
@@ -67,6 +69,10 @@ export interface SheetProps {
   fullScreen?: boolean;
   /** aria role of the panel (default dialog) */
   role?: "dialog" | "alertdialog";
+  /** tiny caps line above the title */
+  eyebrow?: React.ReactNode;
+  /** panel ground: cream (default) or ink (theatre surfaces such as the learn player) */
+  surface?: "cream" | "ink";
 }
 
 const CLOSE_MS = 240;
@@ -247,6 +253,8 @@ export function BottomSheet({
   footerLayout = "end",
   fullScreen,
   role = "dialog",
+  eyebrow,
+  surface = "cream",
 }: SheetProps) {
   const client = useIsClient();
   const { mounted, closing, skipExit } = usePresence(open);
@@ -270,7 +278,7 @@ export function BottomSheet({
     <div className="fixed inset-0 z-[200] flex items-end justify-center" data-lenis-prevent="" data-sheet="">
       <div
         ref={scrim}
-        className="sheet-scrim absolute inset-0 touch-none bg-ink/45"
+        className="sheet-scrim absolute inset-0 touch-none bg-ink/55"
         data-closing={closing || undefined}
         onClick={onClose}
         aria-hidden
@@ -283,26 +291,29 @@ export function BottomSheet({
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
         data-closing={closing || undefined}
+        data-field={surface === "ink" ? "dark" : undefined}
         style={{ maxHeight: cap, height: full ? cap : undefined }}
         className={clsx(
-          "sheet-panel relative flex w-full flex-col overflow-hidden rounded-t-[28px] bg-white shadow-lift focus:outline-none sm:max-w-[560px]",
+          "sheet-panel relative flex w-full flex-col overflow-hidden rounded-none border-t border-line-strong shadow-2xl focus:outline-none sm:max-w-[560px] sm:border-x",
+          surface === "ink" ? INK_SURFACE : CREAM_SURFACE,
           "land:max-w-[min(100%,640px)]",
           className,
         )}
       >
         {/* grabber + header: the drag zone */}
         <div data-sheet-drag="" className="shrink-0 touch-none cursor-grab select-none active:cursor-grabbing">
-          <div className="flex justify-center pt-2 pb-1" aria-hidden>
-            <span className="h-[5px] w-9 rounded-[3px] bg-ink/15" />
+          <div className="flex justify-center pt-2.5 pb-1" aria-hidden>
+            <span className={clsx("h-[3px] w-10", surface === "ink" ? "bg-cream/25" : "bg-ink/20")} />
           </div>
-          <div className={clsx("flex items-start gap-2 pr-2 pb-3 pl-5", hideTitle && !headerAction && hideClose && "pb-1")}>
+          <div className={clsx("flex items-start gap-2 pr-2 pb-4 pl-5", hideTitle && !headerAction && hideClose && "pb-1")}>
             {headerLeading && <div className="-ml-3 shrink-0">{headerLeading}</div>}
             <div className={clsx("min-w-0 flex-1 pt-2", hideTitle && "sr-only")}>
-              <h2 id={titleId} className="t-app-h2">
+              {eyebrow && <p className="t-label mb-2 text-muted">{eyebrow}</p>}
+              <h2 id={titleId} className="font-heading text-[22px] leading-[1.1] font-semibold tracking-[-0.03em]">
                 {title}
               </h2>
               {description && (
-                <p id={descId} className="t-small mt-1 text-ink/65">
+                <p id={descId} className="t-small mt-1.5 text-muted">
                   {description}
                 </p>
               )}
@@ -315,9 +326,9 @@ export function BottomSheet({
                 onClick={onClose}
                 aria-label="Close"
                 data-overlay-close=""
-                className="tap grid size-11 shrink-0 place-items-center rounded-full text-ink/70 hf:bg-ink/[0.06] hf:text-ink"
+                className="tap grid size-11 shrink-0 place-items-center text-ink/70 hf:text-red active:bg-ink/[0.06]"
               >
-                <Icon name="x" className="size-5" />
+                <Icon name="x" className="size-5" strokeWidth={1.7} />
               </button>
             )}
           </div>
@@ -339,7 +350,7 @@ export function BottomSheet({
           <div
             data-overlay-footer=""
             className={clsx(
-              "shrink-0 border-t border-ink/[0.07] bg-white px-5 pt-3 pb-[max(16px,var(--sab))]",
+              "shrink-0 border-t border-line bg-cream px-5 pt-3 pb-[max(16px,var(--sab))]",
               footerLayout === "stack"
                 ? "flex flex-col gap-2 [&>*]:w-full"
                 : footerLayout === "fill"
@@ -401,11 +412,11 @@ export function ActionSheet({
   };
   return (
     <BottomSheet open={open} onClose={onClose} title={title ?? label ?? "Actions"} hideTitle={!title} description={description} hideClose={!title}>
-      {header && <div className="-mt-1 mb-3 border-b border-ink/[0.07] pb-3">{header}</div>}
+      {header && <div className="-mt-1 mb-2 border-b border-line pb-3">{header}</div>}
       <div ref={list} role="menu" aria-label={typeof title === "string" ? title : label} onKeyDown={onKey} className="-mx-2 flex flex-col pb-1">
         {items.map((it, i) =>
           it.divider ? (
-            <div key={i} role="separator" className="mx-3 my-1 h-px bg-ink/[0.07]" />
+            <div key={i} role="separator" className="mx-3 my-1.5 h-px bg-line" />
           ) : it.href ? (
             <Link
               key={i}
@@ -418,9 +429,9 @@ export function ActionSheet({
               }}
               className={actionRow(it.danger, it.disabled)}
             >
-              {it.icon && <Icon name={it.icon} className="size-5 shrink-0 opacity-80" />}
+              {it.icon && <Icon name={it.icon} className="size-5 shrink-0 opacity-70" strokeWidth={1.7} />}
               <span className="min-w-0 flex-1 text-left">{it.label}</span>
-              {it.hint && <span className="shrink-0 text-[13px] font-semibold opacity-70">{it.hint}</span>}
+              {it.hint && <span className="shrink-0 font-mono text-[11px] tracking-[0.06em] uppercase opacity-60">{it.hint}</span>}
             </Link>
           ) : (
             <button
@@ -436,9 +447,9 @@ export function ActionSheet({
               }}
               className={actionRow(it.danger, it.disabled)}
             >
-              {it.icon && <Icon name={it.icon} className="size-5 shrink-0 opacity-80" />}
+              {it.icon && <Icon name={it.icon} className="size-5 shrink-0 opacity-70" strokeWidth={1.7} />}
               <span className="min-w-0 flex-1 text-left">{it.label}</span>
-              {it.hint && <span className="shrink-0 text-[13px] font-semibold opacity-70">{it.hint}</span>}
+              {it.hint && <span className="shrink-0 font-mono text-[11px] tracking-[0.06em] uppercase opacity-60">{it.hint}</span>}
             </button>
           ),
         )}
@@ -448,7 +459,7 @@ export function ActionSheet({
 }
 const actionRow = (danger?: boolean, disabled?: boolean) =>
   clsx(
-    "tap flex min-h-[52px] w-full items-center gap-3.5 rounded-[14px] px-3 py-2 text-[16px] leading-snug font-semibold outline-none",
-    danger ? "text-[#c13500] active:bg-[#ffe1d4] focus-visible:bg-[#ffe1d4]" : "text-ink active:bg-butter focus-visible:bg-butter",
+    "tap flex min-h-[52px] w-full items-center gap-3.5 rounded-none px-3 py-2 text-[16px] leading-snug font-medium outline-none",
+    danger ? "text-red-deep active:bg-red/[0.07] focus-visible:bg-red/[0.07]" : "text-ink active:bg-cream-2 focus-visible:bg-cream-2",
     disabled && "pointer-events-none opacity-40",
   );

@@ -60,7 +60,7 @@ import { slugify, toIST } from "@/lib/mock/seed/util";
    ============================================================================= */
 
 export const STORE_KEY = "tm-demo-store";
-export const STORE_VERSION = 1;
+export const STORE_VERSION = 2;
 /** window event fired by demo.reset() (e.g. the shell's "Reset demo data"). */
 export const DEMO_RESET_EVENT = "tm-demo-reset";
 

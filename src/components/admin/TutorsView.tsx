@@ -2,13 +2,11 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import clsx from "clsx";
 import {
   ApplicationReview,
   Avatar,
   Badge,
   Button,
-  Card,
   DataTable,
   Drawer,
   EmptyState,
@@ -17,12 +15,14 @@ import {
   Modal,
   PageHeader,
   Rating,
+  Section,
   STATUS_META,
   StatusPill,
   Tabs,
   Textarea,
   toast,
 } from "@/components/app";
+import { Idx, MonoMeta, RuleNote, RuledList } from "@/components/tutor/editorial";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   formatCompact,
@@ -38,7 +38,6 @@ import {
   type Tutor,
   type TutorApplication,
 } from "@/lib/mock";
-import { toneBg, toneText } from "@/lib/landing-data";
 import {
   COMPACT_BOX,
   COMPACT_TABLE,
@@ -46,8 +45,6 @@ import {
   MetaRow,
   PersonCell,
   PhoneRow,
-  SectionTitle,
-  catIcon,
   fitColumns,
   pickSort,
   useAdminId,
@@ -126,7 +123,7 @@ export function TutorsView() {
                 <span>{plural(liveCount(t), "live course")}</span>
                 <span>{formatCompact(t.learners)} learners</span>
                 <span className="inline-flex items-center gap-1">
-                  <Icon name="star" className="size-3.5 text-[#b07a00]" />
+                  <Icon name="star" className="size-3.5" strokeWidth={1.6} />
                   {t.rating.toFixed(1)}
                 </span>
               </CompactFacts>
@@ -152,14 +149,14 @@ export function TutorsView() {
           key: "courses",
           header: "Courses",
           align: "right",
-          cell: liveCount,
+          cell: (t) => <span className="font-mono text-[13px] tabular-nums">{liveCount(t)}</span>,
           sortValue: liveCount,
         },
         {
           key: "learners",
           header: "Learners",
           align: "right",
-          cell: (t) => formatCompact(t.learners),
+          cell: (t) => <span className="font-mono text-[13px] tabular-nums">{formatCompact(t.learners)}</span>,
           sortValue: (t) => t.learners,
         },
         {
@@ -176,7 +173,7 @@ export function TutorsView() {
           header: "Share",
           minBox: 1080,
           align: "right",
-          cell: (t) => `${Math.round(t.revenueShare * 100)}%`,
+          cell: (t) => <span className="font-mono text-[13px] tabular-nums">{Math.round(t.revenueShare * 100)}%</span>,
           sortValue: (t) => t.revenueShare,
         },
         {
@@ -184,7 +181,7 @@ export function TutorsView() {
           header: "Last active",
           minBox: 900,
           cell: (t) => (
-            <span className="whitespace-nowrap">{timeAgo(t.lastActiveAt)}</span>
+            <span className="whitespace-nowrap text-muted">{timeAgo(t.lastActiveAt)}</span>
           ),
           sortValue: (t) => t.lastActiveAt,
         },
@@ -204,34 +201,43 @@ export function TutorsView() {
   const href = (t: Tab) =>
     t === "pending" ? "/admin/tutors" : `/admin/tutors?status=${t}`;
 
+  const tabLabel: Record<Tab, string> = {
+    pending: "waiting",
+    changes_requested: "waiting on the applicant",
+    approved: "approved",
+    rejected: "rejected",
+    all: "in total",
+  };
+
   return (
     <div className="app-enter">
       <PageHeader
-        eyebrow="Tutor applications"
-        eyebrowTone="purple"
-        title="Who wants to teach?"
+        eyebrow="Control room · Tutors"
+        title={
+          <>
+            Who wants to <em>teach</em>?
+          </>
+        }
         description="Read the idea, check the sample, and help good teachers find their people."
         breadcrumbs={[
           { label: "Control room", href: "/admin" },
           { label: "Tutor applications" },
         ]}
+        rule={false}
         meta={
-          counts.pending > 0 ? (
-            <Badge tone="sun" dot>
-              {plural(counts.pending, "application")} waiting
-            </Badge>
-          ) : (
-            <Badge tone="mint" dot>
-              Queue clear
-            </Badge>
-          )
+          <MonoMeta as="span">
+            {counts.pending > 0
+              ? `${plural(counts.pending, "application")} waiting`
+              : "Queue clear"}{" "}
+            · {plural(tutors.length, "active tutor")}
+          </MonoMeta>
         }
       />
 
       <Tabs
         label="Application status"
         value={tab}
-        className="mb-5"
+        className="mb-10 md:mb-14"
         items={[
           {
             id: "pending",
@@ -261,96 +267,103 @@ export function TutorsView() {
         ]}
       />
 
-      {list.length ? (
-        // two columns only when the content box itself is wide (≥ 768px), so the
-        // sidebar at 1024 doesn't squeeze each card to ~340px
-        <div className="@container">
-        <ul className="grid grid-cols-1 gap-4 @3xl:grid-cols-2 md:gap-6">
-          {list.map((a, i) => (
-            <li
-              key={a.id}
-              className="app-enter min-w-0"
-              style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
-            >
-              <ApplicationCard
-                app={a}
-                showStatus={tab === "all"}
-                onOpen={() => setOpenId(a.id)}
-                onDecide={(kind) => setDecision({ app: a, kind })}
-              />
-            </li>
-          ))}
-        </ul>
-        </div>
-      ) : (
-        <Card>
-          <EmptyState
-            art="buddies"
-            tone="mint"
-            title={
-              tab === "pending"
-                ? "Nobody waiting. Nice."
-                : "Nothing in this pile."
-            }
-            body={
-              tab === "pending"
-                ? "New applications from the Become a tutor page land here first."
-                : "Applications move here once they get an answer."
-            }
-            action={
-              <Button variant="secondary" href="/become-tutor" icon="external">
-                See the application form
-              </Button>
-            }
-          />
-        </Card>
-      )}
+      <div className="space-y-14 md:space-y-20">
+        <Section
+          index="01"
+          label="Applications"
+          note={
+            tab === "pending"
+              ? "Oldest first: the fairest queue. Open one to read the plan and watch the sample."
+              : "Newest decision first."
+          }
+          title={`${plural(list.length, "application")} ${tabLabel[tab]}.`}
+        >
+          {list.length ? (
+            <RuledList label="Applications">
+              {list.map((a, i) => (
+                <ApplicationRow
+                  key={a.id}
+                  index={i + 1}
+                  app={a}
+                  showStatus={tab === "all"}
+                  onOpen={() => setOpenId(a.id)}
+                  onDecide={(kind) => setDecision({ app: a, kind })}
+                />
+              ))}
+            </RuledList>
+          ) : (
+            <EmptyState
+              art="none"
+              align="start"
+              eyebrow={tab === "pending" ? "Queue clear" : "Nothing here"}
+              title={
+                tab === "pending"
+                  ? "Nobody waiting. Nice."
+                  : "Nothing in this pile."
+              }
+              body={
+                tab === "pending"
+                  ? "New applications from the Become a tutor page land here first."
+                  : "Applications move here once they get an answer."
+              }
+              action={
+                <Button variant="outline" href="/become-tutor" icon="external">
+                  See the application form
+                </Button>
+              }
+              className="border-t border-fg !px-0"
+              compact
+            />
+          )}
+        </Section>
 
-      <section className="mt-10 md:mt-12" aria-labelledby="tutors-title">
-        <SectionTitle
+        <Section
+          index="02"
+          label="Teaching now"
           id="tutors-title"
-          title="Teaching on Tamada now"
-          description={`${plural(tutors.length, "active tutor")}, sorted by learners.`}
-        />
-        <div ref={boxRef}>
-          <DataTable<Tutor>
-            caption="Active tutors"
-            rows={tutors}
-            getRowId={(t) => t.id}
-            search={{ placeholder: "Search tutors" }}
-            pageSize={8}
-            rowHref={(t) => `/admin/users/${t.id}`}
-            mobileRow={(t) => (
-              <PhoneRow
-                leading={<Avatar name={t.name} src={t.avatar} tone={t.tone} size="md" decorative />}
-                title={t.name}
-                lines={[
-                  t.headline,
-                  [
-                    plural(liveCount(t), "live course"),
-                    <>
-                      <Icon name="star" className="size-3.5 text-[#b07a00]" />
-                      {t.rating.toFixed(1)}
-                    </>,
-                  ],
-                ]}
-                trailing={formatCompact(t.learners)}
-                badge={<span className="text-[12px] font-semibold text-ink/55">learners</span>}
-              />
-            )}
-            dense={boxW != null && boxW < 1000}
-            minWidth={compact ? 0 : 560}
-            className={compact ? COMPACT_TABLE : undefined}
-            key={tutorSort.sortKey}
-            columns={tutorCols}
-            initialSort={tutorSort.initialSort}
-            empty={{
-              title: "No tutors yet.",
-              body: "Approve an application to welcome the first one.",
-            }}
-          />
-        </div>
-      </section>
+          note={`${plural(tutors.length, "active tutor")}, sorted by learners.`}
+          title="On Tamada today."
+        >
+          <div ref={boxRef}>
+            <DataTable<Tutor>
+              caption="Active tutors"
+              rows={tutors}
+              getRowId={(t) => t.id}
+              search={{ placeholder: "Search tutors" }}
+              pageSize={8}
+              rowHref={(t) => `/admin/users/${t.id}`}
+              mobileRow={(t) => (
+                <PhoneRow
+                  leading={<Avatar name={t.name} src={t.avatar} tone={t.tone} size="md" decorative />}
+                  title={t.name}
+                  lines={[
+                    t.headline,
+                    [
+                      plural(liveCount(t), "live course"),
+                      <>
+                        <Icon name="star" className="size-3.5" strokeWidth={1.6} />
+                        {t.rating.toFixed(1)}
+                      </>,
+                    ],
+                  ]}
+                  trailing={formatCompact(t.learners)}
+                  badge={<MonoMeta as="span">learners</MonoMeta>}
+                />
+              )}
+              dense={boxW != null && boxW < 1000}
+              minWidth={compact ? 0 : 560}
+              className={compact ? COMPACT_TABLE : undefined}
+              key={tutorSort.sortKey}
+              columns={tutorCols}
+              initialSort={tutorSort.initialSort}
+              empty={{
+                title: "No tutors yet.",
+                body: "Approve an application to welcome the first one.",
+              }}
+            />
+          </div>
+        </Section>
+      </div>
 
       <ApplicationDrawer
         app={open}
@@ -378,13 +391,15 @@ function whenLine(app: TutorApplication) {
   return `sent ${timeAgo(app.submittedAt)}`;
 }
 
-function ApplicationCard({
+function ApplicationRow({
   app,
+  index,
   showStatus,
   onOpen,
   onDecide,
 }: {
   app: TutorApplication;
+  index: number;
   /** single-status tabs already say the status; only "All" needs the pill */
   showStatus?: boolean;
   onOpen: () => void;
@@ -397,80 +412,72 @@ function ApplicationCard({
   const open = app.status === "pending" || app.status === "changes_requested";
   const plan = splitPlan(app);
   return (
-    <Card className="flex h-full flex-col">
-      <div className="flex items-start gap-3">
+    <li className="grid grid-cols-[minmax(0,1fr)] gap-x-6 gap-y-4 py-6 md:grid-cols-[auto_minmax(0,13rem)_minmax(0,1fr)] md:py-7 xl:grid-cols-[auto_minmax(0,14rem)_minmax(0,1fr)_auto]">
+      <Idx n={index} className="mt-1.5 max-md:hidden" />
+      <div className="flex min-w-0 items-start gap-3">
         <Avatar
           name={app.name}
           src={user?.avatar}
           tone={user?.tone ?? "sun"}
           size="md"
+          decorative
         />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="min-w-0 t-app-h3 break-words">{app.name}</h3>
-            {isNew && (
-              <Badge tone="hotpink" size="sm">
-                New
-              </Badge>
-            )}
-            {showStatus && <StatusPill status={app.status} size="sm" />}
-          </div>
+          <h3 className="t-app-h3 break-words">{app.name}</h3>
           {/* wraps as a unit; the dot sits in the gap and is clipped when the
               date drops to its own line, so no line starts or ends with "·" */}
-          <p className="flex flex-wrap gap-x-3 overflow-hidden text-[13px] font-medium text-ink/60">
+          <p className="mt-0.5 flex flex-wrap gap-x-3 overflow-hidden text-[13px] text-muted">
             <span>{app.city}</span>
             <span className="relative whitespace-nowrap before:absolute before:-left-2 before:content-['·']">
               {whenLine(app)}
             </span>
           </p>
+          {(isNew || showStatus) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {isNew && (
+                <Badge tone="red" size="sm">
+                  New
+                </Badge>
+              )}
+              {showStatus && <StatusPill status={app.status} size="sm" />}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="mt-4 rounded-tag bg-cream p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {cat && (
-            <span
-              className={clsx(
-                "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[12px] font-bold",
-                toneBg[cat.tone],
-                toneText[cat.tone],
-              )}
-            >
-              <Icon name={catIcon(cat.icon)} className="size-3.5" />
-              {cat.name}
-            </span>
-          )}
-          <span className="text-[13px] font-semibold text-ink/60">
-            {app.subject}
-          </span>
-        </div>
-        <p className="mt-2 line-clamp-2 text-[16px] leading-snug font-bold">
+      <div className="min-w-0">
+        <MonoMeta>
+          {[cat?.name, app.subject].filter(Boolean).join(" · ")}
+        </MonoMeta>
+        <p className="mt-1.5 line-clamp-2 font-heading text-[18px] leading-[1.18] font-semibold tracking-[-0.025em]">
           {plan.title}
         </p>
+        <p className="mt-2 line-clamp-2 t-small text-muted">“{app.why}”</p>
         {plan.outline.length > 0 && (
-          <p className="mt-1 text-[13px] font-semibold text-ink/55">
+          <MonoMeta className="mt-2">
             {plural(plan.outline.length, "part")} in the outline
+          </MonoMeta>
+        )}
+        {app.status === "changes_requested" && app.decisionNote && (
+          <RuleNote tone="quiet" className="mt-3" label="You asked">
+            {app.decisionNote}
+          </RuleNote>
+        )}
+        {app.decisionNote && !open && (
+          <p className="mt-3 t-small text-muted">
+            <span className="font-medium text-fg">Note:</span> {app.decisionNote}
           </p>
         )}
-        <p className="mt-1.5 line-clamp-2 t-small text-ink/70">“{app.why}”</p>
       </div>
 
-      {app.decisionNote && !open && (
-        <p className="mt-3 t-small text-ink/65">Note: {app.decisionNote}</p>
-      )}
-      {app.status === "changes_requested" && app.decisionNote && (
-        <p className="mt-3 rounded-tag bg-[#dfe8ff] p-3 t-small text-blue-deep">
-          You asked: {app.decisionNote}
-        </p>
-      )}
-
-      <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+      <div className="flex flex-wrap items-start gap-2 md:col-start-3 xl:col-start-auto xl:flex-col xl:items-stretch">
         <Button
           size="sm"
-          variant={open ? "primary" : "secondary"}
+          variant={open ? "primary" : "outline"}
+          iconRight="arrow-right"
           onClick={onOpen}
         >
-          {open ? "Review application" : "View application"}
+          {open ? "Review" : "View"}
         </Button>
         {app.status === "pending" && (
           <Button
@@ -483,7 +490,7 @@ function ApplicationCard({
           </Button>
         )}
       </div>
-    </Card>
+    </li>
   );
 }
 
@@ -513,15 +520,23 @@ function ApplicationDrawer({
           title: "Their first course",
           body: (
             <>
-              <span className="block font-bold">{plan.title}</span>
+              <span className="block font-heading text-[19px] leading-[1.15] font-semibold tracking-[-0.025em]">
+                {plan.title}
+              </span>
               {plan.outline.length > 0 && (
-                <span className="mt-3 block rounded-tag bg-cream p-3">
-                  <span className="block t-micro text-ink/55 uppercase">
+                <span className="mt-4 block">
+                  <span className="block font-mono text-[10.5px] tracking-[0.1em] text-muted uppercase">
                     Rough outline
                   </span>
-                  <ol className="mt-1.5 list-decimal space-y-0.5 pl-5 text-[14px] leading-relaxed whitespace-normal marker:font-bold marker:text-ink/45">
+                  <ol className="mt-2 border-t border-line whitespace-normal">
                     {plan.outline.map((step, i) => (
-                      <li key={i}>{step}</li>
+                      <li
+                        key={i}
+                        className="flex gap-3 border-b border-line py-2 text-[14px] leading-snug"
+                      >
+                        <Idx n={i + 1} className="mt-[3px]" />
+                        <span className="min-w-0">{step}</span>
+                      </li>
                     ))}
                   </ol>
                 </span>
@@ -537,7 +552,12 @@ function ApplicationDrawer({
     <Drawer
       open={!!app}
       onClose={onClose}
-      width={520}
+      width={540}
+      eyebrow={
+        app
+          ? `Tutor application · ${STATUS_META[app.status]?.label ?? app.status}`
+          : undefined
+      }
       title={app ? app.name : "Application"}
       description={app ? `${app.email} · ${app.city}` : undefined}
       footer={
@@ -547,15 +567,15 @@ function ApplicationDrawer({
             {/* phones: Reject + Request changes share a row, Approve fills the
                 bottom row (thumb zone) */}
             <Button
-              variant="ghost"
+              variant="danger"
               size="sm"
-              className="max-sm:h-12"
+              className="max-sm:h-12 sm:mr-auto"
               onClick={() => onDecide("rejected")}
             >
               Reject
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               icon="edit"
               className="max-sm:h-12"
@@ -564,7 +584,7 @@ function ApplicationDrawer({
               Request changes
             </Button>
             <Button
-              variant="success"
+              variant="primary"
               size="sm"
               icon="check"
               className="max-sm:h-12 max-sm:basis-full"
@@ -574,14 +594,14 @@ function ApplicationDrawer({
             </Button>
           </>
         ) : (
-          <Button variant="secondary" size="sm" className="max-sm:h-12" onClick={onClose}>
+          <Button variant="outline" size="sm" className="max-sm:h-12" onClick={onClose}>
             Close
           </Button>
         ))
       }
     >
       {app && (
-        <div className="space-y-5">
+        <div className="space-y-7">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill status={app.status} />
             {cat && <Badge tone="neutral">{cat.name}</Badge>}
@@ -620,7 +640,7 @@ function ApplicationDrawer({
           {sections.map((s) => (
             <Fragment key={s.title}>
               <section>
-                <h3 className="mb-1.5 t-micro text-ink/55 uppercase">
+                <h3 className="mb-2.5 border-b border-fg pb-2 text-[11px] font-semibold tracking-[0.16em] uppercase">
                   {s.title}
                 </h3>
                 <div className="text-[15px] leading-relaxed whitespace-pre-line">
@@ -630,9 +650,11 @@ function ApplicationDrawer({
               {s.title === "Teaching experience" && <ApplicationReview app={app} />}
             </Fragment>
           ))}
-          <section className="rounded-card bg-butter p-4">
-            <h3 className="t-app-h3">Sample and intro video</h3>
-            <p className="mt-1 t-small text-ink/70">
+          <section>
+            <h3 className="mb-2.5 border-b border-fg pb-2 text-[11px] font-semibold tracking-[0.16em] uppercase">
+              Sample and intro video
+            </h3>
+            <p className="t-small text-muted">
               Watch at least two minutes. Are they clear, warm and easy to
               follow?
             </p>
@@ -640,38 +662,31 @@ function ApplicationDrawer({
               href={app.sampleUrl}
               target="_blank"
               rel="noreferrer noopener"
-              className="mt-3 flex items-center gap-3 rounded-tag bg-white p-3 text-[14px] font-bold shadow-soft transition-colors hf:bg-cream"
+              className="group mt-3 flex items-center gap-3 bg-ink px-4 py-3.5 text-[14px] font-medium text-cream transition-colors hf:bg-graphite focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red"
             >
-              <span
-                className="grid size-9 shrink-0 place-items-center rounded-full bg-flame text-white"
-                aria-hidden
-              >
-                <Icon name="play" className="size-4" />
-              </span>
-              <span className="min-w-0 flex-1 truncate">
+              <Icon name="play" strokeWidth={1.6} className="size-4 shrink-0 text-red-lite" />
+              <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] tracking-[0.02em]">
                 {app.sampleUrl.replace(/^https?:\/\//, "")}
               </span>
-              <Icon name="external" className="size-4 shrink-0 text-ink/45" />
+              <Icon name="external" strokeWidth={1.6} className="size-4 shrink-0 opacity-60" />
               <span className="sr-only">(opens in a new tab)</span>
             </a>
           </section>
           {app.decisionNote && (
-            <section className="rounded-card bg-cream p-4">
-              <h3 className="t-micro text-ink/55 uppercase">Decision note</h3>
-              <p className="mt-1.5 text-[15px]">“{app.decisionNote}”</p>
+            <RuleNote label="Decision note">
+              <span className="text-[15px]">“{app.decisionNote}”</span>
               {decidedBy && app.decidedAt && (
-                <p className="mt-2 text-[13px] font-semibold text-ink/55">
+                <MonoMeta className="mt-2">
                   {decidedBy} · {formatDate(app.decidedAt)}
-                </p>
+                </MonoMeta>
               )}
-            </section>
+            </RuleNote>
           )}
           {user && (
             <Button
               size="sm"
-              variant="ghost"
+              variant="arrow"
               href={`/admin/users/${user.id}`}
-              icon="user"
             >
               Open their account
             </Button>
@@ -690,7 +705,7 @@ const DECISION_COPY: Record<
     cta: string;
     hint: string;
     placeholder: string;
-    tone: "success" | "primary" | "danger";
+    tone: "red" | "primary" | "danger";
     required: boolean;
   }
 > = {
@@ -699,7 +714,7 @@ const DECISION_COPY: Record<
     cta: "Approve tutor",
     hint: "They become a tutor straight away and get a public profile. Your note goes in their welcome email.",
     placeholder: "Lovely sample, clear plan. Welcome aboard!",
-    tone: "success",
+    tone: "red",
     required: false,
   },
   changes_requested: {
@@ -765,6 +780,7 @@ function DecisionModal({
     <Modal
       open={!!decision}
       onClose={close}
+      eyebrow={decision ? `Decision · ${decision.app.name}` : undefined}
       title={copy?.title ?? ""}
       description={
         decision
@@ -773,19 +789,13 @@ function DecisionModal({
       }
       footer={
         <>
-          <Button variant="secondary" onClick={close}>
+          <Button variant="outline" onClick={close}>
             Cancel
           </Button>
           <Button
             type="submit"
             form="decision-form"
-            variant={
-              copy?.tone === "success"
-                ? "success"
-                : copy?.tone === "danger"
-                  ? "danger"
-                  : "primary"
-            }
+            variant={copy?.tone ?? "primary"}
           >
             {copy?.cta}
           </Button>

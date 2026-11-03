@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { FullScreenSheet, Icon } from "@/components/app";
 import { CertificateSheet, type CertificateData } from "./CertificateSheet";
 
-/** Width the landscape A4 sheet is laid out at (its container query flips at 896px). */
+/** Width the landscape A4 sheet is laid out at (its container query flips at 672px). */
 const SHEET_W = 960;
 const SHEET_H = SHEET_W / 1.414;
 
@@ -28,17 +28,17 @@ export function CertificateViewer({
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
-    <div className="relative">
+    <div className="relative max-sm:pb-14">
       {children}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label="View the certificate full size"
-        className="no-print tap absolute inset-0 rounded-card-lg focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-blue sm:hidden"
+        className="no-print tap absolute inset-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red sm:hidden"
       >
-        <span className="absolute right-3 bottom-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-[13px] font-bold text-cream shadow-soft">
-          <Icon name="eye" className="size-4" strokeWidth={2.2} />
+        <span className="t-label absolute inset-x-0 bottom-0 inline-flex h-11 items-center justify-center gap-2 border border-line-strong text-fg">
+          <Icon name="eye" className="size-4" strokeWidth={1.8} />
           View full size
         </span>
       </button>

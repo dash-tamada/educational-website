@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthSplit } from "@/components/auth/AuthSplit";
+import { AuthSplit, AuthSwitch } from "@/components/auth/AuthSplit";
 import { ForgotForm } from "@/components/auth/ForgotForm";
-import { HighlightBox } from "@/components/decor/Bits";
 
 export const metadata: Metadata = {
   title: "Reset password",
-  description:
-    "Forgot your Tamada Media password? We'll email you a reset link.",
+  description: "Forgot your Tamada Media password? We'll email you a reset link.",
 };
 
 export default function ForgotPasswordPage() {
@@ -15,38 +13,17 @@ export default function ForgotPasswordPage() {
     <AuthSplit
       scene="forgot"
       eyebrow="Reset password"
-      title={
-        <>
-          Forgot your{" "}
-          <HighlightBox tone="lime" rotate={-3}>
-            password?
-          </HighlightBox>
-        </>
-      }
-      body="It happens. Pop in your email and we'll send you a fresh link."
-      topAction={
-        <p>
-          New here?{" "}
-          <Link
-            href="/signup"
-            className="font-bold text-ink underline decoration-hotpink decoration-2 underline-offset-4 hf:decoration-ink"
-          >
-            Create an account
-          </Link>
-        </p>
-      }
+      title="Forgot your password?"
+      intro="It happens on every set. Enter your email and we'll send a fresh link."
+      topAction={<AuthSwitch prompt="Remembered it?" label="Log in" href="/login" />}
     >
-      <div className="app-enter rounded-card-lg bg-white p-5 shadow-soft sm:p-8">
-        <ForgotForm />
-      </div>
-      <p className="mt-6 text-center text-[14px] text-ink/65">
+      <ForgotForm />
+      <p className="mt-10 border-t border-line pt-4 text-[13.5px] text-muted">
         Still stuck?{" "}
-        <Link
-          href="/contact"
-          className="font-bold text-ink underline decoration-blue decoration-2 underline-offset-4"
-        >
+        <Link href="/contact" className="link-draw font-medium text-fg">
           Ask a human
         </Link>
+        . We reply within a working day.
       </p>
     </AuthSplit>
   );

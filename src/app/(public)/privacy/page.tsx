@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/auth/LegalPage";
+import { SITE } from "@/lib/content/site";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
   description: "What Tamada Media collects, why, who we share it with and how to control your data. Sample placeholder copy.",
+
 };
 
 const SECTIONS: LegalSection[] = [
@@ -13,9 +15,9 @@ const SECTIONS: LegalSection[] = [
     title: "The short version",
     body: (
       <ul>
-        <li>We collect what we need to run your account, your courses and your payments. That&apos;s it.</li>
+        <li>We collect what we need to run your account, your course progress and your payments. That&apos;s it.</li>
         <li>We don&apos;t sell your personal data. Ever.</li>
-        <li>Tutors see learning stats for their courses, not your email or payment details.</li>
+        <li>Instructors see learning stats for their lessons, not your email or payment details.</li>
         <li>You can download or delete your data whenever you like.</li>
       </ul>
     ),
@@ -28,13 +30,14 @@ const SECTIONS: LegalSection[] = [
         <h3>You give us</h3>
         <ul>
           <li>Account details: name, email, password (stored hashed, never in plain text), city and an optional photo.</li>
-          <li>Tutor applications: subject, experience, sample links and payout country. Bank or UPI details only after approval.</li>
+          <li>Instructor applications: subject, experience, sample links and payout country. Bank or UPI details only after approval.</li>
           <li>Things you post: reviews, lesson questions, notes and support messages.</li>
+          <li>Work you share: capstone cuts and links you send for feedback or the showcase.</li>
         </ul>
         <h3>We collect as you learn</h3>
         <ul>
-          <li>Progress: which lessons you watched, where you paused, test attempts and scores, streaks and certificates.</li>
-          <li>Purchases: course, amount, coupon and order status. Card and UPI details are handled by our payment partners, not us.</li>
+          <li>Progress: which lessons you watched, where you paused, checkpoint attempts and scores, streaks and certificates.</li>
+          <li>Purchases: what you bought, amount, coupon and order status. Card and UPI details are handled by our payment partners, not us.</li>
           <li>Device basics: browser, rough location (city level), and logs that keep the service secure.</li>
         </ul>
       </>
@@ -45,11 +48,11 @@ const SECTIONS: LegalSection[] = [
     title: "How we use it",
     body: (
       <ul>
-        <li>To run your account, unlock what you bought and remember where you left off.</li>
+        <li>To run your account, unlock what you bought and remember where you cut off.</li>
         <li>To issue and verify certificates (the public check shows your name, the course and the date, nothing else).</li>
-        <li>To pay tutors and handle refunds, tax and accounting.</li>
+        <li>To pay guest instructors and handle refunds, tax and accounting.</li>
         <li>To keep Tamada safe: spotting fraud, account sharing and abuse.</li>
-        <li>To improve courses: tutors see aggregated stats like completion and quiz pass rates.</li>
+        <li>To improve the course: the teaching team sees aggregated stats like completion and checkpoint pass rates.</li>
         <li>To send emails you&apos;d expect (receipts, resets, replies). Newsletters only if you opt in, with one-click unsubscribe.</li>
       </ul>
     ),
@@ -72,10 +75,10 @@ const SECTIONS: LegalSection[] = [
   },
   {
     id: "tutors-see",
-    title: "What tutors can see",
+    title: "What instructors can see",
     body: (
       <p>
-        Tutors see your first name, avatar, your questions and reviews on their courses, and anonymous aggregates (how many learners finished module 2, which quiz question trips people up). They don&apos;t see your email, phone or payment details.
+        The teaching team and guest instructors see your first name, avatar, your questions and reviews on their lessons, cuts you send for feedback, and anonymous aggregates (how many learners finished module 2, which checkpoint question trips people up). They don&apos;t see your email, phone or payment details.
       </p>
     ),
   },
@@ -86,7 +89,7 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>We use a small number of cookies and browser storage to keep you logged in, remember your playback position and settings, and measure what&apos;s working.</p>
         <p>
-          <strong>In this demo</strong>, a cookie called <code className="rounded bg-cream px-1.5 py-0.5 font-mono text-[14px]">tm_demo</code> remembers which demo account you picked, and your demo changes live in this browser&apos;s local storage. Nothing is sent to a server.
+          <strong>In this demo</strong>, a cookie called <code>tm_demo</code> remembers which demo account you picked, and your demo changes live in this browser&apos;s local storage. Nothing is sent to a server.
         </p>
       </>
     ),
@@ -105,7 +108,7 @@ const SECTIONS: LegalSection[] = [
           <li>nominate someone to act for you, and complain to the Data Protection Board of India.</li>
         </ul>
         <p>
-          Write to <a href="mailto:privacy@tamada.demo">privacy@tamada.demo</a> and we&apos;ll respond within 30 days, usually much sooner.
+          Write to <a href={`mailto:${SITE.email}`}>{SITE.email}</a> and we&apos;ll respond within 30 days, usually much sooner.
         </p>
       </>
     ),
@@ -140,7 +143,7 @@ const SECTIONS: LegalSection[] = [
     title: "Changes and contact",
     body: (
       <p>
-        We&apos;ll post updates here and email you about important changes. Our grievance officer (sample: Sameer Joshi) can be reached at <a href="mailto:privacy@tamada.demo">privacy@tamada.demo</a> or through the <Link href="/contact?topic=other">contact page</Link>.
+        We&apos;ll post updates here and email you about important changes. Our grievance officer (sample: Sameer Joshi) can be reached at <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or through the <Link href="/contact?topic=other">contact page</Link>.
       </p>
     ),
   },
@@ -149,13 +152,13 @@ const SECTIONS: LegalSection[] = [
 export default function PrivacyPage() {
   return (
     <LegalPage
-      eyebrow="Privacy policy"
-      eyebrowTone="hotpink"
-      title="Your data, plainly."
-      intro="What we collect, why we need it, who sees it and how to take it back. We'd rather tell you clearly than bury it."
-      updated="1 September 2026"
+      index="02"
+      eyebrow="Legal"
+      title="Privacy policy."
+      intro="What we collect, why we need it, who sees it and how to take it back. Your data, plainly: we'd rather tell you clearly than bury it."
+      updated="01.09.2026"
       sections={SECTIONS}
-      other={{ label: "terms of use", href: "/terms" }}
+      other={{ label: "Terms of use", href: "/terms" }}
     />
   );
 }

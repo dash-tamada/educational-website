@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import {
-  Caveat,
-  DM_Sans,
-  Londrina_Solid,
-  Yellowtail,
-} from "next/font/google";
+import { Anton, Inter, Inter_Tight } from "next/font/google";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { RevealScanner } from "@/components/motion/Reveal";
 import { AnimationGate } from "@/components/motion/AnimationGate";
@@ -15,43 +9,59 @@ import { Toaster } from "@/components/app/Toast";
 import { KeyboardInset } from "@/components/app/mobile";
 import "./globals.css";
 
-/** Display caps (Maxima-style tall, rounded, condensed). Only 900 is used. */
-const londrina = Londrina_Solid({
-  variable: "--font-londrina",
-  weight: "900",
-  subsets: ["latin"],
-});
-/**
- * Chunky Aardvark-style headings. Every use is weight 800 at opsz 96, so we ship
- * Google's static instance pinned to exactly that (opsz 96, wght 800, latin:
- * 22 KB) instead of the variable font with opsz + wdth axes (131 KB).
- * Re-download: fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@96,800
- * (OFL, see fonts/Bricolage-OFL.txt). Not preloaded: nothing above the fold uses it.
- */
-const bricolage = localFont({
-  variable: "--font-bricolage",
-  src: [{ path: "./fonts/bricolage-800-opsz96-latin.woff2", weight: "800", style: "normal" }],
-  display: "swap",
-  preload: false,
-  fallback: ["Arial Black", "Arial", "sans-serif"],
-  adjustFontFallback: "Arial",
-});
-/** Hand notes (hero + sections): 600, plus 700 for the category hover swap. */
-const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"] });
-const yellowtail = Yellowtail({
-  variable: "--font-yellowtail",
+/* Design system v2 type (see the globals.css header):
+   display  = Anton (condensed caps, one weight)            --font-anton
+   headings = Inter Tight (statements, headlines; variable) --font-inter-tight
+   body/UI  = Inter (variable)                              --font-inter
+   latin-ext carries the rupee sign (U+20B9), so prices never fall back. */
+const anton = Anton({
+  variable: "--font-anton",
   weight: "400",
   subsets: ["latin"],
+  display: "swap",
 });
-const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"] });
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "Tamada Media | Video courses from real tutors",
+    default: "Tamada Media | AI Filmmaking: Prompt to Premiere",
     template: "%s | Tamada Media",
   },
   description:
-    "Short video lessons, tests between modules and real tutors. The first video of every course is free.",
+    "An AI filmmaking school for Indian creators. Learn to write, design, generate, voice, score, edit and release a cinematic short with Veo, Kling, Runway, Midjourney, ElevenLabs and DaVinci Resolve. First lesson free.",
+  applicationName: "Tamada Media",
+  keywords: [
+    "AI filmmaking course",
+    "AI video generation",
+    "Veo",
+    "Kling",
+    "Runway",
+    "Midjourney",
+    "AI short film",
+    "filmmaking course India",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "Tamada Media",
+    locale: "en_IN",
+    title: "AI Filmmaking: Prompt to Premiere | Tamada Media",
+    description:
+      "Direct a cinematic short with AI, from the first prompt to the premiere. Ten modules, a 60-second capstone and a certificate. First lesson free.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Filmmaking: Prompt to Premiere | Tamada Media",
+    description: "Direct a cinematic short with AI, from the first prompt to the premiere. First lesson free.",
+  },
 };
 
 /* Mobile foundation (MOBILE_SPEC §1.11): draw under the notch / home indicator
@@ -59,13 +69,13 @@ export const metadata: Metadata = {
    resize the layout viewport for the keyboard so sticky bars ride above it.
    Never maximumScale / userScalable: pinch zoom stays available. */
 export const viewport: Viewport = {
-  themeColor: "#f5f0e3",
+  themeColor: "#fdf8ee",
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const fonts = [londrina, bricolage, caveat, yellowtail, dmSans]
+  const fonts = [anton, interTight, inter]
     .map((f) => f.variable)
     .join(" ");
   return (
