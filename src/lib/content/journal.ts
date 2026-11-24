@@ -435,7 +435,7 @@ export const POSTS: Post[] = POSTS_UNSORTED.map((p) => ({ ...p, minutes: readMin
 export const JOURNAL = {
   label: "Journal",
   title: "Studio Notes",
-  note: "Working notes from an AI-first studio: techniques, tool shifts worth knowing, and the work we keep rewatching.",
+  note: "Working notes from a studio that makes films with AI: techniques, tool shifts worth knowing, and the work we keep rewatching.",
   all: "All",
   featured: "Latest note",
   more: "Load more notes",

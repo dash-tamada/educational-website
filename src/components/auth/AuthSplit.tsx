@@ -226,7 +226,7 @@ export function AuthSplit({
 
           <div className="col-span-3 row-start-4 flex items-center justify-between gap-4 border-t border-line bg-ink px-8 py-4 xl:px-10">
             <p className="t-label whitespace-nowrap text-ash">
-              Tamada Media<span className="max-xl:hidden"> · AI-first school</span>
+              Tamada Media<span className="max-xl:hidden"> · Filmmaking with AI</span>
             </p>
             <p className="t-timecode whitespace-nowrap text-ash" aria-hidden>
               SC {s.scene} · TK {s.take} · 24 FPS

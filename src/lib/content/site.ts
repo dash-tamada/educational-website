@@ -1,7 +1,7 @@
 /* =============================================================================
    Site-wide constants: brand, flagship course, nav, footer, clock, socials.
    Server- and client-safe (no React). Copy voice: confident, cinematic, concise,
-   for Indian creators; money in INR. Positioning: an AI-first creative school,
+   for Indian creators; money in INR. Positioning: a school of filmmaking with AI,
    founded by filmmakers (film is the flagship; movies, ads, content and design
    open next; standout graduates are considered for studio work).
    ============================================================================= */
@@ -53,7 +53,7 @@ export const SITE = {
   name: "Tamada Media",
   /** the ® mark is used on the wordmark only */
   wordmark: "Tamada Media",
-  tagline: "The AI-first creative school, founded by filmmakers.",
+  tagline: "The school of filmmaking with AI, founded by filmmakers.",
   city: "Bengaluru, India",
   email: "hello@tamada.demo",
   founded: 2023,

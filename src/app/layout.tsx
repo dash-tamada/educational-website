@@ -33,14 +33,14 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Tamada Media | The AI-first creative school",
+    default: "Tamada Media | The school of filmmaking with AI",
     template: "%s | Tamada Media",
   },
   description:
-    "The AI-first creative school for Indian creators, founded by filmmakers. Learn filmmaking, movie making, ads, content and design with AI, starting with the flagship course AI Filmmaking: Prompt to Premiere. Standout graduates are considered for work on Tamada Media productions. First lesson free.",
+    "The school of filmmaking with AI for Indian creators, founded by filmmakers. Learn to make short films, movies, ads, reels and design with AI, starting with the flagship course AI Filmmaking: Prompt to Premiere. Standout graduates are considered for work on Tamada Media productions. First lesson free.",
   applicationName: "Tamada Media",
   keywords: [
-    "AI-first creative school",
+    "filmmaking with AI",
     "AI filmmaking course",
     "AI movie making",
     "AI ads and brand films",
@@ -53,14 +53,14 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Tamada Media",
     locale: "en_IN",
-    title: "Tamada Media | The AI-first creative school",
+    title: "Tamada Media | The school of filmmaking with AI",
     description:
-      "Films, ads and stories, made AI-first and directed by you. Start with the flagship AI filmmaking course; standout graduates get a shot at Tamada Media productions. First lesson free.",
+      "Films and stories, made with AI and directed by you. Start with the flagship AI filmmaking course; standout graduates get a shot at Tamada Media productions. First lesson free.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tamada Media | The AI-first creative school",
-    description: "Films, ads and stories, made AI-first and directed by you. First lesson free.",
+    title: "Tamada Media | The school of filmmaking with AI",
+    description: "Films and stories, made with AI and directed by you. First lesson free.",
   },
 };
 

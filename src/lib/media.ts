@@ -116,7 +116,7 @@ const MEDIA = {
   "bts-cinema-camera": { src: u("1532800783378-1bed60adaf58"), alt: "An operator with a cinema camera filming an actor by a bright studio window", credit: UNSPLASH, pos: "40% 40%" },
   "bts-studio-camera": { src: u("1594394489098-74ac04c0fc2e"), alt: "A camera on a tripod, its monitor showing the framed studio set behind", credit: UNSPLASH, pos: "65% 45%", tone: "dark" },
 
-  /* ---- AI-first studio (creators at work) ---------------------------------------- */
+  /* ---- AI studio (creators at work) ---------------------------------------- */
   // [L 4:3] South Asian man in profile at three monitors (UI, code, laptop), dark blue room;
   // he sits right of centre, screens fill the left half.
   "ai-creator-screens": { src: u("1719400471588-575b23e27bd7"), alt: "A creator at a desk of three glowing monitors in a dark room, working late", credit: UNSPLASH, pos: "62% 40%", tone: "dark" },

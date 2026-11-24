@@ -80,7 +80,7 @@ export const ABOUT = {
     titleTop: "We are",
     title: "Tamada Media",
     intro: [
-      "Tamada Media is an AI-first creative school and studio, founded by filmmakers. We make films, ads, reels and design with AI, and we teach exactly how we do it.",
+      "Tamada Media is a school of filmmaking with AI, and a studio, founded by filmmakers. We make films, ads and reels with AI, and we teach exactly how we do it.",
       "We started because the tools got astonishing and the work didn't. Anyone can render a beautiful frame now. Very few people are taught to make it mean something. So we teach the craft behind it: story, look, performance, sound and the cut, starting with film and moving into movies, ads, content and design.",
     ],
     side: "Want to make work like the pieces on this site?",
@@ -89,7 +89,7 @@ export const ABOUT = {
   statement: {
     label: "What we do",
     /** words in `red` are set in red; the whole statement fills in as you scroll */
-    text: "We teach you to make everything with AI, film first, so that what you make feels made, not generated, and the best of it finds its way into the studio.",
+    text: "We teach filmmaking with AI, and everything a filmmaker makes with it, so that what you make feels made, not generated, and the best of it finds its way into the studio.",
     red: ["everything", "made,"],
   },
   photos: { narrow: "ai-creator-night" as MediaKey, wide: "ai-studio-team" as MediaKey, caption: "In the studio and at the desk: every lesson is made like a production." },
@@ -107,8 +107,8 @@ export const ABOUT = {
     cta: { label: "See the flagship curriculum", href: `${FLAGSHIP.href}#curriculum` },
     items: [
       {
-        title: "AI-first, story always",
-        statement: "We reach for AI first, and for the story before the tool. A film, an ad or a reel is a want, an obstacle and a turn; the frames come after.",
+        title: "Story always",
+        statement: "AI is the camera, not the director: the story comes before the tool. A film, an ad or a reel is a want, an obstacle and a turn; the frames come after.",
         body: "Every course starts with a sentence, not a tool. In film that's a logline, a sixty-second script and a shot list that is already your prompt list.",
       },
       {
@@ -133,7 +133,7 @@ export const ABOUT = {
     title: "Tamada, so far.",
     items: [
       { value: FLAGSHIP.learners.toLocaleString("en-IN"), label: "Creators enrolled", note: "Writers, editors, designers, ad-makers and complete beginners." },
-      { value: "5", label: "Crafts, taught AI-first", note: "Film first, then movies, ads, content and design." },
+      { value: "5", label: "Crafts, taught with AI", note: "Film first, then movies, ads, content and design." },
       { value: String(FLAGSHIP.rating), label: "Average rating", note: "From learners who finished module one." },
       { value: DIRECTOR.facts[2].value, label: "Festival selections", note: "Across the director's live-action and AI work." },
     ],

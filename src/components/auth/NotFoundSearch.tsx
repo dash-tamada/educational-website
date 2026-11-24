@@ -26,7 +26,7 @@ const INDEX: Entry[] = [
     terms: `${g.title} ${g.chips.join(" ")} ${g.statement}`.toLowerCase(),
   })),
   { kind: "Page", title: "Work", href: "/films", terms: "work films showreel shorts trailers ads brand reels music videos gallery learners" },
-  { kind: "Page", title: "The studio", href: "/about", terms: "studio about director founder arjun rao team story school ai-first careers work with us" },
+  { kind: "Page", title: "The studio", href: "/about", terms: "studio about director founder arjun rao team story school filmmaking with ai careers work with us" },
   { kind: "Page", title: "Journal", href: "/journal", terms: "journal notes articles blog studio" },
   { kind: "Page", title: "Contact", href: "/contact", terms: "contact email help support question human talk" },
   { kind: "Page", title: "Questions, answered", href: "/#faq", terms: "faq questions help refund access emi cost tools" },

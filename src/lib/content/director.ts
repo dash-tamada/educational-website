@@ -27,16 +27,16 @@ export const DIRECTOR = {
   portraitAlt: "director-portrait" as MediaKey,
   onSet: "director-on-set" as MediaKey,
   /** hero statement, top-left (Marlowe). Words in `red` are set in red. */
-  heroStatement: { text: "A filmmaker who went AI-first, and built a school and a studio around it.", red: ["AI-first"] },
+  heroStatement: { text: "A filmmaker who makes films with AI, and built a school and a studio to teach it.", red: ["AI"] },
   /** side note under the nav (Marlowe right column) */
   sideNote:
-    "We started as filmmakers. Now we make everything with AI, and we teach you to do the same: with intent in every frame.",
+    "We started as filmmakers. Now we make films with AI, and we teach you to do the same: with intent in every frame.",
   short:
     "Arjun Rao spent a decade directing ads, music videos and short films before rebuilding his whole practice around AI. He founded Tamada Media to teach it, and to bring the best of the people he teaches into the studio.",
   bio: [
     "Arjun Rao is a Bengaluru-based director who spent ten years on sets: ads for national brands, music videos for independent artists, and short films that travelled to festivals in India and abroad.",
-    "In 2023 he went AI-first: whole films, then ads, reels and key art, made with generative tools. He noticed what everyone else noticed: the models could render anything, and almost nothing felt made. The gap wasn't the software. It was craft.",
-    "Tamada Media is the school and the studio he wished existed. Film first, because that's where the craft lives, then movies, ads, content and design, all taught AI-first. No hype, no prompt dumps. And the best work from every cohort gets a seat at the studio's table.",
+    "In 2023 he started making films with AI: whole shorts, then ads, reels and key art, made with generative tools. He noticed what everyone else noticed: the models could render anything, and almost nothing felt made. The gap wasn't the software. It was craft.",
+    "Tamada Media is the school and the studio he wished existed. Filmmaking with AI at the heart of it, then movies, ads, content and design, all taught with a filmmaker's craft. No hype, no prompt dumps. And the best work from every cohort gets a seat at the studio's table.",
   ],
   quotes: [
     { text: "AI can render anything. That is exactly the problem. A director's job is to decide what deserves a frame.", red: "decide", context: "On the first day of every cohort" },

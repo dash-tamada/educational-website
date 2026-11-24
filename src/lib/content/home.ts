@@ -6,7 +6,7 @@ import { FLAGSHIP, emi3 } from "./site";
    HOME PAGE COPY (src/app/(public)/page.tsx -> src/components/home/*).
    Server- and client-safe (no React). One export per section, in page order.
    Voice: cinematic, confident, concise, for Indian creators; money in INR.
-   Positioning: an AI-first creative school, founded by filmmakers. Film is the
+   Positioning: a school of filmmaking with AI, founded by filmmakers. Film is the
    flagship (Course 01, live now); movies, ads, content and design open next; the
    standout graduates are considered for work on Tamada Media productions.
    Testimonials are SAMPLE copy for stand-in learners and are labelled as such
@@ -19,16 +19,16 @@ export type RedText = { text: string; red?: string[] };
 /* ---- 01 Hero (theatre, Marlowe) --------------------------------------------- */
 export const HERO = {
   /** top-left statement, Anton caps, one line per entry */
-  statement: ["Films and ads,", "made AI-first,", "directed by you."],
-  statementRed: ["AI-first"],
+  statement: ["Films and stories,", "made with AI,", "directed by you."],
+  statementRed: ["AI"],
   /** giant title, bottom: small first line + the giant word */
-  titleTop: "The AI-first",
+  titleTop: "Filmmaking with AI",
   title: "School",
   /** right column, under the CTA */
   side: DIRECTOR.sideNote,
   sideBy: `${DIRECTOR.name}, founder & director`,
   meta: {
-    course: "Tamada Media · AI-first school",
+    course: "Tamada Media · AI film school",
     year: "© 2026",
     facts: "Film · Movies · Ads · Reels · Design",
   },
@@ -41,9 +41,9 @@ export const HERO = {
 export const SCATTERED = {
   label: "The school",
   statement:
-    "We teach you to [create] with AI: to turn a [prompt] into a frame, a frame into a [film,] and your best work into a [career.]",
+    "We teach you to make [films] with AI: to turn a [prompt] into a frame, a frame into a [film,] and your best work into a [career.]",
   body: [
-    "We started as filmmakers. Then we rebuilt everything we make around AI: short films, movies, ads, reels and design. Tamada Media teaches that whole way of working, with the craft that makes it land: story, look, performance, sound and the cut.",
+    "We are filmmakers who make films with AI: shorts, movies, ads and reels. Tamada Media teaches exactly how we do it, with the craft that makes it land: story, look, performance, sound and the cut.",
     "Start with the flagship, AI Filmmaking: a logline on day one, a finished 60-second short at the end. Movies, ads, content and design open next. And the standout graduates don't just leave with a certificate: they get a shot at working on Tamada Media productions.",
   ],
 } as const;
@@ -114,7 +114,7 @@ export const COURSE_INTRO = {
   label: "What we teach",
   title: "Five crafts, one method",
   meta: "Film · Movies · Ads · Reels · Design",
-  note: "Five crafts, one AI-first way of working. Filmmaking is enrolling now; the rest open next.",
+  note: "Five crafts, one way of making films with AI. Filmmaking is enrolling now; the rest open next.",
   cta: { label: "Start with film", href: FLAGSHIP.href },
 } as const;
 
@@ -135,7 +135,7 @@ export const NUMBERS = {
   stats: [
     {
       value: "5",
-      title: "Crafts, one AI-first method",
+      title: "Crafts, one filmmaker's method",
       body: "Film, movies, ads, content and design. The tools overlap, the thinking carries over, and every course ends with work you can show.",
       image: "ai-video-wall",
       cta: { label: "What we teach", href: "#course" },
@@ -317,7 +317,7 @@ export const FAQ = {
   items: [
     {
       q: "Is Tamada Media only about filmmaking?",
-      a: "No. We're an AI-first school founded by filmmakers. Film is where we started and the course that's open today; movie making, ads and brand films, content and reels, and design and photography open next.",
+      a: "Filmmaking with AI is who we are, and it's the course that's open today. Around it we teach the rest of what a filmmaker makes with AI: movie making, ads and brand films, content and reels, and design and photography, all opening next.",
     },
     {
       q: "Can I work with Tamada Media after the course?",
