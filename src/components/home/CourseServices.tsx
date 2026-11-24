@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { COURSE_GROUPS, COURSE_INTRO } from "@/lib/content/home";
-import { FLAGSHIP } from "@/lib/content/site";
 import { ArrowLink, Eyebrow, SplitReveal } from "@/components/editorial";
 
 /* =============================================================================
@@ -64,10 +63,10 @@ export function CourseServices() {
             <div>
               <Eyebrow index="04">{COURSE_INTRO.label}</Eyebrow>
               <h2 id="course-title" className="t-headline-l mt-6 max-w-[11ch]">
-                What you&rsquo;ll learn
+                {COURSE_INTRO.title}
               </h2>
               <p className="t-label mt-6 text-muted">
-                {FLAGSHIP.modules} modules · {FLAGSHIP.lessons} lessons · {FLAGSHIP.hours}
+                {COURSE_INTRO.meta}
               </p>
             </div>
             <div className="max-lg:hidden">

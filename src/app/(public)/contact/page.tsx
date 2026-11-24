@@ -8,7 +8,7 @@ import { ContactFaq } from "@/components/contact/ContactFaq";
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "Talk to Tamada Media: the course, the mentor cohort, workshops for your team, a film you want made, or just a hello. A human replies within one working day.",
+    "Talk to Tamada Media: a course, the mentor cohort, working with the studio after a course, a workshop for your team, a project you want made, or just a hello. A human replies within one working day.",
 };
 
 /* /contact (Mobius "Contacts"): Let's talk + the conversational sentence form

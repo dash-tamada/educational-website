@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
-import { Input } from "@/components/app";
+import { Input } from "@/components/app/Form";
 import { ArrowIcon } from "@/components/editorial";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import { FLAGSHIP } from "@/lib/content/site";
@@ -17,7 +17,7 @@ import { COURSE_GROUPS } from "@/lib/content/home";
 type Entry = { kind: string; title: string; href: string; terms: string };
 
 const INDEX: Entry[] = [
-  { kind: "Course", title: FLAGSHIP.title, href: FLAGSHIP.href, terms: "course ai filmmaking prompt premiere curriculum price buy enrol enroll modules" },
+  { kind: "Course", title: FLAGSHIP.title, href: FLAGSHIP.href, terms: "course courses ai filmmaking movie ads content reels design photography prompt premiere curriculum price buy enrol enroll modules" },
   { kind: "Lesson", title: "Watch the free first lesson", href: FLAGSHIP.freeLessonHref, terms: "free lesson trial preview watch video learn" },
   ...COURSE_GROUPS.map((g) => ({
     kind: g.modules,
@@ -25,8 +25,8 @@ const INDEX: Entry[] = [
     href: FLAGSHIP.href,
     terms: `${g.title} ${g.chips.join(" ")} ${g.statement}`.toLowerCase(),
   })),
-  { kind: "Page", title: "Films", href: "/films", terms: "films showreel work shorts gallery learners" },
-  { kind: "Page", title: "The director", href: "/about", terms: "director arjun rao about team story school" },
+  { kind: "Page", title: "Work", href: "/films", terms: "work films showreel shorts trailers ads brand reels music videos gallery learners" },
+  { kind: "Page", title: "The studio", href: "/about", terms: "studio about director founder arjun rao team story school ai-first careers work with us" },
   { kind: "Page", title: "Journal", href: "/journal", terms: "journal notes articles blog studio" },
   { kind: "Page", title: "Contact", href: "/contact", terms: "contact email help support question human talk" },
   { kind: "Page", title: "Questions, answered", href: "/#faq", terms: "faq questions help refund access emi cost tools" },

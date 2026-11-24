@@ -87,6 +87,12 @@ const MEDIA = {
   "still-fog-tree": { src: u("1505672678657-cc7037095e60"), alt: "A lone wind-bent tree on a green field in thick fog", credit: UNSPLASH, pos: "50% 40%" },
   "still-warehouse-haze": { src: u("1574391884720-bbc3740c59d1"), alt: "Silhouettes walking through a hazy warehouse towards a pink and blue light", credit: UNSPLASH, pos: "50% 65%", tone: "dark" },
   "still-lightning-lake": { src: u("1500674425229-f692875b0ab7"), alt: "Orange lightning over a dark lake with a small wooded island", credit: UNSPLASH, tone: "dark" },
+  // [L 3:2] Ad-style beauty shot: gold steel watch, pale dial lit red, standing in rippling
+  // water on near-black. Dial reads only "QUARTZ" (no brand). Watch sits right of centre.
+  "still-product-ad": { src: u("1728437115386-9c140e114e77"), alt: "A gold wristwatch standing in shallow water, its dial glowing red against black", credit: UNSPLASH, pos: "62% 55%", tone: "dark" },
+  // [L 3:2] Car-commercial macro: projector headlight of a black car, pink and teal neon
+  // reflected (mirrored, illegible) in the bodywork below. No badge in frame.
+  "still-car-neon": { src: u("1568066696615-d106ac513143"), alt: "Close-up of a black car's headlight with pink and teal neon reflected in its paint", credit: UNSPLASH, pos: "45% 50%", tone: "dark" },
 
   /* ---- Behind the scenes (set, gear, edit suite) --------------------------------- */
   "bts-clapper-desert": { src: u("1485846234645-a62644f84728"), alt: "A hand holding a clapperboard on a desert shoot", credit: UNSPLASH },
@@ -109,6 +115,37 @@ const MEDIA = {
   "bts-handheld-operator": { src: u("1543242594-c8bae8b9e708"), alt: "A camera operator with a handheld rig and monitor filming a group conversation", credit: UNSPLASH, pos: "70% 40%" },
   "bts-cinema-camera": { src: u("1532800783378-1bed60adaf58"), alt: "An operator with a cinema camera filming an actor by a bright studio window", credit: UNSPLASH, pos: "40% 40%" },
   "bts-studio-camera": { src: u("1594394489098-74ac04c0fc2e"), alt: "A camera on a tripod, its monitor showing the framed studio set behind", credit: UNSPLASH, pos: "65% 45%", tone: "dark" },
+
+  /* ---- AI-first studio (creators at work) ---------------------------------------- */
+  // [L 4:3] South Asian man in profile at three monitors (UI, code, laptop), dark blue room;
+  // he sits right of centre, screens fill the left half.
+  "ai-creator-screens": { src: u("1719400471588-575b23e27bd7"), alt: "A creator at a desk of three glowing monitors in a dark room, working late", credit: UNSPLASH, pos: "62% 40%", tone: "dark" },
+  // [L 1.37] Editor at a wide multi-monitor grading desk (colour wheels, scopes, timeline),
+  // dim room; editor on the right third.
+  "ai-edit-suite": { src: u("1779896412277-c4fd15c7a89c"), alt: "An editor grading a film across a wall of monitors in a dim edit suite", credit: UNSPLASH, pos: "55% 45%", tone: "dark" },
+  // [L 3:2] Hands on a keyboard with blue RGB backlight, dark desk. Works as a square crop.
+  "ai-prompt-hands": { src: u("1558744037-2f2f6f2fbf6a"), alt: "Hands typing on a keyboard lit by blue backlight in the dark", credit: UNSPLASH, pos: "40% 55%", tone: "dark" },
+  // [L 3:2] Very dark teal room: a few people in silhouette at glowing screens. Mostly
+  // shadow, so a line of cream text reads anywhere on it as a full-bleed background.
+  "ai-studio-team": { src: u("1766021736652-f6593f02cc7a"), alt: "A small team gathered around a desk of monitors in a dark studio at night", credit: UNSPLASH, pos: "55% 55%", tone: "dark" },
+  // [P 2:3] Young South Asian man looking down at a laptop, face lit by the screen, dark
+  // patterned room behind; face in the upper third.
+  "ai-creator-night": { src: u("1700474424608-e9b19ce41c2f"), alt: "A young creator working on a laptop at night, his face lit by the screen", credit: UNSPLASH, pos: "50% 30%", tone: "dark" },
+  // [L 3:2] Hackathon-style room in purple stage light: a learner on a laptop in front,
+  // more learners with laptops behind.
+  "ai-learners": { src: u("1504384764586-bb4cdc1707b0"), alt: "Learners working on laptops together in a room washed with purple light", credit: UNSPLASH, pos: "55% 50%", tone: "dark" },
+  // [L 3:2] Woman in a white VR headset reaching out with a controller, magenta and violet
+  // light. Landscape original: for a portrait frame keep pos so head + controller stay in.
+  "ai-headset-creator": { src: u("1653158861306-e5b3804f6115"), alt: "A woman in a VR headset reaching out with a controller in magenta light", credit: UNSPLASH, pos: "55% 35%", tone: "dark" },
+  // [L 3:2] Dark gallery: a 2x4 grid of large screens showing colourful visuals, two
+  // small silhouettes walking past at the bottom.
+  "ai-video-wall": { src: u("1575719028439-65ce8662c1cc"), alt: "A wall of screens showing colourful visuals in a dark room, people in silhouette", credit: UNSPLASH, pos: "50% 45%", tone: "dark" },
+  // [P 4:5] A hand holds up a phone filming a smiling woman, the vertical frame visible on
+  // the phone screen; soft daylight, curtains behind.
+  "ai-phone-creator": { src: u("1658207951097-96f86cc0a1c8"), alt: "A creator filming a vertical video of a woman on a phone held up in one hand", credit: UNSPLASH, pos: "55% 40%", tone: "light" },
+  // [L 3:2] Over-the-shoulder: designer sketching a sneaker on a pen display with a stylus,
+  // a VR headset on the desk; bright daylight.
+  "ai-designer-tablet": { src: u("1581094798398-153528d38b8f"), alt: "A designer sketching a sneaker on a pen display with a stylus", credit: UNSPLASH, pos: "50% 55%", tone: "light" },
 
   /* ---- Course covers -------------------------------------------------------------- */
   // [P 2:3] cinema camera on a tripod head, neon streaks; centre-crops well to 16:9.

@@ -7,7 +7,8 @@ import { STUDIO_PLACE } from "./team";
    The conversational form is UI only (validates, then shows a success state; no
    network). Other pages deep-link a topic: /contact?topic=<key>[&ref=…]#message
    (terms: payments, privacy/legal: other, certificates: certificate + ref, tutor
-   application: tutor, about page: workshop | studio | tutor | press). Unknown
+   application: tutor, about page: work | workshop | studio | tutor | press, footer:
+   work). Unknown
    topics fall back to the first intent. Address, phone-free by design.
    ============================================================================= */
 
@@ -16,7 +17,7 @@ export type Intent = { key: string; label: string };
 export const CONTACT = {
   label: "Contact",
   title: "Let's talk.",
-  lede: "A question about the course, a workshop for your team, a film you want made, or just a hello. Fill in the sentence; a human replies within one working day.",
+  lede: "A question about a course, the path into the studio, a project you want made, or just a hello. Fill in the sentence; a human replies within one working day.",
   /** the same inbox as the footer and home enquiry (placeholder until launch) */
   email: SITE.email,
   sentence: {
@@ -30,16 +31,19 @@ export const CONTACT = {
     "first-time filmmaker",
     "working editor",
     "content creator",
+    "designer or photographer",
     "student",
     "brand or agency",
     "teacher or school",
     "journalist",
   ],
   intents: [
-    { key: "course", label: "take the course" },
+    { key: "course", label: "take the film course" },
+    { key: "waitlist", label: "hear when a new course opens" },
     { key: "mentor", label: "join the mentor cohort" },
+    { key: "work", label: "work with the studio after a course" },
     { key: "workshop", label: "bring a workshop to my team" },
-    { key: "studio", label: "commission a film" },
+    { key: "studio", label: "commission a project" },
     { key: "tutor", label: "teach or mentor with you" },
     { key: "payments", label: "sort out a payment" },
     { key: "certificate", label: "check a certificate" },
@@ -66,8 +70,8 @@ export const CONTACT = {
 /** Contact details block (Mobius "photo + card"). */
 export const STUDIO = {
   label: "The studio",
-  image: "bts-crew-location" as MediaKey,
-  caption: "Remote-first: the course is online, the studio is wherever the shoot is.",
+  image: "ai-creator-screens" as MediaKey,
+  caption: "Remote-first: the courses are online, the studio is wherever the screens are.",
   /** from the clock (site.ts CLOCK), the same place About uses */
   city: STUDIO_PLACE,
   timezone: CLOCK.label,
@@ -92,13 +96,12 @@ export const CONTACT_FAQ = {
       a: "Use the questions tab under the lesson: mentors answer there within a day. Write here for anything about your account or a payment.",
     },
     {
-      q: "Do you run workshops for teams and colleges?",
-      a: "Yes: half-day and two-day formats, online or in person. Pick “bring a workshop to my team” in the form above and tell us the size of the group.",
+      q: "When do the other courses open?",
+      a: "Film is enrolling now. Movie making, ads and brand films, content and reels, and design and photography open next. Pick “hear when a new course opens” above and we'll write the day one does.",
     },
     {
-      q: "Can I pay in instalments?",
-      a: "Yes. Three no-cost EMIs on supported cards and UPI apps, chosen at checkout.",
-      link: { label: "See pricing", href: "/#pricing" },
+      q: "Do you run workshops for teams and colleges?",
+      a: "Yes: half-day and two-day formats, online or in person. Pick “bring a workshop to my team” in the form above and tell us the size of the group.",
     },
   ],
 } as const;

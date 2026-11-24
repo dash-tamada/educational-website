@@ -93,7 +93,7 @@ export function CinematicIntro() {
                 Reel 01
               </p>
               <p data-intro-meta="" className="t-label text-muted">
-                Prompt to Premiere
+                The AI-first school
               </p>
             </div>
             <div data-intro-center="" className="flex flex-col items-center">

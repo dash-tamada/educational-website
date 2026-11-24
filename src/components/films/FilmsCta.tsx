@@ -9,7 +9,7 @@ import { ArrowLink, Button, Eyebrow, RedWords, SplitReveal } from "@/components/
 export function FilmsCta() {
   const c = FILMS_PAGE.cta;
   const stats = [
-    { value: String(FILMS.length), label: "Films on this page" },
+    { value: String(FILMS.length), label: "Pieces on this page" },
     { value: averageRuntime(), label: "Average runtime" },
     { value: String(FILM_TOOLS.length), label: "Tools across the stack" },
     { value: "0", label: "Cameras used" },

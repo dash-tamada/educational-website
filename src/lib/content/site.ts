@@ -1,10 +1,12 @@
 /* =============================================================================
    Site-wide constants: brand, flagship course, nav, footer, clock, socials.
    Server- and client-safe (no React). Copy voice: confident, cinematic, concise,
-   for Indian creators; money in INR.
+   for Indian creators; money in INR. Positioning: an AI-first creative school,
+   founded by filmmakers (film is the flagship; movies, ads, content and design
+   open next; standout graduates are considered for studio work).
    ============================================================================= */
 
-/** The one product. Mirrors the mock catalogue (src/lib/mock: crs_aifilm). */
+/** The flagship course (the one on sale today). Mirrors the mock catalogue (src/lib/mock: crs_aifilm). */
 /** One of three no-cost EMIs, rounded up to the rupee (₹2,999 -> ₹1,000). */
 export const emi3 = (price: number) => Math.ceil(price / 3);
 
@@ -51,7 +53,7 @@ export const SITE = {
   name: "Tamada Media",
   /** the ® mark is used on the wordmark only */
   wordmark: "Tamada Media",
-  tagline: "An AI filmmaking school for Indian creators.",
+  tagline: "The AI-first creative school, founded by filmmakers.",
   city: "Bengaluru, India",
   email: "hello@tamada.demo",
   founded: 2023,
@@ -61,9 +63,9 @@ export type NavItem = { label: string; href: string; /** pathname prefix that ma
 
 /** Primary nav (caps, in this order). */
 export const NAV: NavItem[] = [
-  { label: "Course", href: FLAGSHIP.href, match: "/courses" },
-  { label: "Films", href: "/films", match: "/films" },
-  { label: "Director", href: "/about", match: "/about" },
+  { label: "Courses", href: FLAGSHIP.href, match: "/courses" },
+  { label: "Work", href: "/films", match: "/films" },
+  { label: "Studio", href: "/about", match: "/about" },
   { label: "Journal", href: "/journal", match: "/journal" },
   { label: "Contact", href: "/contact", match: "/contact" },
 ];
@@ -94,16 +96,18 @@ export const FOOTER_COLUMNS: { title: string; links: { label: string; href: stri
   {
     title: "School",
     links: [
-      { label: "The course", href: FLAGSHIP.href },
+      { label: "AI Filmmaking course", href: FLAGSHIP.href },
       { label: "Free first lesson", href: FLAGSHIP.freeLessonHref },
-      { label: "Films", href: "/films" },
+      { label: "What we teach", href: "/#course" },
       { label: "Journal", href: "/journal" },
     ],
   },
   {
     title: "Studio",
     links: [
-      { label: "Director & team", href: "/about" },
+      { label: "About & team", href: "/about" },
+      { label: "Work", href: "/films" },
+      { label: "Work with us", href: "/contact?topic=work#message" },
       { label: "Contact", href: "/contact" },
       { label: "Log in", href: "/login" },
     ],
@@ -112,7 +116,7 @@ export const FOOTER_COLUMNS: { title: string; links: { label: string; href: stri
 
 export const NEWSLETTER = {
   title: "Studio notes, once a month.",
-  body: "New techniques, tool shifts worth knowing and one short film we loved. No spam, ever.",
+  body: "New techniques across film, ads, content and design, tool shifts worth knowing and one piece of work we loved. No spam, ever.",
   placeholder: "Your email",
   done: "You're on the list. First note lands on the 1st.",
 } as const;

@@ -6,7 +6,14 @@ import { usePathname } from "next/navigation";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { Button, DropdownMenu, EmptyState, Icon, PageHeader, SearchInput, Select, Skeleton, TabPanel, Tabs, toast, type MenuItem } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { DropdownMenu, type MenuItem } from "@/components/app/Overlay";
+import { EmptyState, Skeleton } from "@/components/app/Display";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { SearchInput, Select } from "@/components/app/Form";
+import { TabPanel, Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
 import { cropSrc } from "@/lib/img";
 import { lessonPoster } from "@/lib/media";
 import { useDb, demo } from "@/lib/demo/store";
@@ -261,7 +268,7 @@ function MyCoursesInner({ initialFilter, initialQuery, initialSort }: Props) {
             </p>
             <div className="min-w-0 lg:col-span-9">
               <h2 id="explore" className="max-w-[24ch] t-statement-m text-balance">
-                That&apos;s the whole shelf, for now. One course, made <span className="text-red">properly</span>.
+                That&apos;s the whole shelf, for now. Movies, ads, content and design open <span className="text-red">next</span>.
               </h2>
               <p className="mt-3 max-w-[56ch] t-small text-muted">New modules land inside the course you already own, free. Read the journal for what we&apos;re testing next.</p>
               <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-4">

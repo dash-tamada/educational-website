@@ -21,22 +21,22 @@ export const DIRECTOR = {
   name: "Arjun Rao",
   firstName: "Arjun",
   lastName: "Rao",
-  role: "Director & lead instructor",
+  role: "Founder, director & lead instructor",
   city: "Bengaluru",
   portrait: "director-hero" as MediaKey,
   portraitAlt: "director-portrait" as MediaKey,
   onSet: "director-on-set" as MediaKey,
   /** hero statement, top-left (Marlowe). Words in `red` are set in red. */
-  heroStatement: { text: "Directing films with AI, from the first prompt to the premiere.", red: ["prompt", "premiere"] },
+  heroStatement: { text: "A filmmaker who went AI-first, and built a school and a studio around it.", red: ["AI-first"] },
   /** side note under the nav (Marlowe right column) */
   sideNote:
-    "The tools are new. Taste is not. I teach you to direct the machine the way you would direct a crew: with intent in every frame.",
+    "We started as filmmakers. Now we make everything with AI, and we teach you to do the same: with intent in every frame.",
   short:
-    "Arjun Rao spent a decade directing ads, music videos and short films before rebuilding his whole practice around AI. He teaches the director's half of the craft.",
+    "Arjun Rao spent a decade directing ads, music videos and short films before rebuilding his whole practice around AI. He founded Tamada Media to teach it, and to bring the best of the people he teaches into the studio.",
   bio: [
     "Arjun Rao is a Bengaluru-based director who spent ten years on sets: ads for national brands, music videos for independent artists, and short films that travelled to festivals in India and abroad.",
-    "In 2023 he started making whole films with generative tools, and noticed what everyone else noticed: the models could render anything, and almost nothing looked like cinema. The gap wasn't the software. It was direction.",
-    "Tamada Media is the school he wished existed. One course, built like a production: story first, then the look, the shot, the motion, the performance, the sound and the cut. No hype, no prompt dumps. Just the decisions that make a film feel made.",
+    "In 2023 he went AI-first: whole films, then ads, reels and key art, made with generative tools. He noticed what everyone else noticed: the models could render anything, and almost nothing felt made. The gap wasn't the software. It was craft.",
+    "Tamada Media is the school and the studio he wished existed. Film first, because that's where the craft lives, then movies, ads, content and design, all taught AI-first. No hype, no prompt dumps. And the best work from every cohort gets a seat at the studio's table.",
   ],
   quotes: [
     { text: "AI can render anything. That is exactly the problem. A director's job is to decide what deserves a frame.", red: "decide", context: "On the first day of every cohort" },

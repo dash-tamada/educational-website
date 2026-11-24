@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { ArrowIcon, Eyebrow, GridLines, RedWords } from "@/components/editorial";
 import { Mascot } from "@/components/decor/Mascot";
 import { NotFoundSearch } from "@/components/auth/NotFoundSearch";
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 const EXITS = [
   { label: "The course", href: FLAGSHIP.href },
-  { label: "Films", href: "/films" },
+  { label: "Work", href: "/films" },
   { label: "Journal", href: "/journal" },
   { label: "Home", href: "/" },
 ];

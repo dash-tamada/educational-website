@@ -16,13 +16,16 @@ import { getLenis, scrollToTarget } from "@/lib/lenis";
 import { prefersReducedMotion } from "@/lib/motion";
 import { CurtainArt } from "./CurtainArt";
 
-/* Touch devices (MOBILE_SPEC §1.15, F-18): a shorter curtain (cover ~380ms, reveal ~480ms,
-   total <= 0.9s), Tami's idle bob only if the hold runs past 600ms, and NO curtain on
-   browser back/forward (iOS edge swipe / Android back already animate the page):
-   the stored scroll position is restored instantly instead. */
+/* Every device gets the short curtain (cover ~380ms, reveal ~480ms, total <= 0.9s with a
+   prefetched route; the full-length 1.7s one read as lag on every click), the running
+   timecode only if the hold runs past 600ms. Touch devices (MOBILE_SPEC §1.15, F-18) get
+   NO curtain on browser back/forward (iOS edge swipe / Android back already animate the
+   page): the stored scroll position is restored instantly instead. */
 const isTouch = () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
-const COVER_SCALE = 0.56 / 0.38; // timeline speed-up on touch: the sheet covers in 380ms
+const COVER_SCALE = 0.56 / 0.38; // timeline speed-up: the sheet covers in 380ms
 const REVEAL_SCALE = 0.82 / 0.48; // the reveal lifts away in 480ms
+/** shortest time the covered slate stays up before the reveal starts */
+const MIN_HOLD_MS = 120;
 import { areaOf, isAppArea } from "@/components/app/nav";
 
 /**
@@ -238,9 +241,9 @@ export function TransitionLink(props: React.ComponentProps<typeof Link>) {
 const RED = "#e3061b";
 const ROUTES: { test: RegExp; label: string; scene: string }[] = [
   { test: /^\/$/, label: "Home", scene: "01" },
-  { test: /^\/courses/, label: "Course", scene: "02" },
-  { test: /^\/films/, label: "Films", scene: "03" },
-  { test: /^\/about/, label: "Director", scene: "04" },
+  { test: /^\/courses/, label: "Courses", scene: "02" },
+  { test: /^\/films/, label: "Work", scene: "03" },
+  { test: /^\/about/, label: "The studio", scene: "04" },
   { test: /^\/journal/, label: "Journal", scene: "05" },
   { test: /^\/contact/, label: "Contact", scene: "06" },
   { test: /^\/learn/, label: "Press play", scene: "07" },
@@ -487,11 +490,10 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
           .fromTo(p.disc, { scaleX: 0, transformOrigin: "0% 50%", autoAlpha: 1 }, { scaleX: 1, duration: 0.5, ease: "expo.out" }, 0.3)
           .fromTo(p.label, { yPercent: 110, autoAlpha: 1 }, { yPercent: 0, duration: 0.6, ease: "expo.out" }, 0.34)
           .fromTo(p.tami, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "power1.out" }, 0.42)
-          .call(resolve, [], 0.56);
-        if (isTouch()) {
-          // idle bob only when the route takes longer than ~600ms after covering
-          st.coverTl.call(startIdle, [], 0.56 + 0.6 * COVER_SCALE).timeScale(COVER_SCALE);
-        } else st.coverTl.call(startIdle, [], 0.84);
+          .call(resolve, [], 0.56)
+          // the timecode only runs when the route takes longer than ~600ms after covering
+          .call(startIdle, [], 0.56 + 0.6 * COVER_SCALE)
+          .timeScale(COVER_SCALE);
       });
     },
     [killAll, pieces, setCovered, startIdle],
@@ -526,7 +528,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
         // sheet lifts away (never an empty black frame on screen for long).
         gsap
           .timeline({ onComplete: end })
-          .timeScale(isTouch() ? REVEAL_SCALE : 1)
+          .timeScale(REVEAL_SCALE)
           .to(p.label, { yPercent: -110, duration: 0.4, ease: "power2.in" }, 0)
           .to(p.disc, { scaleX: 0, transformOrigin: "100% 50%", duration: 0.4, ease: "power2.in" }, 0.04)
           .to(p.tami, { autoAlpha: 0, duration: 0.2, ease: "power1.in" }, 0)
@@ -637,6 +639,12 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
       setDest(routeAccent(url.pathname));
       html.dataset.curtain = "cover";
       let anchor: HTMLElement | null = null;
+      // fetch (and in dev, compile) the route while the curtain covers, not after
+      if (url.pathname !== st.path) {
+        try {
+          router.prefetch(target);
+        } catch {}
+      }
       try {
         lenis?.stop();
         await raf2(); // let the label/accent render
@@ -659,7 +667,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
         await Promise.race([
           Promise.all([
             rendered.then(raf2).then(() => document.fonts?.ready),
-            wait(220),
+            wait(MIN_HOLD_MS),
           ]),
           wait(2500),
         ]);

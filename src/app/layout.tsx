@@ -33,34 +33,34 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Tamada Media | AI Filmmaking: Prompt to Premiere",
+    default: "Tamada Media | The AI-first creative school",
     template: "%s | Tamada Media",
   },
   description:
-    "An AI filmmaking school for Indian creators. Learn to write, design, generate, voice, score, edit and release a cinematic short with Veo, Kling, Runway, Midjourney, ElevenLabs and DaVinci Resolve. First lesson free.",
+    "The AI-first creative school for Indian creators, founded by filmmakers. Learn filmmaking, movie making, ads, content and design with AI, starting with the flagship course AI Filmmaking: Prompt to Premiere. Standout graduates are considered for work on Tamada Media productions. First lesson free.",
   applicationName: "Tamada Media",
   keywords: [
+    "AI-first creative school",
     "AI filmmaking course",
+    "AI movie making",
+    "AI ads and brand films",
+    "AI content creation course",
+    "AI design course",
     "AI video generation",
-    "Veo",
-    "Kling",
-    "Runway",
-    "Midjourney",
-    "AI short film",
     "filmmaking course India",
   ],
   openGraph: {
     type: "website",
     siteName: "Tamada Media",
     locale: "en_IN",
-    title: "AI Filmmaking: Prompt to Premiere | Tamada Media",
+    title: "Tamada Media | The AI-first creative school",
     description:
-      "Direct a cinematic short with AI, from the first prompt to the premiere. Ten modules, a 60-second capstone and a certificate. First lesson free.",
+      "Films, ads and stories, made AI-first and directed by you. Start with the flagship AI filmmaking course; standout graduates get a shot at Tamada Media productions. First lesson free.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Filmmaking: Prompt to Premiere | Tamada Media",
-    description: "Direct a cinematic short with AI, from the first prompt to the premiere. First lesson free.",
+    title: "Tamada Media | The AI-first creative school",
+    description: "Films, ads and stories, made AI-first and directed by you. First lesson free.",
   },
 };
 

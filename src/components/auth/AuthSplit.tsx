@@ -49,9 +49,9 @@ const SCENES: Record<AuthScene, SceneArt> = {
     lines: ["Roll", "camera."],
     red: ["camera"],
     fit: 26,
-    quote: "Every session starts the same way. Find the frame, check the light, then roll.",
-    by: "Arjun Rao, Director",
-    still: "director-on-set",
+    quote: "Every session starts the same way. Find the idea, find the frame, then generate.",
+    by: "Arjun Rao, Founder & director",
+    still: "ai-creator-night",
     pos: "42% 42%",
     start: 24 * 60 + 12,
   },
@@ -61,8 +61,8 @@ const SCENES: Record<AuthScene, SceneArt> = {
     lines: ["Your first", "take starts", "here."],
     red: ["take"],
     fit: 17.5,
-    quote: "You don't need a camera. You need a story worth a minute of someone's life.",
-    by: "Arjun Rao, Director",
+    quote: "You don't need a camera or a crew. You need an idea worth a minute of someone's life.",
+    by: "Arjun Rao, Founder & director",
     still: "journal-sixty-seconds",
     pos: "50% 55%",
     start: 1,
@@ -75,8 +75,8 @@ const SCENES: Record<AuthScene, SceneArt> = {
     red: ["again"],
     fit: 21.5,
     quote: "Every good take had a bad one before it. Reset, breathe, roll again.",
-    by: "Arjun Rao, Director",
-    still: "bts-projector",
+    by: "Arjun Rao, Founder & director",
+    still: "ai-video-wall",
     pos: "38% 55%",
     start: 3 * 60 + 33,
     lift: 0.68,
@@ -84,12 +84,12 @@ const SCENES: Record<AuthScene, SceneArt> = {
   tutor: {
     scene: "12",
     take: "01",
-    lines: ["Teach what", "you shoot."],
-    red: ["shoot"],
+    lines: ["Teach what", "you make."],
+    red: ["make"],
     fit: 19.5,
     quote: "Finished work and the patience to explain it. That's the whole job description.",
-    by: "Arjun Rao, Director",
-    still: "bts-camera-rig",
+    by: "Arjun Rao, Founder & director",
+    still: "ai-edit-suite",
     pos: "40% 40%",
     start: 12 * 60,
     lift: 0.72,
@@ -226,7 +226,7 @@ export function AuthSplit({
 
           <div className="col-span-3 row-start-4 flex items-center justify-between gap-4 border-t border-line bg-ink px-8 py-4 xl:px-10">
             <p className="t-label whitespace-nowrap text-ash">
-              Tamada Media<span className="max-xl:hidden"> · AI filmmaking school</span>
+              Tamada Media<span className="max-xl:hidden"> · AI-first school</span>
             </p>
             <p className="t-timecode whitespace-nowrap text-ash" aria-hidden>
               SC {s.scene} · TK {s.take} · 24 FPS

@@ -98,7 +98,7 @@ export function AboutHero() {
           </div>
           <figure data-ab-fade="" data-enter="" className="col-span-2 col-start-10 max-lg:hidden short:hidden">
             <figcaption className="t-timecode mb-3 text-ash">Fig. 01 · Take one</figcaption>
-            <Photo k="bts-slate-hands" ratio={5 / 4} sizes="15vw" className="aspect-[4/5]" imgClassName="grayscale contrast-[1.08]" />
+            <Photo k="ai-headset-creator" ratio={5 / 4} sizes="15vw" className="aspect-[4/5]" imgClassName="grayscale contrast-[1.08]" />
           </figure>
         </div>
       </div>

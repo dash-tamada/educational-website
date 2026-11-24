@@ -9,7 +9,7 @@ import { JOURNAL } from "@/lib/content/journal";
 export const metadata: Metadata = {
   title: `${JOURNAL.title}: the journal`,
   description:
-    "Studio Notes from Tamada Media: practical AI filmmaking notes on prompting camera language, character continuity, sound, the grade, credit budgets and releasing AI films in India.",
+    "Studio Notes from Tamada Media, the AI-first school: practical notes on prompting camera language, character continuity, sound, the grade, credit budgets and releasing AI films in India.",
 };
 
 /* /journal (Mobius "Feed"): giant Studio Notes header, tag chips (?tag=), a featured

@@ -1,6 +1,7 @@
 import type { Category, Profile, TutorProfile, Tone } from "../types";
 import { mediaSrc } from "@/lib/media";
 import { daysAgo, rng, slugify } from "./util";
+import { DEMO_ADMIN_ID, DEMO_STUDENT_ID, DEMO_TUTOR_ID } from "./ids";
 
 /* ----------------------------------------------------------------------------- categories */
 /** One flagship course (AI Filmmaking) plus the two bonus tracks the studio is building. */
@@ -11,9 +12,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 /* ----------------------------------------------------------------------------- demo accounts */
-export const DEMO_STUDENT_ID = "u_priya";
-export const DEMO_TUTOR_ID = "u_arjun";
-export const DEMO_ADMIN_ID = "u_admin";
+export { DEMO_ADMIN_ID, DEMO_STUDENT_ID, DEMO_TUTOR_ID };
 
 /* ----------------------------------------------------------------------------- tutors */
 type TutorSeed = Omit<Profile, "role" | "tutorStatus" | "status" | "lastActiveAt"> &
@@ -32,8 +31,8 @@ const TUTOR_SEEDS: TutorSeed[] = [
     tone: "flame",
     joinedAt: daysAgo(640),
     lastActiveDays: 0,
-    headline: "Director and AI filmmaker. Lead instructor at Tamada Media",
-    bio: "Arjun spent a decade directing ads, music videos and short films before the camera became optional. Today he builds whole films with AI: story in an LLM, look in Midjourney, motion in Veo and Kling, voices and score generated, then cut and graded in DaVinci Resolve. His shorts have screened at Indian indie festivals and his brand films run on national TV. He teaches the director's half of AI filmmaking: what to ask for, why, and when to cut.",
+    headline: "Founder of Tamada Media, the AI-first school. Director and lead instructor",
+    bio: "Arjun spent a decade directing ads, music videos and short films before the camera became optional. Today he builds whole films with AI: story in an LLM, look in Midjourney, motion in Veo and Kling, voices and score generated, then cut and graded in DaVinci Resolve. His shorts have screened at Indian indie festivals and his brand films run on national TV. He founded Tamada Media to teach that AI-first way of working, film first, and brings the standout graduates onto studio productions.",
     expertise: ["AI filmmaking", "Prompt direction", "Image-to-video", "Voice and lip-sync", "Editing and colour", "Sound design"],
     languages: ["English", "Hindi", "Kannada"],
     yearsTeaching: 9,

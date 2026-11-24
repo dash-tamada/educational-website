@@ -7,7 +7,7 @@ import { FLAGSHIP } from "@/lib/content/site";
 
 export const metadata: Metadata = {
   title: "Sign up",
-  description: "Make a free Tamada Media account, save your progress and start AI Filmmaking: Prompt to Premiere with the free first lesson.",
+  description: "Make a free Tamada Media account, save your progress and start with the flagship course, AI Filmmaking: Prompt to Premiere, with the free first lesson.",
 };
 
 const PERKS = ["First lesson free", "Pay once, in ₹", `${FLAGSHIP.certificateTitle} certificate`];

@@ -4,9 +4,9 @@ import { FilmsExplorer } from "@/components/films/FilmsExplorer";
 import { FilmsCta } from "@/components/films/FilmsCta";
 
 export const metadata: Metadata = {
-  title: "Films",
+  title: "Work",
   description:
-    "Films made with prompts: capstones, mentor-cohort films and studio work from Tamada Media, every frame generated and every decision human. Drag the canvas, open any film for its prompt and tool stack.",
+    "Work made with AI: short films, movie trailers, brand films, reels and music videos from Tamada Media learners and the studio, every frame generated and every decision human. Drag the canvas, open any film for its prompt and tool stack.",
 };
 
 /* /films (Mobius "Work" x Marlowe): a dark scroll / drag canvas of stills under a giant

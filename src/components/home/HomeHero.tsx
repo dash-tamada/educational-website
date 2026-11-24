@@ -123,7 +123,7 @@ export function HomeHero() {
                 {HERO.title}
               </span>
             </span>
-            <span className="sr-only">: {FLAGSHIP.title}, an AI filmmaking course by {HERO.sideBy}</span>
+            <span className="sr-only">: Tamada Media teaches filmmaking, movies, ads, content and design with AI. Flagship course: {FLAGSHIP.title}</span>
           </h1>
         </div>
 

@@ -16,7 +16,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Tamada Media (&ldquo;Tamada&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) runs an online school for AI filmmaking. Our course,{" "}
+          Tamada Media (&ldquo;Tamada&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) runs an AI-first online creative school. Our flagship course,{" "}
           <Link href={FLAGSHIP.href}>{FLAGSHIP.title}</Link>, is made by director {FLAGSHIP.director} and the Tamada team, sometimes with guest
           instructors. These terms apply when you browse the site, make an account, buy the course or an add-on (such as mentor feedback), or
           teach with us.

@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { Button, CourseCard, DropdownMenu, EmptyState, Icon, PageHeader, Select, toast, type MenuItem } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { CourseCard } from "@/components/app/CourseCard";
+import { DropdownMenu, type MenuItem } from "@/components/app/Overlay";
+import { EmptyState } from "@/components/app/Display";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Select } from "@/components/app/Form";
+import { toast } from "@/components/app/Toast";
 import { cropSrc } from "@/lib/img";
 import { lessonPoster } from "@/lib/media";
 import { FLAGSHIP } from "@/lib/content/site";
@@ -130,7 +137,7 @@ function WishlistInner() {
               title={ownsSomething ? "Nothing to save. You already own the whole shelf." : "Nothing saved yet."}
               body={
                 ownsSomething
-                  ? "Tamada Media runs one course, done properly, and it's yours. New modules land inside it for free."
+                  ? "You own the flagship course, and new modules land inside it for free. Movies, ads, content and design courses open next."
                   : "Tap the heart on the course page and it waits here, price, today's best code and the free lesson included."
               }
               action={

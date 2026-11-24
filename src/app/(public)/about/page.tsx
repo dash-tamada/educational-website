@@ -11,8 +11,8 @@ import { AboutFinal } from "@/components/about/AboutFinal";
 import { DIRECTOR } from "@/lib/content/director";
 
 export const metadata: Metadata = {
-  title: "The director & the studio",
-  description: `We are Tamada Media: an AI filmmaking school built like a film studio. Meet ${DIRECTOR.name}, the director who leads the course, the crew behind every lesson, and how we teach: story first, direct the machine, finish like a pro.`,
+  title: "The studio",
+  description: `We are Tamada Media: an AI-first creative school and studio, founded by filmmakers. Meet ${DIRECTOR.name}, the founder and director, the crew behind every lesson, how we teach, and the path from the class into the studio.`,
 };
 
 /* /about (nav: Director). Mobius "Studio" flow x Marlowe mood: WE ARE TAMADA MEDIA®,

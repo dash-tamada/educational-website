@@ -142,7 +142,7 @@ export function CertificateSheet({ data, className }: { data: CertificateData; c
 
           {/* body */}
           <div className="mt-9 flex flex-1 flex-col items-center justify-center text-center @2xl:mt-[1.2cqw]">
-            <p className="font-mono text-[10px] tracking-[0.18em] text-ink/60 uppercase @2xl:text-[max(10px,1.05cqw)]">Tamada Media · AI filmmaking school</p>
+            <p className="font-mono text-[10px] tracking-[0.18em] text-ink/60 uppercase @2xl:text-[max(10px,1.05cqw)]">Tamada Media · AI-first school</p>
             <h2 className="mt-3 font-display text-[11.5cqw] leading-[0.88] tracking-[-0.003em] uppercase @2xl:mt-[1.4cqw] @2xl:text-[7.4cqw]">
               Certified AI <span className="whitespace-nowrap">filmmaker</span>
             </h2>

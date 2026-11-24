@@ -3,10 +3,11 @@ import { DIRECTOR } from "./director";
 import { FLAGSHIP } from "./site";
 
 /* =============================================================================
-   FILMS PAGE (/films -> src/components/films/*). Server- and client-safe.
-   The showcase: student capstones and studio films made with generative tools.
+   WORK PAGE (/films -> src/components/films/*). Server- and client-safe.
+   The showcase: learner and studio work made with generative tools (short films,
+   movie trailers, brand films, reels, music videos).
    ALL OF THIS IS SAMPLE COPY: stand-in makers, stand-in stills (media.ts still-*
-   keys). The page says so. Swap in real cohort films (and real stills) at launch;
+   keys). The page says so. Swap in real cohort work (and real stills) at launch;
    keep the shape. Layout (sizes, scatter) lives in the component, not here.
    ============================================================================= */
 
@@ -15,8 +16,8 @@ export type Film = {
   title: string;
   maker: string;
   city: string;
-  /** who made it: a learner's capstone, a mentor-cohort film or a studio film */
-  kind: "Capstone" | "Mentor cohort" | "Studio film";
+  /** the format of the piece */
+  kind: "Short film" | "Movie trailer" | "Brand film" | "Reel" | "Music video";
   year: number;
   /** m:ss */
   runtime: string;
@@ -35,7 +36,7 @@ export const FILMS: Film[] = [
     title: "Monsoon Static",
     maker: DIRECTOR.name,
     city: "Mumbai",
-    kind: "Studio film",
+    kind: "Short film",
     year: 2025,
     runtime: "1:00",
     tools: ["Flux", "Kling", "ElevenLabs", "Suno", "DaVinci Resolve"],
@@ -50,7 +51,7 @@ export const FILMS: Film[] = [
     title: "Umbrella Season",
     maker: "Riya Menon",
     city: "Kochi",
-    kind: "Capstone",
+    kind: "Short film",
     year: 2026,
     runtime: "0:58",
     tools: ["Midjourney", "Veo", "ElevenLabs", "DaVinci Resolve"],
@@ -65,7 +66,7 @@ export const FILMS: Film[] = [
     title: "Violet Hour",
     maker: "Kabir Shah",
     city: "Pune",
-    kind: "Capstone",
+    kind: "Short film",
     year: 2026,
     runtime: "1:00",
     tools: ["Flux", "Runway", "Suno", "DaVinci Resolve"],
@@ -80,12 +81,12 @@ export const FILMS: Film[] = [
     title: "Red Mile",
     maker: "Aarav Jain",
     city: "Jaipur",
-    kind: "Capstone",
+    kind: "Movie trailer",
     year: 2026,
-    runtime: "0:55",
+    runtime: "1:30",
     tools: ["Midjourney", "Kling", "Suno", "DaVinci Resolve"],
     still: "still-desert-road",
-    logline: "Two brothers drive their late father's truck to the edge of the desert to keep a promise neither of them understands.",
+    logline: "Trailer for a feature in development: two brothers drive their late father's truck to the edge of the desert to keep a promise neither of them understands.",
     prompt:
       "Extreme wide, 50mm, low on the tarmac. An empty road runs straight between red sandstone rocks to the horizon. Midday heat shimmer. Locked off. Faded Kodachrome palette, fine grain.",
     shot: "Shot 02 · The road",
@@ -95,12 +96,12 @@ export const FILMS: Film[] = [
     title: "The Gate Keeps Nothing",
     maker: "Ishaan Bose",
     city: "Kolkata",
-    kind: "Mentor cohort",
+    kind: "Movie trailer",
     year: 2026,
-    runtime: "1:00",
+    runtime: "2:00",
     tools: ["Flux", "Veo", "ElevenLabs", "Topaz Video"],
     still: "still-fog-castle",
-    logline: "An old watchman guards the gate of a fort that the town forgot, until the fog brings someone back.",
+    logline: "Trailer for a feature in development: an old watchman guards the gate of a fort the town forgot, until the fog brings someone back.",
     prompt:
       "Wide, 35mm, eye level. A stone gateway disappearing into thick fog, wet moss on the arch. Very slow dolly in. Grey dawn light, no sun, a single lantern glowing just inside the arch.",
     shot: "Shot 06 · The arch",
@@ -110,7 +111,7 @@ export const FILMS: Film[] = [
     title: "One Sail",
     maker: "Ananya Iyer",
     city: "Chennai",
-    kind: "Capstone",
+    kind: "Short film",
     year: 2026,
     runtime: "1:00",
     tools: ["Midjourney", "Runway", "Suno", "DaVinci Resolve"],
@@ -125,7 +126,7 @@ export const FILMS: Film[] = [
     title: "Saltwater Hymn",
     maker: DIRECTOR.name,
     city: DIRECTOR.city,
-    kind: "Studio film",
+    kind: "Music video",
     year: 2024,
     runtime: "3:20",
     tools: ["Midjourney", "Veo", "Kling", "DaVinci Resolve"],
@@ -140,7 +141,7 @@ export const FILMS: Film[] = [
     title: "Ember",
     maker: "Meher Gill",
     city: "Chandigarh",
-    kind: "Capstone",
+    kind: "Short film",
     year: 2026,
     runtime: "0:52",
     tools: ["Flux", "Kling", "ElevenLabs", "DaVinci Resolve"],
@@ -155,12 +156,12 @@ export const FILMS: Film[] = [
     title: "Orbit, Alone",
     maker: "Nikhil Pillai",
     city: "Thiruvananthapuram",
-    kind: "Mentor cohort",
+    kind: "Movie trailer",
     year: 2026,
-    runtime: "1:00",
+    runtime: "1:45",
     tools: ["Midjourney", "Veo", "Suno", "Topaz Video"],
     still: "still-astronaut",
-    logline: "The first astronaut from a small coastal town hears her grandmother's voice on the station radio.",
+    logline: "Trailer for a feature in development: the first astronaut from a small coastal town hears her grandmother's voice on the station radio.",
     prompt:
       "Wide, 35mm. An astronaut floats in black space above the curve of the Earth, tethered, perfectly still. Very slow roll of the camera, 8 seconds. Hard sunlight from frame right, no fill.",
     shot: "Shot 08 · The window",
@@ -170,7 +171,7 @@ export const FILMS: Film[] = [
     title: "Before the Storm",
     maker: "Tanvi Rao",
     city: "Hyderabad",
-    kind: "Capstone",
+    kind: "Short film",
     year: 2026,
     runtime: "0:59",
     tools: ["Flux", "Runway", "ElevenLabs", "DaVinci Resolve"],
@@ -181,31 +182,31 @@ export const FILMS: Film[] = [
     shot: "Shot 05 · The funnel",
   },
   {
-    slug: "the-tree-that-waited",
-    title: "The Tree That Waited",
+    slug: "night-drive",
+    title: "Night Drive",
     maker: "Sana Qureshi",
     city: "Lucknow",
-    kind: "Capstone",
+    kind: "Brand film",
     year: 2026,
-    runtime: "1:00",
-    tools: ["Midjourney", "Kling", "Suno", "DaVinci Resolve"],
-    still: "still-fog-tree",
-    logline: "Every year on the same morning, a woman visits the tree where she once waited for someone who never came.",
+    runtime: "0:30",
+    tools: ["Flux", "Veo", "Suno", "DaVinci Resolve"],
+    still: "still-car-neon",
+    logline: "A 30-second spot for an electric car: one city, one night, and nobody else on the road.",
     prompt:
-      "Wide, 50mm, eye level. A single wind-bent tree on a green field in thick fog. Locked off, 6 seconds. Soft overcast light, the fog drifting left to right. Muted greens, lifted blacks.",
-    shot: "Shot 09 · The tree",
+      "Low tracking shot, 35mm, bumper height. A car glides through a wet city street at night; neon signs smear across the bodywork and the puddles. Smooth, steady, no shake. Magenta and cyan reflections, deep black sky, no logos.",
+    shot: "Shot 03 · The glide",
   },
   {
     slug: "afterparty",
     title: "Afterparty",
     maker: "Dev Malhotra",
     city: "Delhi",
-    kind: "Mentor cohort",
+    kind: "Reel",
     year: 2026,
-    runtime: "1:00",
+    runtime: "0:30",
     tools: ["Flux", "Runway", "Suno", "DaVinci Resolve"],
     still: "still-warehouse-haze",
-    logline: "Three friends leave a warehouse party at dawn and realise only two of them are walking home.",
+    logline: "A 30-second vertical reel: three friends leave a warehouse party at dawn and realise only two of them are walking home.",
     prompt:
       "Wide, 35mm, from behind at waist height. Silhouettes walking through a hazy warehouse toward a pink and blue light at the far end. Slow follow. Heavy haze, backlight only, shadows long on the floor.",
     shot: "Shot 12 · Walking out",
@@ -215,12 +216,12 @@ export const FILMS: Film[] = [
     title: "Lantern Lane",
     maker: "Zara Khan",
     city: "Bhopal",
-    kind: "Capstone",
+    kind: "Brand film",
     year: 2026,
-    runtime: "0:57",
+    runtime: "0:30",
     tools: ["Midjourney", "Veo", "ElevenLabs", "DaVinci Resolve"],
     still: "still-neon-signs",
-    logline: "A lantern-maker's apprentice stays up all night to finish one lantern for a customer who hasn't paid.",
+    logline: "A Diwali spot for a family-run lantern shop: the apprentice stays up all night to finish one lantern for a customer who hasn't paid.",
     prompt:
       "Medium wide, 50mm, eye level. A red paper lantern glowing in a blue night alley lined with signs. Static, the lantern turning slightly in the wind. Red key on the lantern, cool blue everywhere else.",
     shot: "Shot 03 · The lantern",
@@ -230,37 +231,37 @@ export const FILMS: Film[] = [
     title: "Take Two",
     maker: "Karan Mehta",
     city: "Ahmedabad",
-    kind: "Capstone",
+    kind: "Reel",
     year: 2026,
-    runtime: "0:48",
+    runtime: "0:20",
     tools: ["Flux", "Kling", "ElevenLabs", "DaVinci Resolve"],
     still: "still-cinema-neon",
-    logline: "A junior artist gets one line in a film, and one chance to say it.",
+    logline: "A 20-second reel for a casting page: a junior artist gets one line in a film, and one chance to say it.",
     prompt:
       "Extreme close-up, 100mm macro. A pair of eyes framed between clapperboard stripes, red light from the left, blue from the right. Static. The clapper snaps shut on the cut.",
     shot: "Shot 02 · The slate",
   },
   {
-    slug: "insert-coin",
-    title: "Insert Coin",
+    slug: "midnight-bloom",
+    title: "Midnight Bloom",
     maker: "Siddharth Varma",
     city: "Visakhapatnam",
-    kind: "Capstone",
+    kind: "Brand film",
     year: 2026,
-    runtime: "1:00",
-    tools: ["Midjourney", "Runway", "Suno", "DaVinci Resolve"],
-    still: "still-arcade-glow",
-    logline: "The last night of a neighbourhood arcade, and the kid who has never once won a game.",
+    runtime: "0:15",
+    tools: ["Midjourney", "Flux", "Runway", "DaVinci Resolve"],
+    still: "still-product-ad",
+    logline: "A 15-second perfume spot for a homegrown label: one bottle, one beam of light, one slow turn.",
     prompt:
-      "Wide, 24mm, eye level. A dark arcade room glowing with neon screens, nobody inside. Slow lateral dolly right past the machines. Screen light only, magenta and cyan spill on the floor.",
-    shot: "Shot 01 · Closing night",
+      "Product hero, 100mm macro, locked off on a black sweep. A glass perfume bottle turns slowly on a mirrored base; a single hard light carves the edges, a thin haze behind. Rich blacks, one warm highlight, no label text.",
+    shot: "Shot 01 · Hero product",
   },
   {
     slug: "night-shift-at-hanle",
     title: "Night Shift at Hanle",
     maker: "Aditi Deshmukh",
     city: "Nagpur",
-    kind: "Mentor cohort",
+    kind: "Short film",
     year: 2026,
     runtime: "1:00",
     tools: ["Flux", "Veo", "ElevenLabs", "Suno", "Topaz Video"],
@@ -274,21 +275,21 @@ export const FILMS: Film[] = [
 
 /** Page copy. */
 export const FILMS_PAGE = {
-  label: "Films",
-  kicker: "Made with prompts",
-  title: "Films",
+  label: "Work",
+  kicker: "Made with AI",
+  title: "Work",
   hint: "Scroll / Drag",
   hintTouch: "Swipe / Scroll",
-  count: `${FILMS.length} films`,
-  note: "Capstones, cohort films and studio work. Every frame generated, every decision human.",
-  sample: "Sample showcase: titles, makers and stills are stand-ins until the first cohort's films land.",
+  count: `${FILMS.length} pieces`,
+  note: "Short films, movie trailers, brand films, reels and music videos. Every frame generated, every decision human.",
+  sample: "Sample showcase: titles, makers and stills are stand-ins until the first cohort's work lands.",
   views: { canvas: "Canvas", grid: "Grid" },
   cta: {
     label: "Make your own",
-    title: "Every film here started as one logline.",
-    red: ["logline"],
-    body: "Ten modules take you from the first prompt to a finished 60-second short: story, look, lens, motion, voice, sound, the cut and the release. Mentor-cohort films earn a slot on this page.",
-    primary: { label: "See the course", href: FLAGSHIP.href },
+    title: "Every piece here started as one idea.",
+    red: ["idea"],
+    body: "Start with the film course: ten modules from the first prompt to a finished 60-second short. Standout work earns a slot on this page, and a look from the studio for paid Tamada Media productions.",
+    primary: { label: "See the film course", href: FLAGSHIP.href },
     secondary: { label: "Watch free lesson", href: FLAGSHIP.freeLessonHref },
   },
 } as const;

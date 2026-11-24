@@ -403,7 +403,7 @@ export function FilmsCanvas({ onOpen, toggle }: { onOpen: (index: number) => voi
         </p>
 
         {/* The field */}
-        <ul aria-label="Films" aria-describedby="films-canvas-help" className="absolute inset-0">
+        <ul aria-label="Work" aria-describedby="films-canvas-help" className="absolute inset-0">
           {FILMS.map((f, i) => {
             const sl = slot(i);
             const col = i % COLS;

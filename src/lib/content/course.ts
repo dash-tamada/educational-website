@@ -23,7 +23,7 @@ export const COURSE_PAGE = {
     titleTop: "Prompt to",
     title: "Premiere",
     statement: {
-      text: "Write, shoot, voice, score and cut a short film with AI. No camera. No crew. Your vision.",
+      text: "Where every Tamada creator starts: write, generate, voice, score and cut a short film with AI. Your vision.",
       red: ["vision"],
     } satisfies RedLine,
     /** the trailer poster (play opens the free first lesson) */
@@ -67,7 +67,7 @@ export const COURSE_PAGE = {
     label: "Capstone",
     titleTop: "Your",
     title: "60-second premiere",
-    body: "The course ends with a film, not a quiz. One complete short, scripted, generated, voiced, scored, cut and graded by you, on a production calendar that fits two weekends.",
+    body: "The course ends with a film, not a quiz. One complete short, scripted, generated, voiced, scored, cut and graded by you, on a production calendar that fits two weekends. It's also your audition: the studio reviews the standout capstones for paid Tamada Media work.",
     image: "poster-m11" as MediaKey,
     caption: "Module 11 · Brief, workbook and Arjun's feedback rubric",
     steps: [
@@ -75,7 +75,7 @@ export const COURSE_PAGE = {
       { when: "W1 · Sun", title: "Look development", body: "Style frames and a style bible that lock the film's look before a single video credit." },
       { when: "W2 · Sat", title: "Shots in motion", body: "Generate, direct and fix every shot: lens, movement, light and the same face throughout." },
       { when: "W2 · Sun", title: "Voice, score, cut and grade", body: "Cast the voices, sync the lips, score it, then edit and grade in DaVinci Resolve." },
-      { when: "Premiere", title: "Release it", body: "Export for Reels, YouTube or a festival, label it honestly, and share it for feedback." },
+      { when: "Premiere", title: "Release it", body: "Export for Reels, YouTube or a festival, label it honestly, and submit it to the studio for review." },
     ],
   },
 
@@ -90,7 +90,7 @@ export const COURSE_PAGE = {
     label: "Your director",
     portrait: DIRECTOR.portrait,
     quote: DIRECTOR.quotes[0],
-    cta: { label: "Meet your director", href: "/about" },
+    cta: { label: "Meet the studio", href: "/about" },
   },
 
   /* ---- 08 Reviews ------------------------------------------------------------------- */
@@ -104,7 +104,7 @@ export const COURSE_PAGE = {
   certificate: {
     label: "Certificate",
     title: FLAGSHIP.certificateTitle,
-    body: "Finish every lesson, pass the checkpoints and premiere your capstone. Your certificate gets its own public page with a code anyone can verify.",
+    body: "Finish every lesson, pass the checkpoints and premiere your capstone. Your certificate gets its own public page with a code anyone can verify, and the standout makers get a call from the studio.",
     cta: { label: "Verify a certificate", href: "/certificates" },
     sampleName: "Your name here",
     sampleCode: "TM-AF-2026-0000",
@@ -144,6 +144,6 @@ export const SUCCESS = {
   next: [
     { title: "Watch at your pace", body: "Short lessons, progress saves itself. Phone or laptop." },
     { title: "Pass the checkpoints", body: "Each one unlocks the next module." },
-    { title: "Premiere and get certified", body: "Finish your 60-second short and claim your certificate." },
+    { title: "Premiere and get certified", body: "Finish your 60-second short, claim your certificate and put it in front of the studio." },
   ],
 } as const;

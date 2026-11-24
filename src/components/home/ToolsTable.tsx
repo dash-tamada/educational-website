@@ -35,7 +35,7 @@ export function ToolsTable() {
 
         <div className="col-span-12 lg:col-span-8 lg:col-start-5">
           <table className="tools-table w-full border-collapse text-left">
-            <caption className="sr-only">The AI filmmaking tools taught in the course, what each is used for, and the module that teaches it</caption>
+            <caption className="sr-only">The AI tools taught at Tamada Media, what each is used for, and the crafts that use it</caption>
             <thead>
               <tr className="border-b border-line-strong">
                 {TOOLS.head.map((h, i) => (
@@ -55,7 +55,7 @@ export function ToolsTable() {
                     <span className="t-small mt-1 block text-muted sm:hidden">{r.use}</span>
                   </th>
                   <td className="t-small py-5 pr-4 align-top text-cream/75 max-sm:hidden sm:py-6 sm:pt-[1.85rem]">{r.use}</td>
-                  <td className="t-timecode py-5 text-right align-top whitespace-nowrap text-ash sm:py-6 sm:pt-[1.9rem]">M{r.module}</td>
+                  <td className="t-timecode py-5 text-right align-top whitespace-nowrap text-ash sm:py-6 sm:pt-[1.9rem]">{r.module}</td>
                 </tr>
               ))}
             </tbody>
