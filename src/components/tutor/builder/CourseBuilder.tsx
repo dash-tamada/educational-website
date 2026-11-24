@@ -4,7 +4,17 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import clsx from "clsx";
 import { formatDuration, getCourseById, getCurriculum, plural, timeAgo, type Course, type Module } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
-import { Badge, Button, Card, EmptyState, Icon, Modal, PageHeader, Skeleton, StatusPill, StickyActionBar, TabPanel, Tabs, Tooltip, toast, useScrollHide } from "@/components/app";
+import { Badge, StatusPill } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Card } from "@/components/app/Card";
+import { EmptyState, Skeleton } from "@/components/app/Display";
+import { Icon } from "@/components/app/icons";
+import { Modal, Tooltip } from "@/components/app/Overlay";
+import { PageHeader } from "@/components/app/PageHeader";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { TabPanel, Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
+import { useScrollHide } from "@/components/app/mobile";
 import { useTutorContext } from "../shared";
 import { CheckRow, Idx, LineIcon, RuleNote } from "../editorial";
 import { CurriculumEditor } from "./CurriculumEditor";

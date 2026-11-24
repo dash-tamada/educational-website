@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { Button, Checkbox, Field, Input, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Checkbox, Field, Input } from "@/components/app/Form";
+import { toast } from "@/components/app/Toast";
 import { useDemoAuth } from "@/lib/demo/session-client";
 import {
   EMAIL_RE,

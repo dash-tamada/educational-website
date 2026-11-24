@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { Button, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { toast } from "@/components/app/Toast";
 import { ArrowIcon } from "@/components/editorial";
 import { useDemoAuth, useDemoUser } from "@/lib/demo/session-client";
 import { DEMO_ACCOUNT_CARDS, landingFor } from "@/lib/mock/extra/auth";

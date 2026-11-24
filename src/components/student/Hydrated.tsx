@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Skeleton } from "@/components/app";
+import { Skeleton } from "@/components/app/Display";
 import { useStoreHydrated } from "@/lib/demo/store";
 
 /* =============================================================================

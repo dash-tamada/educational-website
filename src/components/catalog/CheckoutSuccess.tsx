@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import clsx from "clsx";
-import { Skeleton } from "@/components/app";
+import { Skeleton } from "@/components/app/Display";
 import { ArrowLink, Button, Eyebrow, GridLines, RedWords } from "@/components/editorial";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { armEnter, markEntered, onPageReady, prefersReducedMotion } from "@/lib/motion";

@@ -8,7 +8,15 @@ import { cropSrc } from "@/lib/img";
 import { formatINR, getCategories, type CourseCardData, type CourseLevel, type Tone } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
 import { COURSE_LANGUAGES, COURSE_LEVELS, GST_RATE, PRICE_MAX, PRICE_MIN, PRICE_PRESETS, THUMBNAIL_PRESETS } from "@/lib/mock/extra/tutor";
-import { BottomSheet, Button, CourseCard, Field, Icon, Input, PageHeader, RadioGroup, Select, StickyActionBar, Textarea, UnsavedChangesGuard, toast } from "@/components/app";
+import { BottomSheet } from "@/components/app/Sheet";
+import { Button } from "@/components/app/Button";
+import { CourseCard } from "@/components/app/CourseCard";
+import { Field, Input, RadioGroup, Select, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { UnsavedChangesGuard } from "@/components/app/NavigationGuard";
+import { toast } from "@/components/app/Toast";
 import { Figure, SquareTick, TonePalette, editorialTone, pad2 } from "./editorial";
 import { useTutorContext } from "./shared";
 

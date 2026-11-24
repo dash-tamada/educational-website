@@ -5,7 +5,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { cropSrc } from "@/lib/img";
 import type { Tone } from "@/lib/tone";
-import { Icon, type IconName } from "@/components/app";
+import { Icon, type IconName } from "@/components/app/icons";
 
 /* =============================================================================
    Studio editorial primitives (tutor studio + admin control room), design system v2.

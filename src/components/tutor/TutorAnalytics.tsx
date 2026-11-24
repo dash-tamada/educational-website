@@ -12,22 +12,14 @@ import {
   type AnalyticsRange,
 } from "@/lib/mock";
 import { getCourseFunnel } from "@/lib/mock/extra/tutor";
-import {
-  BarChart,
-  Button,
-  DataTable,
-  EmptyState,
-  LineChart,
-  PageHeader,
-  ProgressBar,
-  Rating,
-  Section,
-  Segmented,
-  Select,
-  StatGrid,
-  StatTile,
-  useIsPhone,
-} from "@/components/app";
+import { BarChart, LineChart } from "@/components/app/Charts";
+import { Button } from "@/components/app/Button";
+import { DataTable } from "@/components/app/DataTable";
+import { EmptyState, ProgressBar, Rating } from "@/components/app/Display";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { Section } from "@/components/app/Card";
+import { Segmented, Select } from "@/components/app/Form";
+import { useIsPhone } from "@/components/app/mobile";
 import { WideSection } from "@/components/admin/ledgerKit";
 import { Figure, Idx, MonoMeta, Poster, RuleNote } from "./editorial";
 import { biggestModuleDrop, splitPartialDay, useTutorContext } from "./shared";

@@ -2,21 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Avatar,
-  Button,
-  DataTable,
-  DescriptionList,
-  Drawer,
-  PageHeader,
-  ProgressBar,
-  SampleNote,
-  StatGrid,
-  StatTile,
-  StatusPill,
-  Tabs,
-  type MenuItem,
-} from "@/components/app";
+import { Avatar, ProgressBar } from "@/components/app/Display";
+import { Button } from "@/components/app/Button";
+import { DataTable } from "@/components/app/DataTable";
+import { DescriptionList } from "@/components/app/Card";
+import { Drawer, type MenuItem } from "@/components/app/Overlay";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { SampleNote, StatusPill } from "@/components/app/Badge";
+import { Tabs } from "@/components/app/Navigation";
 import { MonoMeta, RuleNote } from "@/components/tutor/editorial";
 import { useDb } from "@/lib/demo/store";
 import {

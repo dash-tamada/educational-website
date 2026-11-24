@@ -4,25 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Badge,
-  Button,
-  DataTable,
-  DescriptionList,
-  Drawer,
-  EmptyState,
-  Field,
-  Icon,
-  PageHeader,
-  Select,
-  StatGrid,
-  StatTile,
-  StatusPill,
-  Textarea,
-  toast,
-  Tooltip,
-  type Column,
-} from "@/components/app";
+import { Badge, StatusPill } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { DataTable, type Column } from "@/components/app/DataTable";
+import { DescriptionList } from "@/components/app/Card";
+import { Drawer, Tooltip } from "@/components/app/Overlay";
+import { EmptyState } from "@/components/app/Display";
+import { Field, Select, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { toast } from "@/components/app/Toast";
 import { cropSrc } from "@/lib/img";
 import { lessonPoster } from "@/lib/media";
 import { FLAGSHIP } from "@/lib/content/site";

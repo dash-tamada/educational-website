@@ -11,17 +11,12 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
-import {
-  BottomSheet,
-  Button,
-  Icon,
-  LAND_QUERY,
-  Modal,
-  Switch,
-  useIsPhone,
-  useIsShortLandscape,
-  type IconName,
-} from "@/components/app";
+import { BottomSheet } from "@/components/app/Sheet";
+import { Button } from "@/components/app/Button";
+import { Icon, type IconName } from "@/components/app/icons";
+import { LAND_QUERY, useIsPhone, useIsShortLandscape } from "@/components/app/mobile";
+import { Modal } from "@/components/app/Overlay";
+import { Switch } from "@/components/app/Form";
 import { formatDuration } from "@/lib/mock";
 import type { PlayerHandle } from "./context";
 import { consumeAutoplay, requestAutoplay } from "./media";

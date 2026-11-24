@@ -19,7 +19,7 @@ import {
   type ModuleItem,
 } from "@/lib/mock";
 import { getItemAccessMap, type AccessResult } from "@/lib/access";
-import type { IconName } from "@/components/app";
+import type { IconName } from "@/components/app/icons";
 import type { Tone } from "@/lib/tone";
 
 /* ----------------------------------------------------------------------------- enrolments */

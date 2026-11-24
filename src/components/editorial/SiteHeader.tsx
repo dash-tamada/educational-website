@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { NAV, PRIMARY_CTA, SOCIALS, FLAGSHIP } from "@/lib/content/site";
-import { useTransitionRouter } from "@/components/transition/RouteTransition";
+import { useTransitionRouter, whenNavigationAllowed } from "@/components/transition/RouteTransition";
 import { currentScrollY, getLenis } from "@/lib/lenis";
-import { useDemoAuth, useDemoUser, syncSessionHint } from "@/lib/demo/session-client";
+import { DEMO_USERS } from "@/lib/demo/session";
+// cookie-only session: the header never pulls the demo database onto public pages
+import { clearSessionCookie, useClaimedSession } from "@/lib/demo/session-cookie";
 import { BrandMark } from "./BrandMark";
 import { Button } from "./Button";
 import { useGround, type Ground } from "./useGround";
@@ -40,12 +42,8 @@ export function SiteHeader({ initialGround = "light", loginNext = true }: { init
   const [solid, setSolid] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
-  const me = useDemoUser();
-  const account = me ? { label: me.role === "student" ? "Dashboard" : me.role === "tutor" ? "Studio" : "Admin", href: me.meta.href } : { label: "Log in", href: authHref(pathname, loginNext) };
-
-  useEffect(() => {
-    syncSessionHint();
-  }, [me]);
+  const me = useClaimedSession();
+  const account = me ? { label: me.role === "student" ? "Dashboard" : me.role === "tutor" ? "Studio" : "Admin", href: DEMO_USERS[me.role].href } : { label: "Log in", href: authHref(pathname, loginNext) };
 
   // the page scrollbar follows the ground under the header (classic Windows scrollbars
   // would otherwise draw a light strip down every theatre section; globals.css BASE)
@@ -138,7 +136,7 @@ export function SiteHeader({ initialGround = "light", loginNext = true }: { init
           </div>
         </div>
       </header>
-      <MobileMenu open={open} onClose={() => setOpen(false)} pathname={pathname} account={account} />
+      <MobileMenu open={open} onClose={() => setOpen(false)} pathname={pathname} account={account} signedIn={!!me} />
     </>
   );
 }
@@ -166,16 +164,23 @@ function MobileMenu({
   onClose,
   pathname,
   account,
+  signedIn,
 }: {
   open: boolean;
   onClose: () => void;
   pathname: string | null;
   account: { label: string; href: string };
+  signedIn: boolean;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const router = useTransitionRouter();
-  const me = useDemoUser();
-  const { logout } = useDemoAuth();
+  const nextRouter = useRouter();
+  // useDemoAuth().logout without the demo data: guards first, then re-render server components
+  const logout = () =>
+    whenNavigationAllowed(window.location.pathname + window.location.search, () => {
+      clearSessionCookie();
+      nextRouter.refresh();
+    });
 
   // lock scroll, focus the first link, trap focus, Escape closes
   useEffect(() => {
@@ -271,7 +276,7 @@ function MobileMenu({
             <Link href={account.href} data-no-transition="" onClick={(e) => go(e, account.href)} className="t-label link-draw py-3">
               {account.label}
             </Link>
-            {me && (
+            {signedIn && (
               <button
                 type="button"
                 onClick={() => {

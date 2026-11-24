@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button, Field, Input, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Field, Input } from "@/components/app/Form";
+import { toast } from "@/components/app/Toast";
 import { EMAIL_RE } from "@/lib/mock/extra/auth";
 import { EmailText } from "@/components/auth/EmailText";
 import { focusField } from "./fields";

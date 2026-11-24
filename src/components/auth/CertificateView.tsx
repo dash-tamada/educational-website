@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRef, useState, useSyncExternalStore } from "react";
 import clsx from "clsx";
-import { Button, Field, Input, Skeleton, isCoarse, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Field, Input } from "@/components/app/Form";
+import { Skeleton } from "@/components/app/Display";
+import { isCoarse } from "@/components/app/mobile";
+import { toast } from "@/components/app/Toast";
 import { ArrowLink, Eyebrow, Photo } from "@/components/editorial";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import { useDemoSession } from "@/lib/demo/session-client";

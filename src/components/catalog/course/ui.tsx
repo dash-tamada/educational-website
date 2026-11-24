@@ -1,7 +1,8 @@
 "use client";
 
 import clsx from "clsx";
-import { Icon, toast } from "@/components/app";
+import { Icon } from "@/components/app/icons";
+import { toast } from "@/components/app/Toast";
 import { Eyebrow } from "@/components/editorial";
 import { useWishlist } from "../hooks";
 

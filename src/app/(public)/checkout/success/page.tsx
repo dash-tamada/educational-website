@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { CheckoutSuccess } from "@/components/catalog/CheckoutSuccess";
 import { DemoSessionSeed } from "@/lib/demo/session-client";
 import { getDemoCookieValue } from "@/lib/demo/session-server";

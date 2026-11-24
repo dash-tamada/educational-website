@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FullScreenSheet, Icon } from "@/components/app";
+import { FullScreenSheet } from "@/components/app/Sheet";
+import { Icon } from "@/components/app/icons";
 import { CertificateSheet, type CertificateData } from "./CertificateSheet";
 
 /** Width the landscape A4 sheet is laid out at (its container query flips at 672px). */

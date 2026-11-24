@@ -3,17 +3,15 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Badge,
-  Button,
-  ConfirmDialog,
-  Eyebrow,
-  Icon,
-  ProgressBar,
-  Segmented,
-  StickyActionBar,
-  toast,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog } from "@/components/app/Overlay";
+import { Eyebrow } from "@/components/app/PageHeader";
+import { Icon } from "@/components/app/icons";
+import { ProgressBar } from "@/components/app/Display";
+import { Segmented } from "@/components/app/Form";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { toast } from "@/components/app/Toast";
 import {
   formatDate,
   getQuizAttempts,

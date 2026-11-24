@@ -2,23 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Button,
-  Checkbox,
-  DescriptionList,
-  EmptyState,
-  Field,
-  Icon,
-  Input,
-  ProgressBar,
-  RadioGroup,
-  Select,
-  Skeleton,
-  StatusPill,
-  StickyActionBar,
-  Textarea,
-  toast,
-} from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Checkbox, Field, Input, RadioGroup, Select, Textarea } from "@/components/app/Form";
+import { DescriptionList } from "@/components/app/Card";
+import { EmptyState, ProgressBar, Skeleton } from "@/components/app/Display";
+import { Icon } from "@/components/app/icons";
+import { StatusPill } from "@/components/app/Badge";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { toast } from "@/components/app/Toast";
 import {
   useDemoAuth,
   useDemoSession,

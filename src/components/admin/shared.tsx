@@ -4,15 +4,10 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
-import {
-  Avatar,
-  Icon,
-  ICON_NAMES,
-  Tabs,
-  type Column,
-  type IconName,
-  type SortState,
-} from "@/components/app";
+import { Avatar } from "@/components/app/Display";
+import { Icon, ICON_NAMES, type IconName } from "@/components/app/icons";
+import { Tabs } from "@/components/app/Navigation";
+import type { Column, SortState } from "@/components/app/DataTable";
 import { useDemoSession } from "@/lib/demo/session-client";
 import { cropSrc } from "@/lib/img";
 import {

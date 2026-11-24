@@ -6,27 +6,18 @@ import clsx from "clsx";
 import { formatDate, formatNumber } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
 import { COURSE_LANGUAGES, getPayoutAccount } from "@/lib/mock/extra/tutor";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Field,
-  Icon,
-  Input,
-  PageHeader,
-  Rating,
-  Section,
-  Skeleton,
-  StickyActionBar,
-  Switch,
-  Textarea,
-  UnsavedChangesGuard,
-  toast,
-  useIsClient,
-  useIsPhone,
-} from "@/components/app";
+import { Avatar, Rating, Skeleton } from "@/components/app/Display";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Card, Section } from "@/components/app/Card";
+import { Checkbox, Field, Input, Switch, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { UnsavedChangesGuard } from "@/components/app/NavigationGuard";
+import { toast } from "@/components/app/Toast";
+import { useIsClient } from "@/components/app/Overlay";
+import { useIsPhone } from "@/components/app/mobile";
 import { MonoMeta, RuleNote } from "./editorial";
 import { useTutorContext, type TutorCtx } from "./shared";
 

@@ -2,29 +2,17 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import {
-  ApplicationFacts,
-  Avatar,
-  Button,
-  buttonClass,
-  DataTable,
-  DescriptionList,
-  DropdownMenu,
-  EmptyState,
-  Icon,
-  PageHeader,
-  ProgressBar,
-  Rating,
-  Section,
-  STATUS_META,
-  StatGrid,
-  StatTile,
-  StatusPill,
-  StickyActionBar,
-  useIsPhone,
-  type Column,
-  type MenuItem,
-} from "@/components/app";
+import { ApplicationFacts } from "@/components/app/ApplicationFacts";
+import { Avatar, EmptyState, ProgressBar, Rating } from "@/components/app/Display";
+import { Button, buttonClass } from "@/components/app/Button";
+import { DataTable, type Column } from "@/components/app/DataTable";
+import { DescriptionList, Section } from "@/components/app/Card";
+import { DropdownMenu, type MenuItem } from "@/components/app/Overlay";
+import { Icon } from "@/components/app/icons";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { STATUS_META, StatusPill } from "@/components/app/Badge";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { useIsPhone } from "@/components/app/mobile";
 import { useDb } from "@/lib/demo/store";
 import {
   formatDate,

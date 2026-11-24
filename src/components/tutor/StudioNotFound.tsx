@@ -1,4 +1,4 @@
-import { Eyebrow } from "@/components/app";
+import { Eyebrow } from "@/components/app/PageHeader";
 import { RuledList, RuledRow } from "./editorial";
 
 /** The tutor studio's 404: stays inside the studio shell with a way back (editorial: a giant

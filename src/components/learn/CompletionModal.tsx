@@ -3,7 +3,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import clsx from "clsx";
-import { Button, Field, Icon, Modal, Textarea, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Field, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { Modal } from "@/components/app/Overlay";
+import { toast } from "@/components/app/Toast";
 import { formatDate, type Certificate, type Course } from "@/lib/mock";
 import { demo, useDb } from "@/lib/demo/store";
 

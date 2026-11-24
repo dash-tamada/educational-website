@@ -20,29 +20,16 @@ import {
 } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
 import { STUDIO_TIPS } from "@/lib/mock/extra/tutor";
-import {
-  Avatar,
-  AvatarGroup,
-  BarChart,
-  Button,
-  EmptyState,
-  Field,
-  Icon,
-  LineChart,
-  Modal,
-  PageHeader,
-  ProgressBar,
-  Rating,
-  Section,
-  Segmented,
-  Sparkline,
-  StatGrid,
-  StatTile,
-  StatusPill,
-  Textarea,
-  toast,
-  type IconName,
-} from "@/components/app";
+import { Avatar, AvatarGroup, EmptyState, ProgressBar, Rating } from "@/components/app/Display";
+import { BarChart, LineChart, Sparkline } from "@/components/app/Charts";
+import { Button } from "@/components/app/Button";
+import { Field, Segmented, Textarea } from "@/components/app/Form";
+import { Icon, type IconName } from "@/components/app/icons";
+import { Modal } from "@/components/app/Overlay";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { Section } from "@/components/app/Card";
+import { StatusPill } from "@/components/app/Badge";
+import { toast } from "@/components/app/Toast";
 import { Figure, Idx, LineIcon, MonoMeta, RuleNote } from "./editorial";
 import { CourseThumb, biggestModuleDrop, copyText, courseMonthSales, courseRevenueLabel, focusFirstInvalid, greeting, splitPartialDay, tutorCourses, useTutorContext } from "./shared";
 

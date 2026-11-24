@@ -3,14 +3,9 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Button,
-  Checkbox,
-  Field,
-  Input,
-  RadioGroup,
-  toast,
-} from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Checkbox, Field, Input, RadioGroup } from "@/components/app/Form";
+import { toast } from "@/components/app/Toast";
 import { useDemoAuth } from "@/lib/demo/session-client";
 import {
   EMAIL_RE,

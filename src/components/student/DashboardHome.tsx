@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import clsx from "clsx";
-import { Icon, PageHeader, Section, Skeleton } from "@/components/app";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Section } from "@/components/app/Card";
+import { Skeleton } from "@/components/app/Display";
 import { useDb } from "@/lib/demo/store";
 import { getItemAccessMap } from "@/lib/access";
 import { FLAGSHIP } from "@/lib/content/site";

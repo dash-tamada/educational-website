@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { CheckoutFallback } from "@/components/catalog/StoreFallback";
 import { DemoSessionSeed } from "@/lib/demo/session-client";
 import { getDemoCookieValue } from "@/lib/demo/session-server";

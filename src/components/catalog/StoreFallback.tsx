@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import clsx from "clsx";
-import { Skeleton } from "@/components/app";
+import { Skeleton } from "@/components/app/Display";
 import { ArrowLink, Button, Eyebrow, GridLines } from "@/components/editorial";
 import { getCourseAccess } from "@/lib/access";
 import { FLAGSHIP } from "@/lib/content/site";

@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { formatDuration, type ModuleItem, type Question, type QuestionType, type Quiz, type QuizItem, type Resource, type ResourceItem, type ResourceFileType, type VideoItem } from "@/lib/mock";
 import { SAMPLE_FILES, SAMPLE_VIDEOS } from "@/lib/mock/extra/tutor";
-import { Badge, Button, Checkbox, DropdownMenu, Drawer, Field, Icon, Input, ProgressBar, Segmented, Select, Switch, Textarea, toast } from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Checkbox, Field, Input, Segmented, Select, Switch, Textarea } from "@/components/app/Form";
+import { DropdownMenu, Drawer } from "@/components/app/Overlay";
+import { Icon } from "@/components/app/icons";
+import { ProgressBar } from "@/components/app/Display";
+import { toast } from "@/components/app/Toast";
 import { LineIcon, RuleNote } from "../editorial";
 import { answerKey, itemLabel, newQuestion, omitKey, parseDuration, questionFieldIssues, quizProblems, stripUndefined, titleFromFileName } from "./utils";
 

@@ -3,30 +3,16 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  DescriptionList,
-  DropdownMenu,
-  EmptyState,
-  Field,
-  Icon,
-  PageHeader,
-  Rating,
-  Section,
-  Select,
-  Skeleton,
-  StatusPill,
-  StickyActionBar,
-  Switch,
-  buttonClass,
-  toast,
-  type IconName,
-  type MenuItem,
-} from "@/components/app";
+import { Avatar, EmptyState, Rating, Skeleton } from "@/components/app/Display";
+import { Badge, StatusPill } from "@/components/app/Badge";
+import { Button, buttonClass } from "@/components/app/Button";
+import { Card, DescriptionList, Section } from "@/components/app/Card";
+import { Checkbox, Field, Select, Switch } from "@/components/app/Form";
+import { DropdownMenu, type MenuItem } from "@/components/app/Overlay";
+import { Icon, type IconName } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { toast } from "@/components/app/Toast";
 import { demo, useDb, useStoreHydrated } from "@/lib/demo/store";
 import {
   formatDate,

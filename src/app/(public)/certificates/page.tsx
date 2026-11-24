@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { ArrowLink, Eyebrow } from "@/components/editorial";
 import { CertificateLookup } from "@/components/auth/CertificateView";
 import { CertificateSheet } from "@/components/auth/CertificateSheet";

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getFirstFreeItem } from "@/lib/mock";
 import { learnHref, useLearn } from "./context";
-import { Button } from "@/components/app";
+import { Button } from "@/components/app/Button";
 import { StageSkeleton } from "./LearnShell";
 import { LearnEmpty } from "./LearnEmpty";
 

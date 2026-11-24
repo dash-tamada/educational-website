@@ -3,7 +3,10 @@
 import Link, { useLinkStatus } from "next/link";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Button, DemoPill, Icon, ProgressBar } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { DemoPill } from "@/components/app/Badge";
+import { Icon } from "@/components/app/icons";
+import { ProgressBar } from "@/components/app/Display";
 import {
   formatDuration,
   getCourseStats,

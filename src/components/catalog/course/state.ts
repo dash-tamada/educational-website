@@ -97,7 +97,11 @@ export function splitTitle(title: string): { top: string | null; main: string } 
   return { top: title.slice(0, i).trim(), main: title.slice(i + 1).trim() };
 }
 
-/** true while `ref` is scrolled out of the viewport ABOVE (it has been passed). */
+/** true while `ref` is scrolled out of the viewport ABOVE (it has been passed). An
+ *  IntersectionObserver, not a scroll handler: no layout reads while the page scrolls.
+ *  Its root runs from the viewport top down without end, so it fires exactly when the
+ *  element's bottom crosses the top edge, even when a jump (an #anchor, a fling) skips
+ *  straight past the viewport. */
 export function usePassed(ref: React.RefObject<HTMLElement | null>, deps: unknown[] = []) {
   const [passed, setPassed] = useState(false);
   useEffect(() => {
@@ -106,22 +110,9 @@ export function usePassed(ref: React.RefObject<HTMLElement | null>, deps: unknow
       setPassed(false);
       return;
     }
-    let raf = 0;
-    const check = () => {
-      raf = 0;
-      setPassed(el.getBoundingClientRect().bottom <= 0);
-    };
-    const on = () => {
-      if (!raf) raf = requestAnimationFrame(check);
-    };
-    check();
-    window.addEventListener("scroll", on, { passive: true });
-    window.addEventListener("resize", on);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", on);
-      window.removeEventListener("resize", on);
-    };
+    const io = new IntersectionObserver((es) => setPassed(!es[es.length - 1].isIntersecting), { rootMargin: "0px 0px 1000000px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, ...deps]);
   return passed;

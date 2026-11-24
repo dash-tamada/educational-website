@@ -3,24 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import {
-  Avatar,
-  BarChart,
-  Button,
-  Card,
-  Donut,
-  EmptyState,
-  LineChart,
-  PageHeader,
-  ProgressBar,
-  Rating,
-  Section,
-  Segmented,
-  StatGrid,
-  StatTile,
-  StatusPill,
-  type IconName,
-} from "@/components/app";
+import { Avatar, EmptyState, ProgressBar, Rating } from "@/components/app/Display";
+import { BarChart, Donut, LineChart } from "@/components/app/Charts";
+import { Button } from "@/components/app/Button";
+import { Card, Section } from "@/components/app/Card";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { Segmented } from "@/components/app/Form";
+import { StatusPill } from "@/components/app/Badge";
+import type { IconName } from "@/components/app/icons";
 import { LineIcon, MonoMeta, RuleNote, pad2 } from "@/components/tutor/editorial";
 import { useDb } from "@/lib/demo/store";
 import {

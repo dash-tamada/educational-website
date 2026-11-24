@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { getCertificateByCode } from "@/lib/mock";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { DemoSessionSeed } from "@/lib/demo/session-client";
 import { getDemoCookieValue } from "@/lib/demo/session-server";
 import { CertificateHeading, CertificateView } from "@/components/auth/CertificateView";

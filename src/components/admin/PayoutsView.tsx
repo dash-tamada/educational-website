@@ -1,20 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Avatar,
-  BarChart,
-  Button,
-  Card,
-  ConfirmDialog,
-  DataTable,
-  PageHeader,
-  Section,
-  Select,
-  StatusPill,
-  toast,
-  type MenuItem,
-} from "@/components/app";
+import { Avatar } from "@/components/app/Display";
+import { BarChart } from "@/components/app/Charts";
+import { Button } from "@/components/app/Button";
+import { Card, Section } from "@/components/app/Card";
+import { ConfirmDialog, type MenuItem } from "@/components/app/Overlay";
+import { DataTable } from "@/components/app/DataTable";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Select } from "@/components/app/Form";
+import { StatusPill } from "@/components/app/Badge";
+import { toast } from "@/components/app/Toast";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   formatDate,

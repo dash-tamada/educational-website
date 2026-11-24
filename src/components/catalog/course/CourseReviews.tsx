@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Field, Input, Textarea, toast } from "@/components/app";
+import { Field, Input, Textarea } from "@/components/app/Form";
+import { toast } from "@/components/app/Toast";
 import { Button, Eyebrow } from "@/components/editorial";
 import { COURSE_PAGE } from "@/lib/content/course";
 import { demo } from "@/lib/demo/store";

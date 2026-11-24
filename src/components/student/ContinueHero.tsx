@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
-import { Button } from "@/components/app";
+import { Button } from "@/components/app/Button";
 import { cropSrc } from "@/lib/img";
 import { lessonPoster } from "@/lib/media";
 import { FLAGSHIP } from "@/lib/content/site";

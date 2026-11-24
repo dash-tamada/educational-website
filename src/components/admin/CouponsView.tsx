@@ -3,30 +3,17 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
-import {
-  Badge,
-  Button,
-  Checkbox,
-  ConfirmDialog,
-  DataTable,
-  Field,
-  Icon,
-  Input,
-  Modal,
-  PageHeader,
-  ProgressBar,
-  RadioGroup,
-  Section,
-  Segmented,
-  StatGrid,
-  StatTile,
-  Switch,
-  Textarea,
-  Tooltip,
-  toast,
-  useIsPhone,
-  type MenuItem,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Checkbox, Field, Input, RadioGroup, Segmented, Switch, Textarea } from "@/components/app/Form";
+import { ConfirmDialog, Modal, Tooltip, type MenuItem } from "@/components/app/Overlay";
+import { DataTable } from "@/components/app/DataTable";
+import { Icon } from "@/components/app/icons";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { ProgressBar } from "@/components/app/Display";
+import { Section } from "@/components/app/Card";
+import { toast } from "@/components/app/Toast";
+import { useIsPhone } from "@/components/app/mobile";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   MOCK_NOW_ISO,

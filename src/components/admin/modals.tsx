@@ -1,16 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Badge,
-  Button,
-  Field,
-  Modal,
-  RadioGroup,
-  Select,
-  Textarea,
-  toast,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Field, RadioGroup, Select, Textarea } from "@/components/app/Form";
+import { Modal } from "@/components/app/Overlay";
+import { toast } from "@/components/app/Toast";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   formatDate,

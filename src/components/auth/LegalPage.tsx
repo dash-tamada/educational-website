@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { ArrowLink, Eyebrow } from "@/components/editorial";
 import { LegalToc } from "./LegalToc";
 

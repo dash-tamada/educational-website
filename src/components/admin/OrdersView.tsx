@@ -3,28 +3,17 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Badge,
-  Button,
-  ConfirmDialog,
-  DataTable,
-  DescriptionList,
-  Donut,
-  Drawer,
-  EmptyState,
-  PageHeader,
-  Section,
-  Select,
-  StatGrid,
-  StatTile,
-  StatusPill,
-  Tabs,
-  toast,
-  Field,
-  Modal,
-  Textarea,
-  type MenuItem,
-} from "@/components/app";
+import { Badge, StatusPill } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog, Drawer, Modal, type MenuItem } from "@/components/app/Overlay";
+import { DataTable } from "@/components/app/DataTable";
+import { DescriptionList, Section } from "@/components/app/Card";
+import { Donut } from "@/components/app/Charts";
+import { EmptyState } from "@/components/app/Display";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { Select, Field, Textarea } from "@/components/app/Form";
+import { Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   MOCK_NOW,

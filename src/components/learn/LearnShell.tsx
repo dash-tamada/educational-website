@@ -4,24 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Avatar,
-  Badge,
-  Button,
-  DemoPill,
-  Drawer,
-  DropdownMenu,
-  Icon,
-  INK_SURFACE,
-  Skeleton,
-  toast,
-  isCoarse,
-  useBottomUi,
-  useIsPhone,
-  useIsShortLandscape,
-  useScrollHide,
-  useScrolledPast,
-} from "@/components/app";
+import { Avatar, Skeleton } from "@/components/app/Display";
+import { Badge, DemoPill } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Drawer, DropdownMenu } from "@/components/app/Overlay";
+import { Icon } from "@/components/app/icons";
+import { INK_SURFACE } from "@/components/app/surfaces";
+import { toast } from "@/components/app/Toast";
+import { isCoarse, useBottomUi, useIsPhone, useIsShortLandscape, useScrollHide, useScrolledPast } from "@/components/app/mobile";
 import { BrandMark } from "@/components/editorial/BrandMark";
 import {
   flattenCurriculum,

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Drawer } from "@/components/app";
+import { Drawer } from "@/components/app/Overlay";
 import { scrollToTarget } from "@/lib/lenis";
 
 type Item = { id: string; title: string };

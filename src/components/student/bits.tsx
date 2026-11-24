@@ -1,6 +1,6 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { Icon } from "@/components/app";
+import { Icon } from "@/components/app/icons";
 
 /* =============================================================================
    Small presentational pieces shared by the student pages (server-safe), in the

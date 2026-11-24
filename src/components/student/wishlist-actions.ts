@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { toast } from "@/components/app";
+import { toast } from "@/components/app/Toast";
 import { demo, getLiveDb } from "@/lib/demo/store";
 import { getWishlist, type Db } from "@/lib/mock";
 

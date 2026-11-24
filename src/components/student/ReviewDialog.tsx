@@ -3,16 +3,12 @@
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import { useId, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Button,
-  Field,
-  Icon,
-  Input,
-  Modal,
-  Textarea,
-  toast,
-  useIsPhone,
-} from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Field, Input, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { Modal } from "@/components/app/Overlay";
+import { toast } from "@/components/app/Toast";
+import { useIsPhone } from "@/components/app/mobile";
 import { demo } from "@/lib/demo/store";
 import { formatDate, type Course, type Review } from "@/lib/mock";
 

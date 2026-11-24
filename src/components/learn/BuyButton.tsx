@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, type ButtonVariant } from "@/components/app";
+import { Button, type ButtonVariant } from "@/components/app/Button";
 import { useLearn } from "./context";
 
 /**

@@ -20,21 +20,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  Badge,
-  Button,
-  ConfirmDialog,
-  EmptyState,
-  Field,
-  Icon,
-  Input,
-  Modal,
-  PageHeader,
-  Select,
-  Textarea,
-  toast,
-  type IconName,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog, Modal } from "@/components/app/Overlay";
+import { EmptyState } from "@/components/app/Display";
+import { Field, Input, Select, Textarea } from "@/components/app/Form";
+import { Icon, type IconName } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { toast } from "@/components/app/Toast";
 import { demo, useDb } from "@/lib/demo/store";
 import type { Tone } from "@/lib/tone";
 import { getCategories, plural, type Category, type Db } from "@/lib/mock";

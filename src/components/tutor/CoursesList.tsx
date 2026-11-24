@@ -6,24 +6,17 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { plural, formatDate, formatINR, formatNumber, getCategory, getCourseStats, getFirstFreeItem, flattenCurriculum, formatDuration, timeAgo, type Course, type CourseStatus } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
-import {
-  Button,
-  ConfirmDialog,
-  DataTable,
-  DropdownMenu,
-  EmptyState,
-  Icon,
-  PageHeader,
-  Rating,
-  SearchInput,
-  Segmented,
-  Skeleton,
-  StatusPill,
-  Tabs,
-  toast,
-  isPhone,
-  type MenuItem,
-} from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog, DropdownMenu, type MenuItem } from "@/components/app/Overlay";
+import { DataTable } from "@/components/app/DataTable";
+import { EmptyState, Rating, Skeleton } from "@/components/app/Display";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { SearchInput, Segmented } from "@/components/app/Form";
+import { StatusPill } from "@/components/app/Badge";
+import { Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
+import { isPhone } from "@/components/app/mobile";
 import { CourseThumb, courseMonthSales, courseRevenueLabel, salesMonthLabel, tutorCourses, useTutorContext } from "./shared";
 import { Idx, MonoMeta, Poster, RuleNote } from "./editorial";
 

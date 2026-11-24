@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { CourseResolver } from "@/components/catalog/StoreFallback";
 import { getCourseAccess } from "@/lib/access";
 import { DemoSessionSeed } from "@/lib/demo/session-client";

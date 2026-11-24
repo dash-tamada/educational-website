@@ -2,25 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  ConfirmDialog,
-  Field,
-  Icon,
-  Input,
-  Modal,
-  PageHeader,
-  Segmented,
-  Select,
-  StickyActionBar,
-  Switch,
-  Textarea,
-  toast,
-  useScrollHide,
-} from "@/components/app";
+import { Avatar } from "@/components/app/Display";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Card } from "@/components/app/Card";
+import { ConfirmDialog, Modal } from "@/components/app/Overlay";
+import { Field, Input, Segmented, Select, Switch, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { toast } from "@/components/app/Toast";
+import { useScrollHide } from "@/components/app/mobile";
 import type { Tone } from "@/lib/tone";
 import { useDb, demo } from "@/lib/demo/store";
 import { useDemoAuth } from "@/lib/demo/session-client";

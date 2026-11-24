@@ -3,27 +3,17 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import clsx from "clsx";
-import {
-  Badge,
-  Button,
-  Card,
-  ConfirmDialog,
-  Field,
-  Icon,
-  Input,
-  PageHeader,
-  RadioGroup,
-  Section,
-  Segmented,
-  Select,
-  Skeleton,
-  StickyActionBar,
-  Switch,
-  Textarea,
-  toast,
-  UnsavedChangesGuard,
-  useIsClient,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Card, Section } from "@/components/app/Card";
+import { ConfirmDialog, useIsClient } from "@/components/app/Overlay";
+import { Field, Input, RadioGroup, Segmented, Select, Switch, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Skeleton } from "@/components/app/Display";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { toast } from "@/components/app/Toast";
+import { UnsavedChangesGuard } from "@/components/app/NavigationGuard";
 import { RuleNote } from "@/components/tutor/editorial";
 import { SITE } from "@/lib/content/site";
 import { PanelLabel } from "./ledgerKit";

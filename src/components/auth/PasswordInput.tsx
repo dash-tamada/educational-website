@@ -2,7 +2,8 @@
 
 import { forwardRef, useState } from "react";
 import clsx from "clsx";
-import { Icon, Input, type InputProps } from "@/components/app";
+import { Icon } from "@/components/app/icons";
+import { Input, type InputProps } from "@/components/app/Form";
 import { passwordStrength } from "@/lib/mock/extra/auth";
 
 /**

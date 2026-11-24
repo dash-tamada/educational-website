@@ -2,7 +2,10 @@
 
 import { forwardRef, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Skeleton, StickyActionBar, toast, useMediaQuery } from "@/components/app";
+import { Skeleton } from "@/components/app/Display";
+import { StickyActionBar } from "@/components/app/StickyActionBar";
+import { toast } from "@/components/app/Toast";
+import { useMediaQuery } from "@/components/app/mobile";
 import { Button } from "@/components/editorial";
 import { COURSE_PAGE } from "@/lib/content/course";
 import { formatINR, getCertificates, timeAgo, validateCoupon } from "@/lib/mock";

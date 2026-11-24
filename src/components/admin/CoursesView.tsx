@@ -4,20 +4,16 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import clsx from "clsx";
-import {
-  Badge,
-  Button,
-  DataTable,
-  EmptyState,
-  PageHeader,
-  Rating,
-  Section,
-  Select,
-  Switch,
-  Tabs,
-  toast,
-  type MenuItem,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { DataTable } from "@/components/app/DataTable";
+import { EmptyState, Rating } from "@/components/app/Display";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Section } from "@/components/app/Card";
+import { Select, Switch } from "@/components/app/Form";
+import { Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
+import type { MenuItem } from "@/components/app/Overlay";
 import {
   CheckRow,
   Idx,

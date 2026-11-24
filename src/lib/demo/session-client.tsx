@@ -1,24 +1,18 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Role } from "@/lib/mock/types";
 import { getUser } from "@/lib/mock";
 import { getLiveDb, useDb } from "./store";
 import { useTransitionRouter, whenNavigationAllowed } from "@/components/transition/RouteTransition";
-import {
-  DEMO_COOKIE,
-  DEMO_COOKIE_MAX_AGE,
-  DEMO_USERS,
-  isValidDemoSession,
-  parseDemoCookie,
-  roleHome,
-  serializeDemoSession,
-  type DemoSession,
-} from "./session";
+import { DEMO_USERS, isValidDemoSession, parseDemoCookie, roleHome, type DemoSession } from "./session";
+import { clearSessionCookie, readSessionCookie, setSessionHint, useSessionCookie, writeSessionCookie } from "./session-cookie";
+
+export { DemoSessionSeed } from "./session-cookie";
 
 /* =============================================================================
-   Client side of the demo session.
+   Client side of the demo session (the cookie plumbing lives in session-cookie.tsx).
    - useDemoSession(): reads the tm_demo cookie (useSyncExternalStore). During SSR
      and hydration it returns the value handed down by <DemoSessionSeed> (app
      layouts pass the server-read cookie), else null, so markup always matches.
@@ -27,52 +21,19 @@ import {
      prefer useDemoAuth(), which does that for you.
    ============================================================================= */
 
-const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
-
-function readRaw(): string | null {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(new RegExp(`(?:^|;\\s*)${DEMO_COOKIE}=([^;]*)`));
-  return m ? m[1] : null;
-}
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  // another tab may log in/out: re-read when this tab regains focus
-  window.addEventListener("focus", cb);
-  return () => {
-    listeners.delete(cb);
-    window.removeEventListener("focus", cb);
-  };
-}
-
-/** Pre-paint hint for CSS (globals.css hides logged-out-only header bits while a session exists). */
-function setHtmlHint(role: Role | null) {
-  const d = document.documentElement;
-  if (role) d.dataset.session = role;
-  else delete d.dataset.session;
-}
-
-/** Re-align the html hint with the (validated) cookie, e.g. a stale cookie for a user that doesn't exist. */
-export function syncSessionHint() {
-  const s = parseDemoCookie(readRaw());
+/** Re-align the html hint with the (validated) cookie, e.g. a stale cookie for a user that
+ *  doesn't exist. Returns false when a cookie is present but not a valid session. */
+export function syncSessionHint(): boolean {
+  const s = parseDemoCookie(readSessionCookie());
   let live = null;
   try {
     live = s ? getUser(s.userId, getLiveDb()) : null;
   } catch {
     live = null;
   }
-  setHtmlHint(s && isValidDemoSession(s, getUser(s.userId), live) ? s.role : null);
-}
-
-const SeedCtx = createContext<string | null | undefined>(undefined);
-
-/**
- * Server layouts that read the cookie pass it here so client hooks render the
- * right session on the very first (SSR + hydration) pass:
- *   <DemoSessionSeed value={await getDemoCookieValue()}>{children}</DemoSessionSeed>
- */
-export function DemoSessionSeed({ value, children }: { value: string | null; children: React.ReactNode }) {
-  return <SeedCtx.Provider value={value}>{children}</SeedCtx.Provider>;
+  const valid = !!s && isValidDemoSession(s, getUser(s.userId), live);
+  setSessionHint(valid ? s.role : null);
+  return valid || !s;
 }
 
 /**
@@ -83,8 +44,7 @@ export function DemoSessionSeed({ value, children }: { value: string | null; chi
  * store-only sessions resolve right after hydration.
  */
 export function useDemoSession(): DemoSession | null {
-  const seed = useContext(SeedCtx);
-  const raw = useSyncExternalStore(subscribe, readRaw, () => seed ?? null);
+  const raw = useSessionCookie();
   const db = useDb();
   const parsed = useMemo(() => parseDemoCookie(raw), [raw]);
   const live = parsed ? getUser(parsed.userId, db) : null;
@@ -111,18 +71,9 @@ export function useDemoUser() {
 }
 
 /** Writes the cookie (role's default account, or a specific seeded user id). */
-export function loginAsDemo(role: Role, userId?: string) {
-  const value = serializeDemoSession({ role, userId: userId ?? DEMO_USERS[role].userId });
-  document.cookie = `${DEMO_COOKIE}=${encodeURIComponent(value)}; Path=/; Max-Age=${DEMO_COOKIE_MAX_AGE}; SameSite=Lax`;
-  setHtmlHint(role);
-  emit();
-}
+export const loginAsDemo = (role: Role, userId?: string) => writeSessionCookie(role, userId);
 
-export function logout() {
-  document.cookie = `${DEMO_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
-  setHtmlHint(null);
-  emit();
-}
+export const logout = () => clearSessionCookie();
 
 /**
  * The hook pages should use:

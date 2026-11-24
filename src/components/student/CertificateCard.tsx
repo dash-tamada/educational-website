@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import clsx from "clsx";
-import { Button, DropdownMenu, FullScreenSheet, Icon, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { DropdownMenu } from "@/components/app/Overlay";
+import { FullScreenSheet } from "@/components/app/Sheet";
+import { Icon } from "@/components/app/icons";
+import { toast } from "@/components/app/Toast";
 import { CertificateSheet } from "@/components/auth/CertificateSheet";
 import { useDb } from "@/lib/demo/store";
 import { FLAGSHIP } from "@/lib/content/site";

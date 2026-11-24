@@ -7,7 +7,13 @@ import { cropSrc } from "@/lib/img";
 import { MOCK_NOW, MOCK_NOW_ISO, formatDate, formatINR, getCategories, type Coupon, type Course, type CourseLevel, type Db } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
 import { COURSE_LANGUAGES, COURSE_LEVELS, GST_RATE, PRICE_MAX, PRICE_MIN, THUMBNAIL_PRESETS } from "@/lib/mock/extra/tutor";
-import { Badge, Button, Card, CardHeader, ConfirmDialog, Field, Icon, Input, Section, Segmented, Select, Switch, Textarea, toast } from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Card, CardHeader, Section } from "@/components/app/Card";
+import { ConfirmDialog } from "@/components/app/Overlay";
+import { Field, Input, Segmented, Select, Switch, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { toast } from "@/components/app/Toast";
 import { EDITORIAL_TONES, Figure, Idx, MonoMeta, TonePalette, editorialTone, toneSurface } from "../editorial";
 import { focusFirstInvalid } from "../shared";
 

@@ -2,7 +2,7 @@
    the cookie "tm_demo" just says which demo account you are looking at. */
 
 import type { Role } from "@/lib/mock/types";
-import { DEMO_ADMIN_ID, DEMO_STUDENT_ID, DEMO_TUTOR_ID } from "@/lib/mock/seed/people";
+import { DEMO_ADMIN_ID, DEMO_STUDENT_ID, DEMO_TUTOR_ID } from "@/lib/mock/seed/ids";
 
 export const DEMO_COOKIE = "tm_demo";
 export const DEMO_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days

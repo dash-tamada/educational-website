@@ -23,7 +23,12 @@ import {
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDuration, itemTitle, pad2, type Module, type ModuleItem } from "@/lib/mock";
-import { Badge, Button, ConfirmDialog, DropdownMenu, EmptyState, Icon, toast, useIsClient, type MenuItem } from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog, DropdownMenu, useIsClient, type MenuItem } from "@/components/app/Overlay";
+import { EmptyState } from "@/components/app/Display";
+import { Icon } from "@/components/app/icons";
+import { toast } from "@/components/app/Toast";
 import { ItemEditorDrawer } from "./ItemEditors";
 import { firstVideoId, itemLabel, newModule, newQuiz, newResource, newVideo, quizProblems, resourceMeta } from "./utils";
 

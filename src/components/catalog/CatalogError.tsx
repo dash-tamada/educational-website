@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { SiteShell, toast } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
+import { toast } from "@/components/app/Toast";
 import { ArrowLink, Button, Eyebrow } from "@/components/editorial";
 import { FLAGSHIP } from "@/lib/content/site";
 import { demo } from "@/lib/demo/store";

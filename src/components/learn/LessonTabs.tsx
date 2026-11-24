@@ -3,26 +3,16 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import {
-  Avatar,
-  Badge,
-  BottomSheet,
-  Button,
-  ConfirmDialog,
-  DemoPill,
-  DropdownMenu,
-  EmptyState,
-  Field,
-  Icon,
-  Segmented,
-  Skeleton,
-  TabPanel,
-  Tabs,
-  Textarea,
-  isPhone,
-  toast,
-  useIsPhone,
-} from "@/components/app";
+import { Avatar, EmptyState, Skeleton } from "@/components/app/Display";
+import { Badge, DemoPill } from "@/components/app/Badge";
+import { BottomSheet } from "@/components/app/Sheet";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog, DropdownMenu } from "@/components/app/Overlay";
+import { Field, Segmented, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { TabPanel, Tabs } from "@/components/app/Navigation";
+import { isPhone, useIsPhone } from "@/components/app/mobile";
+import { toast } from "@/components/app/Toast";
 import {
   formatDuration,
   formatNumber,

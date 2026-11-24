@@ -12,21 +12,17 @@ import {
   type Payout,
 } from "@/lib/mock";
 import { getPayoutAccount } from "@/lib/mock/extra/tutor";
-import {
-  Avatar,
-  BarChart,
-  Button,
-  Card,
-  DataTable,
-  EmptyState,
-  Icon,
-  PageHeader,
-  Section,
-  StatusPill,
-  Tooltip,
-  toast,
-  useIsPhone,
-} from "@/components/app";
+import { Avatar, EmptyState } from "@/components/app/Display";
+import { BarChart } from "@/components/app/Charts";
+import { Button } from "@/components/app/Button";
+import { Card, Section } from "@/components/app/Card";
+import { DataTable } from "@/components/app/DataTable";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { StatusPill } from "@/components/app/Badge";
+import { Tooltip } from "@/components/app/Overlay";
+import { toast } from "@/components/app/Toast";
+import { useIsPhone } from "@/components/app/mobile";
 import { WideSection } from "@/components/admin/ledgerKit";
 import { Figure, MonoMeta, RuledList, RuledRow } from "./editorial";
 import { copyText, useTutorContext } from "./shared";

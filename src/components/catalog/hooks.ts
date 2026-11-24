@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { toast } from "@/components/app";
+import { toast } from "@/components/app/Toast";
 import { demo, getLiveDb, useDb } from "@/lib/demo/store";
 import { useDemoAuth } from "@/lib/demo/session-client";
 import { DEMO_STUDENT_ID, getUser, isEnrolled, isWishlisted } from "@/lib/mock";

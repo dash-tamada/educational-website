@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Button,
-  ConfirmDialog,
-  Field,
-  Modal,
-  StatusPill,
-  Textarea,
-  toast,
-} from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog, Modal } from "@/components/app/Overlay";
+import { Field, Textarea } from "@/components/app/Form";
+import { StatusPill } from "@/components/app/Badge";
+import { toast } from "@/components/app/Toast";
 import { CheckRow, RuleNote } from "@/components/tutor/editorial";
 import { demo, useDb } from "@/lib/demo/store";
 import {

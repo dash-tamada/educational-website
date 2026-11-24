@@ -2,26 +2,18 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  ApplicationReview,
-  Avatar,
-  Badge,
-  Button,
-  DataTable,
-  Drawer,
-  EmptyState,
-  Field,
-  Icon,
-  Modal,
-  PageHeader,
-  Rating,
-  Section,
-  STATUS_META,
-  StatusPill,
-  Tabs,
-  Textarea,
-  toast,
-} from "@/components/app";
+import { ApplicationReview } from "@/components/app/ApplicationFacts";
+import { Avatar, EmptyState, Rating } from "@/components/app/Display";
+import { Badge, STATUS_META, StatusPill } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { DataTable } from "@/components/app/DataTable";
+import { Drawer, Modal } from "@/components/app/Overlay";
+import { Field, Textarea } from "@/components/app/Form";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Section } from "@/components/app/Card";
+import { Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
 import { Idx, MonoMeta, RuleNote, RuledList } from "@/components/tutor/editorial";
 import { demo, useDb } from "@/lib/demo/store";
 import {

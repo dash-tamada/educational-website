@@ -3,7 +3,12 @@
 import Image from "next/image";
 import { useEffect } from "react";
 import clsx from "clsx";
-import { Badge, Button, Eyebrow, Icon, Skeleton, toast } from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { Eyebrow } from "@/components/app/PageHeader";
+import { Icon } from "@/components/app/icons";
+import { Skeleton } from "@/components/app/Display";
+import { toast } from "@/components/app/Toast";
 import { cropSrc } from "@/lib/img";
 import {
   formatINR,

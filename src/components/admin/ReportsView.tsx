@@ -3,19 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Avatar,
-  Badge,
-  Button,
-  ConfirmDialog,
-  EmptyState,
-  PageHeader,
-  Rating,
-  StatusPill,
-  Tabs,
-  toast,
-  type IconName,
-} from "@/components/app";
+import { Avatar, EmptyState, Rating } from "@/components/app/Display";
+import { Badge, StatusPill } from "@/components/app/Badge";
+import { Button } from "@/components/app/Button";
+import { ConfirmDialog } from "@/components/app/Overlay";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Tabs } from "@/components/app/Navigation";
+import { toast } from "@/components/app/Toast";
+import type { IconName } from "@/components/app/icons";
 import { demo, useDb } from "@/lib/demo/store";
 import {
   formatDate,

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { permanentRedirect, redirect } from "next/navigation";
-import { SiteShell } from "@/components/app";
+import { SiteShell } from "@/components/app/SiteShell";
 import { TutorResolver } from "@/components/catalog/StoreFallback";
 import { DIRECTOR } from "@/lib/content/director";
 import { DemoSessionSeed } from "@/lib/demo/session-client";

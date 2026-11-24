@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useRef } from "react";
-import { Button, Icon, PageHeader, Section, toast } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { Icon } from "@/components/app/icons";
+import { PageHeader } from "@/components/app/PageHeader";
+import { Section } from "@/components/app/Card";
+import { toast } from "@/components/app/Toast";
 import { useTransitionRouter } from "@/components/transition/RouteTransition";
 import { useDb, demo } from "@/lib/demo/store";
 import { FLAGSHIP } from "@/lib/content/site";

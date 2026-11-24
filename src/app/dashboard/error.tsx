@@ -2,7 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Button, EmptyState } from "@/components/app";
+import { Button } from "@/components/app/Button";
+import { EmptyState } from "@/components/app/Display";
 
 /** Student area error boundary (the shell stays; only the page content is replaced). */
 export default function Error({

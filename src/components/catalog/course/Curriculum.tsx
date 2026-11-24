@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
-import { Icon } from "@/components/app";
+import { Icon } from "@/components/app/icons";
 import { getCourseAccess, getItemAccessMap, type AccessResult } from "@/lib/access";
 import { COURSE_PAGE } from "@/lib/content/course";
 import { formatDate, formatDuration, getCourseProgress, getCurriculum, itemTitle, pad2, type Module, type ModuleItem, type QuizItem } from "@/lib/mock";

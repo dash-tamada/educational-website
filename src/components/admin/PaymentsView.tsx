@@ -3,19 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import {
-  Badge,
-  BarChart,
-  Button,
-  Card,
-  Donut,
-  EmptyState,
-  PageHeader,
-  Section,
-  Segmented,
-  StatGrid,
-  StatTile,
-} from "@/components/app";
+import { Badge } from "@/components/app/Badge";
+import { BarChart, Donut } from "@/components/app/Charts";
+import { Button } from "@/components/app/Button";
+import { Card, Section } from "@/components/app/Card";
+import { EmptyState } from "@/components/app/Display";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { Segmented } from "@/components/app/Form";
 import { useDb } from "@/lib/demo/store";
 import {
   formatINR,

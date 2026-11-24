@@ -12,25 +12,16 @@ import {
 } from "@/lib/mock";
 import { demo } from "@/lib/demo/store";
 import { REPLY_TEMPLATES } from "@/lib/mock/extra/tutor";
-import {
-  Avatar,
-  BottomSheet,
-  Button,
-  DropdownMenu,
-  EmptyState,
-  Icon,
-  PageHeader,
-  Pagination,
-  SearchInput,
-  Section,
-  Select,
-  Skeleton,
-  StatGrid,
-  StatTile,
-  Tabs,
-  Textarea,
-  toast,
-} from "@/components/app";
+import { Avatar, EmptyState, Skeleton } from "@/components/app/Display";
+import { BottomSheet } from "@/components/app/Sheet";
+import { Button } from "@/components/app/Button";
+import { DropdownMenu } from "@/components/app/Overlay";
+import { Icon } from "@/components/app/icons";
+import { PageHeader, StatGrid, StatTile } from "@/components/app/PageHeader";
+import { Pagination, Tabs } from "@/components/app/Navigation";
+import { SearchInput, Select, Textarea } from "@/components/app/Form";
+import { Section } from "@/components/app/Card";
+import { toast } from "@/components/app/Toast";
 import { WideSection } from "@/components/admin/ledgerKit";
 import { MonoMeta, RuleNote, RuledList, RuledRow } from "./editorial";
 import { useTutorContext } from "./shared";
